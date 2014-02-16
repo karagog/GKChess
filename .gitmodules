@@ -1,0 +1,3 @@
+[submodule "gutil"]
+	path = gutil
+	url = ssh://george@gdomain.homelinux.net/srv/git/gutil.git
