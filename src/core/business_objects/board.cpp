@@ -19,8 +19,39 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
-Board::Board(GINT32 rows, GINT32 columns)
+Board::Board(GINT32 columns, GINT32 rows)
     :m_board(columns)
+{
+    _init(columns, rows);
+}
+
+Board::Board(const Board &b)
+    :m_board(b.ColumnCount())
+{
+    _init(b.ColumnCount(), RowCount());
+
+    // Copy the pieces from the other board:
+    for(GUINT32 i = 0; i < b.ColumnCount(); ++i)
+    {
+        for(GUINT32 j = 0; j < b.RowCount(); ++j)
+        {
+            Square const &other_square(b.m_board[i][j]);
+            Square &this_square(m_board[i][j]);
+
+            if(other_square.GetPiece())
+                this_square.SetPiece(new Piece(other_square.GetPiece()->GetAllegience(), other_square.GetPiece()->GetType()));
+        }
+    }
+}
+
+Board &Board::operator = (const Board &other)
+{
+    this->~Board();
+    new(this) Board(other);
+    return *this;
+}
+
+void Board::_init(GINT32 columns, GINT32 rows)
 {
     if(0 > rows || 0 > columns)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Rows and Columns must be positive");
@@ -68,8 +99,8 @@ Board::~Board()
 
 void Board::Clear()
 {
-    for(GUINT32 i = 0; i < GetColumns(); ++i){
-        for(GUINT32 j = 0; j < GetRows(); ++j)
+    for(GUINT32 i = 0; i < ColumnCount(); ++i){
+        for(GUINT32 j = 0; j < RowCount(); ++j)
         {
             Square &cur( m_board[i][j] );
             if(cur.GetPiece())
@@ -84,8 +115,8 @@ void Board::Clear()
 bool Board::IsEmpty() const
 {
     bool ret = true;
-    for(GUINT32 i = 0; i < GetColumns() && ret; ++i){
-        for(GUINT32 j = 0; j < GetRows() && ret; ++j){
+    for(GUINT32 i = 0; i < ColumnCount() && ret; ++i){
+        for(GUINT32 j = 0; j < RowCount() && ret; ++j){
             if(m_board[i][j].GetPiece())
                 ret = false;
         }
@@ -93,63 +124,14 @@ bool Board::IsEmpty() const
     return ret;
 }
 
-GUINT32 Board::GetRows() const
+GUINT32 Board::RowCount() const
 {
     return 0 < m_board.Length() ? m_board[0].Length() : 0;
 }
 
-GUINT32 Board::GetColumns() const
+GUINT32 Board::ColumnCount() const
 {
     return m_board.Length();
-}
-
-void Board::Setup(SetupTypeEnum ste)
-{
-    if(!IsEmpty())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "You must first clear the board before setting up a new game");
-
-    switch(ste)
-    {
-    case StandardChess:
-        if(8 != GetRows() || 8 != GetColumns())
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Standard chess can only be played on boards that are 8x8");
-
-        // First set up Pawns:
-        for(GUINT32 i = 0; i < GetColumns(); ++i){
-            m_board[i][1].SetPiece(new Piece(Piece::White, Piece::Pawn));
-            m_board[i][6].SetPiece(new Piece(Piece::Black, Piece::Pawn));
-        }
-
-        // Then Rooks:
-        m_board[0][0].SetPiece(new Piece(Piece::White, Piece::Rook));
-        m_board[7][0].SetPiece(new Piece(Piece::White, Piece::Rook));
-        m_board[0][7].SetPiece(new Piece(Piece::Black, Piece::Rook));
-        m_board[7][7].SetPiece(new Piece(Piece::Black, Piece::Rook));
-
-        // Then Knights:
-        m_board[1][0].SetPiece(new Piece(Piece::White, Piece::Knight));
-        m_board[6][0].SetPiece(new Piece(Piece::White, Piece::Knight));
-        m_board[1][7].SetPiece(new Piece(Piece::Black, Piece::Knight));
-        m_board[6][7].SetPiece(new Piece(Piece::Black, Piece::Knight));
-
-        // Then Bishops:
-        m_board[2][0].SetPiece(new Piece(Piece::White, Piece::Bishop));
-        m_board[5][0].SetPiece(new Piece(Piece::White, Piece::Bishop));
-        m_board[2][7].SetPiece(new Piece(Piece::Black, Piece::Bishop));
-        m_board[5][7].SetPiece(new Piece(Piece::Black, Piece::Bishop));
-
-        // Then Queens:
-        m_board[3][0].SetPiece(new Piece(Piece::White, Piece::Queen));
-        m_board[3][7].SetPiece(new Piece(Piece::Black, Piece::Queen));
-
-        // Then Kings:
-        m_board[4][0].SetPiece(new Piece(Piece::White, Piece::King));
-        m_board[4][7].SetPiece(new Piece(Piece::Black, Piece::King));
-
-        break;
-    default:
-        break;
-    }
 }
 
 Board::Square const &Board::GetSquare(GUINT32 column, GUINT32 row) const
@@ -170,6 +152,18 @@ Board::Square::Square(ColorEnum c)
       _p_Color(c),
       _p_Piece(0)
 {}
+
+bool Board::Square::operator == (const Square &other)
+{
+    // Two squares that share the same north square must be the same.
+    //  If the north square is off the board, then check the south
+    return north ? north == other.north : south == other.south;
+}
+
+bool Board::Square::operator != (const Square &other)
+{
+    return north ? north != other.north : south != other.south;
+}
 
 
 END_NAMESPACE_GKCHESS;

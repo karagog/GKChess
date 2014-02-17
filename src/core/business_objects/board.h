@@ -26,30 +26,15 @@ class Board
 {
 public:
 
-    Board(GINT32 rows = 8, GINT32 columns = 8);
+    Board(GINT32 columns = 8, GINT32 rows = 8);
+    Board(const Board &);
     virtual ~Board();
 
     /** Returns the number of rows. */
-    GUINT32 GetRows() const;
+    GUINT32 RowCount() const;
 
     /** Returns the number of columns. */
-    GUINT32 GetColumns() const;
-
-    /** Describes different ways the board could be set up. */
-    enum SetupTypeEnum
-    {
-        /** Causes the board to be cleared of all pieces. */
-        Empty = 0,
-
-        /** A standard game of chess. */
-        StandardChess = 1,
-
-        /** You can create your own custom board setups starting from this offset. */
-        CustomSetupOffset = 100
-    };
-
-    /** Sets up the board with the given type. */
-    virtual void Setup(SetupTypeEnum = StandardChess);
+    GUINT32 ColumnCount() const;
 
     /** Removes all pieces from the board.
      *  \note This does not resize the board - The only way to do that would be to create a new board.
@@ -64,6 +49,7 @@ public:
     class Square
     {
         friend class Board;
+        friend class GameLogic;
 
         Square *north, *north_east, *east, *south_east, *south, *south_west, *west, *north_west;
 
@@ -89,6 +75,12 @@ public:
         /** Returns true if there is no piece on the square. */
         inline bool IsEmpty() const{ return NULL == GetPiece(); }
 
+        /** Returns true if the squares are the same. */
+        bool operator == (const Square &other);
+
+        /** Returns true if the squares are not the same. */
+        bool operator != (const Square &other);
+
     };
 
 
@@ -98,9 +90,20 @@ public:
     Square const &GetSquare(GUINT32 column, GUINT32 row) const;
 
 
+    /** Returns a column of squares in an array. */
+    inline Square *operator [] (int column){ return m_board[column].Data(); }
+
+    /** Returns a column of squares in an array. */
+    inline Square const *operator [] (int column) const{ return m_board[column].ConstData(); }
+
+    Board &operator = (const Board &);
+
+
 private:
 
     ::GUtil::DataObjects::Vector< ::GUtil::DataObjects::Vector<Square> > m_board;
+
+    void _init(GINT32 columns, GINT32 rows);
 
 };
 
