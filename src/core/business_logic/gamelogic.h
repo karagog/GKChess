@@ -52,13 +52,13 @@ public:
     /** Returns a list of squares that are valid for the given square.
      *  If there is no piece on the square, or the piece has no moves, then an empty list is returned.
     */
-    ::GUtil::DataObjects::Vector<Board::Square *> GetPossibleMoves(const Board::Square &) const;
+    ::GUtil::DataObjects::Vector<Square *> GetPossibleMoves(const Square &) const;
 
     /** Attempts to move the piece at the source square to the destination.
      *  If the move is not possible (according to the rules of standard chess)
      *  it will throw an exception.
     */
-    void Move(Board::Square &source, Board::Square &destination);
+    void Move(Square &source, Square &destination);
 
     /** Causes the last move to be undone. */
     void Undo();
@@ -71,8 +71,8 @@ private:
 
     struct MoveData
     {
-        Board::Square *SourceSquare;
-        Board::Square *DestSquare;
+        Square *SourceSquare;
+        Square *DestSquare;
 
         Piece *CapturedPiece;
 
@@ -82,7 +82,7 @@ private:
     ::GUtil::DataObjects::Vector<MoveData> m_moveHistory;
     GINT32 m_moveHistoryIndex;
 
-    void _execute_move(Board::Square &source, Board::Square &dest);
+    void _execute_move(Square &source, Square &dest);
     MoveData const *_get_last_move() const;
 
 };

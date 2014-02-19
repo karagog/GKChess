@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_BOARD_H
 
 #include "gkchess_piece.h"
+#include "gkchess_square.h"
 #include "gutil_vector.h"
 
 NAMESPACE_GKCHESS;
@@ -45,45 +46,6 @@ public:
     bool IsEmpty() const;
 
 
-    /** Describes one square of the chess board. */
-    class Square
-    {
-        friend class Board;
-        friend class GameLogic;
-
-        Square *north, *north_east, *east, *south_east, *south, *south_west, *west, *north_west;
-
-    public:
-
-        /** Describes the different colors of squares. */
-        enum ColorEnum
-        {
-            InvalidColor = 0,
-
-            Light = 1,
-            Dark = 2,
-
-            /** For extending the board's functionality. */
-            CustomColorOffset = 10
-        };
-
-        explicit Square(ColorEnum);
-
-        PROPERTY(Color, ColorEnum);
-        PROPERTY_POINTER(Piece, Piece);
-
-        /** Returns true if there is no piece on the square. */
-        inline bool IsEmpty() const{ return NULL == GetPiece(); }
-
-        /** Returns true if the squares are the same. */
-        bool operator == (const Square &other);
-
-        /** Returns true if the squares are not the same. */
-        bool operator != (const Square &other);
-
-    };
-
-
     /** Returns a reference to the square at the given column and row.
      *  It does not check your bounds for performance reasons.
     */
@@ -91,10 +53,10 @@ public:
 
 
     /** Returns a column of squares in an array. */
-    inline Square *operator [] (int column){ return m_board[column].Data(); }
+    inline Square *operator [] (int column){ return m_board[column]; }
 
     /** Returns a column of squares in an array. */
-    inline Square const *operator [] (int column) const{ return m_board[column].ConstData(); }
+    inline Square const *operator [] (int column) const{ return m_board[column]; }
 
     Board &operator = (const Board &);
 

@@ -61,8 +61,8 @@ void Board::_init(GINT32 columns, GINT32 rows)
     {
         m_board.PushBack(Vector<Square>(rows));
         for(GINT32 j = 0; j < rows; ++j){
-            m_board[i].PushBack(Square(((OddOrEven(i) && OddOrEven(j)) || (!OddOrEven(i) && !OddOrEven(j))) ?
-                                           Square::Dark : Square::Light));
+            m_board[i].PushBack(Square(this, ((OddOrEven(i) && OddOrEven(j)) || (!OddOrEven(i) && !OddOrEven(j))) ?
+                                                Square::Dark : Square::Light));
         }
     }
 
@@ -134,35 +134,9 @@ GUINT32 Board::ColumnCount() const
     return m_board.Length();
 }
 
-Board::Square const &Board::GetSquare(GUINT32 column, GUINT32 row) const
+Square const &Board::GetSquare(GUINT32 column, GUINT32 row) const
 {
     return m_board[column][row];
-}
-
-
-Board::Square::Square(ColorEnum c)
-    :north(NULL),
-      north_east(NULL),
-      east(NULL),
-      south_east(NULL),
-      south(NULL),
-      south_west(NULL),
-      west(NULL),
-      north_west(NULL),
-      _p_Color(c),
-      _p_Piece(0)
-{}
-
-bool Board::Square::operator == (const Square &other)
-{
-    // Two squares that share the same north square must be the same.
-    //  If the north square is off the board, then check the south
-    return north ? north == other.north : south == other.south;
-}
-
-bool Board::Square::operator != (const Square &other)
-{
-    return north ? north != other.north : south != other.south;
 }
 
 

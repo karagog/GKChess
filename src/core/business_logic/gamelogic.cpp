@@ -78,9 +78,9 @@ GameLogic::MoveData::MoveData()
       CapturedPiece(NULL)
 {}
 
-Vector<Board::Square *> GameLogic::GetPossibleMoves(const Board::Square &s) const
+Vector<Square *> GameLogic::GetPossibleMoves(const Square &s) const
 {
-    Vector<Board::Square *> ret;
+    Vector<Square *> ret;
 
     if(s.GetPiece())
     {
@@ -92,7 +92,7 @@ Vector<Board::Square *> GameLogic::GetPossibleMoves(const Board::Square &s) cons
             MoveData const *last_move( _get_last_move() );
 
             // The pawn can always move one or two steps forward if not capturing
-            Board::Square *temp1(NULL), *temp2(NULL);
+            Square *temp1(NULL), *temp2(NULL);
             switch(s.GetPiece()->GetAllegience())
             {
             case Piece::White:
@@ -143,12 +143,12 @@ Vector<Board::Square *> GameLogic::GetPossibleMoves(const Board::Square &s) cons
     return ret;
 }
 
-void GameLogic::Move(Board::Square &source, Board::Square &destination)
+void GameLogic::Move(Square &source, Square &destination)
 {
     if(source == destination)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Pieces must move to a different square");
 
-    Vector<Board::Square *> possible_moves( GetPossibleMoves(source) );
+    Vector<Square *> possible_moves( GetPossibleMoves(source) );
     if(possible_moves.Contains(&destination)){
         // The move is valid, so execute it
         _execute_move(source, destination);
@@ -158,7 +158,7 @@ void GameLogic::Move(Board::Square &source, Board::Square &destination)
     }
 }
 
-void GameLogic::_execute_move(Board::Square &source, Board::Square &dest)
+void GameLogic::_execute_move(Square &source, Square &dest)
 {
     MoveData md;
     md.SourceSquare = &source;
