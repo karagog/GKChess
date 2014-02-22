@@ -26,36 +26,26 @@ class Piece
 {
 public:
 
-    /** Describes all the different types of pieces. */
+    /** Describes all the different types of pieces.
+     *  \note The enumeration values correspond to the unicode point offset
+    */
     enum PieceTypeEnum
     {
-        InvalidPiece = 0,
-
-        Pawn = 1,
-        Knight = 2,
+        King = 0,
+        Queen = 1,
+        Rook = 2,
         Bishop = 3,
-        Rook = 4,
-        Queen = 5,
-        King = 6,
-
-        /** If you are extending the library you can use this offset as a base
-         *  for your own custom pieces.
-        */
-        CustomPieceOffset = 10
+        Knight = 4,
+        Pawn = 5
     };
 
-    /** Describes which side the piece fights on. */
+    /** Describes which side the piece fights on.
+     *  \note The enumeration values correspond to the unicode point offset
+    */
     enum AllegienceEnum
     {
-        InvalidAllegience = 0,
-
-        White = 1,
-        Black = 2,
-
-        /** If you are extending the library you can use this offset as a base
-         *  for your own custom allegiences.
-        */
-        CustomAllegienceOffset = 10
+        White = 0x2654,
+        Black = 0x265A,
     };
 
 
@@ -68,6 +58,11 @@ public:
 
     /** Returns a human-readable string to describe the piece. */
     virtual ::GUtil::DataObjects::String ToString(bool with_allegience = false) const;
+
+    /** Returns the unicode point of the piece. You can display this in any text viewer
+     *  that supports unicode characters.
+    */
+    inline int UnicodeValue() const{ return (int)GetAllegience() + GetType(); }
 
 };
 

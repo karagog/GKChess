@@ -46,7 +46,7 @@ public:
     };
 
     /** Sets up the board for a new game. */
-    void SetupNewGame(SetupTypeEnum);
+    void SetupNewGame(SetupTypeEnum = StandardChess);
 
 
     /** Returns a list of squares that are valid for the given square.

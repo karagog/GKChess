@@ -19,7 +19,7 @@ HEADER_PREFIX = gkchess_
 # Directory patterns for which we want to ignore all headers
 IGNORE_PATHS = Test
 
-HEADERGEN_TARGET_DIRS = core
+HEADERGEN_TARGET_DIRS = core,presentation
 
 
 headers.commands = $$HEADER_CMD \

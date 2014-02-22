@@ -6,6 +6,7 @@ TEMPLATE = subdirs
 SUBDIRS += \
     pre_build \
     core \
+    presentation \
     doc
 
 CONFIG += ordered

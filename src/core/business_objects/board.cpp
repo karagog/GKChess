@@ -28,7 +28,7 @@ Board::Board(GINT32 columns, GINT32 rows)
 Board::Board(const Board &b)
     :m_board(b.ColumnCount())
 {
-    _init(b.ColumnCount(), RowCount());
+    _init(b.ColumnCount(), b.RowCount());
 
     // Copy the pieces from the other board:
     for(GUINT32 i = 0; i < b.ColumnCount(); ++i)
