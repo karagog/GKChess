@@ -17,11 +17,11 @@ limitations under the License.*/
 
 #include "gutil_macros.h"
 
-#define NAMESPACE_GKCHESS1( n )           namespace GKChess{ namespace n {
-#define NAMESPACE_GKCHESS                 namespace GKChess{
+#define NAMESPACE_GKCHESS1( n )           namespace GKChess{ namespace n { enum{}
+#define NAMESPACE_GKCHESS                 namespace GKChess{ enum{}
 
-#define END_NAMESPACE_GKCHESS1            }}
-#define END_NAMESPACE_GKCHESS             }
+#define END_NAMESPACE_GKCHESS1            }} enum{}
+#define END_NAMESPACE_GKCHESS             } enum{}
 
 #define USING_NAMESPACE_GKCHESS1( ns )            using namespace GKChess::ns
 #define USING_NAMESPACE_GKCHESS                   using namespace GKChess
