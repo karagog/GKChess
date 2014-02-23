@@ -30,6 +30,9 @@ class Square
     friend class GameLogic;
 
     Board *board;
+
+    int column;
+    int row;
     
     Square *north;
     Square *north_east;
@@ -81,6 +84,13 @@ public:
     
     /** References the piece that is on the square (if any). */
     PROPERTY_POINTER(Piece, Piece);
+
+    /** Holds the column that the square is in. */
+    READONLY_PROPERTY(Column, int);
+
+    /** Holds the row that the square is in. */
+    READONLY_PROPERTY(Row, int);
+
     
     /** Returns the square relative to this one. */
     Square const *GetSquare(RelativeSquareEnum) const;

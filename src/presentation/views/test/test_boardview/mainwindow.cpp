@@ -31,6 +31,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sldr_squareSize->setValue(GetHtmlFormatOptions().SquareSize);
 
     m_game.SetupNewGame();
+
+    ui->tableView->setModel(&m_game);
+
     _update();
 }
 
@@ -44,6 +47,7 @@ void MainWindow::_change_light_color()
     QColorDialog dlg(GetHtmlFormatOptions().LightSquareColor);
     if(QDialog::Accepted == dlg.exec())
     {
+        m_game.SetLightColor(dlg.selectedColor());
         _p_HtmlFormatOptions.LightSquareColor = dlg.selectedColor();
         _update();
     }
@@ -54,6 +58,7 @@ void MainWindow::_change_dark_color()
     QColorDialog dlg(GetHtmlFormatOptions().DarkSquareColor);
     if(QDialog::Accepted == dlg.exec())
     {
+        m_game.SetDarkColor(dlg.selectedColor());
         _p_HtmlFormatOptions.DarkSquareColor = dlg.selectedColor();
         _update();
     }
@@ -64,6 +69,7 @@ void MainWindow::_change_piece_color()
     QColorDialog dlg(GetHtmlFormatOptions().PieceColor);
     if(QDialog::Accepted == dlg.exec())
     {
+        m_game.SetPieceColor(dlg.selectedColor());
         _p_HtmlFormatOptions.PieceColor = dlg.selectedColor();
         _update();
     }
@@ -71,6 +77,7 @@ void MainWindow::_change_piece_color()
 
 void MainWindow::_change_piece_size(int s)
 {
+    m_game.SetPieceSize(s);
     _p_HtmlFormatOptions.PieceSize = s;
     _update();
 }

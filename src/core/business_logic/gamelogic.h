@@ -28,6 +28,7 @@ class GameLogic
 
 public:
     GameLogic();
+    virtual ~GameLogic();
 
     /** Returns the game board. */
     inline Board const &GetBoard() const{ return m_board; }
@@ -46,25 +47,25 @@ public:
     };
 
     /** Sets up the board for a new game. */
-    void SetupNewGame(SetupTypeEnum = StandardChess);
+    virtual void SetupNewGame(SetupTypeEnum = StandardChess);
+
+    /** Attempts to move the piece at the source square to the destination.
+     *  If the move is not possible (according to the rules of standard chess)
+     *  it will throw an exception.
+    */
+    virtual void Move(Square &source, Square &destination);
+
+    /** Causes the last move to be undone. */
+    virtual void Undo();
+
+    /** Causes the last move that was undone to be redone. */
+    virtual void Redo();
 
 
     /** Returns a list of squares that are valid for the given square.
      *  If there is no piece on the square, or the piece has no moves, then an empty list is returned.
     */
     ::GUtil::DataObjects::Vector<Square *> GetPossibleMoves(const Square &) const;
-
-    /** Attempts to move the piece at the source square to the destination.
-     *  If the move is not possible (according to the rules of standard chess)
-     *  it will throw an exception.
-    */
-    void Move(Square &source, Square &destination);
-
-    /** Causes the last move to be undone. */
-    void Undo();
-
-    /** Causes the last move that was undone to be redone. */
-    void Redo();
 
 
 private:

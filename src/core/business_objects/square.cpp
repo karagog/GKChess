@@ -30,7 +30,9 @@ Square::Square(Board *b, ColorEnum c)
       en_passant(false),
       castle_available(false),
       _p_Color(c),
-      _p_Piece(0)
+      _p_Piece(0),
+      _p_Column(-1),
+      _p_Row(-1)
 {}
 
 Square::~Square()

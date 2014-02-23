@@ -25,6 +25,9 @@ GameLogic::GameLogic()
       m_moveHistoryIndex(-1)
 {}
 
+GameLogic::~GameLogic()
+{}
+
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
 {
     if(!m_board.IsEmpty())

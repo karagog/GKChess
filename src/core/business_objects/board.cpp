@@ -71,22 +71,28 @@ void Board::_init(GINT32 columns, GINT32 rows)
     {
         for(GINT32 j = 0; j < rows; ++j)
         {
+            Square &s( m_board[i][j] );
+
+            // Each square knows its row and column
+            s._p_Column = i;
+            s._p_Row = j;
+
             if(rows > j + 1)
-                m_board[i][j].north = &m_board[i][j + 1];
+                s.north = &m_board[i][j + 1];
             if(rows > j + 1 && columns > i + 1)
-                m_board[i][j].north_east = &m_board[i + 1][j + 1];
+                s.north_east = &m_board[i + 1][j + 1];
             if(columns > i + 1)
-                m_board[i][j].east = &m_board[i + 1][j];
+                s.east = &m_board[i + 1][j];
             if(0 <= j - 1 && columns > i + 1)
-                m_board[i][j].south_east = &m_board[i + 1][j - 1];
+                s.south_east = &m_board[i + 1][j - 1];
             if(0 <= j - 1)
-                m_board[i][j].south = &m_board[i][j - 1];
+                s.south = &m_board[i][j - 1];
             if(0 <= j - 1 && 0 <= i - 1)
-                m_board[i][j].south_west = &m_board[i - 1][j - 1];
+                s.south_west = &m_board[i - 1][j - 1];
             if(0 <= i - 1)
-                m_board[i][j].west = &m_board[i - 1][j];
+                s.west = &m_board[i - 1][j];
             if(rows > j + 1 && 0 <= i - 1)
-                m_board[i][j].north_west = &m_board[i - 1][j + 1];
+                s.north_west = &m_board[i - 1][j + 1];
         }
     }
 }

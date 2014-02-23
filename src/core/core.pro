@@ -1,5 +1,5 @@
 
-QT          -= gui
+#QT          -= gui
 TEMPLATE    = lib
 
 TOP_DIR = ../..

@@ -12,11 +12,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_BOARDMODEL_H
-#define GKCHESS_BOARDMODEL_H
+#ifndef GKCHESS_GAMEMODEL_H
+#define GKCHESS_GAMEMODEL_H
 
-#include "gkchess_board.h"
+#include "gkchess_gamelogic.h"
 #include <QAbstractTableModel>
+#include <QColor>
 
 namespace GKChess{ namespace UI{
 
@@ -26,12 +27,14 @@ namespace GKChess{ namespace UI{
  *  This can be used with Qt's model-view framework, specifically
  *  with a BoardView.
 */
-class BoardModel :
-        public QAbstractTableModel
+class GameModel :
+        public QAbstractTableModel,
+        public GKChess::GameLogic
 {
     Q_OBJECT
 
-    Board *m_board;
+    QColor m_lightColor, m_darkColor, m_pieceColor;
+    int m_pieceSize;
 
 public:
 
@@ -39,7 +42,7 @@ public:
      *  object. It must exist at least for the lifetime of
      *  this object.
     */
-    explicit BoardModel(Board *, QObject *parent = 0);
+    explicit GameModel(QObject *parent = 0);
 
     /** These are extra data roles we need to represent a chessboard. */
     enum ChessDataRoles
@@ -55,6 +58,37 @@ public:
     };
 
 
+    /** Returns a reference to the square at the given index.
+     *  It will return 0 on errors.
+    */
+    Square const *ConvertIndexToSquare(const QModelIndex &) const;
+
+    /** Returns the model index corresponding to the given square. */
+    QModelIndex ConvertSquareToIndex(const Square &) const;
+
+
+    inline QColor GetLightColor() const{ return m_lightColor; }
+    void SetLightColor(const QColor &);
+
+    QColor GetDarkColor() const{ return m_darkColor; }
+    void SetDarkColor(const QColor &);
+
+    QColor GetPieceColor() const{ return m_pieceColor; }
+    void SetPieceColor(const QColor &);
+
+    inline int GetPieceSize() const{ return m_pieceSize; }
+    void SetPieceSize(int);
+
+
+    /** \name GKChess::GameLogic interface
+     *  \{
+    */
+    virtual void SetupNewGame(SetupTypeEnum = StandardChess);
+    virtual void Move(Square &, Square &);
+    virtual void Undo();
+    virtual void Redo();
+    /** \} */
+
 
     /** \name QAbstractTableModel interface
      *  \{
@@ -66,9 +100,15 @@ public:
     /** \} */
 
 
+private:
+
+    void _updated_squares(Square::ColorEnum);
+    void _updated_pieces();
+
+
 };
 
 
-}
+}}
 
-#endif // GKCHESS_BOARDMODEL_H
+#endif // GKCHESS_GAMEMODEL_H

@@ -1,5 +1,5 @@
 HEADERS += \
-    models/boardmodel.h
+    models/gamemodel.h
 
 SOURCES += \
-    models/boardmodel.cpp
+    models/gamemodel.cpp
