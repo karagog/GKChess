@@ -13,7 +13,9 @@ DEFINES += GUTIL_CORE_QT_ADAPTERS
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \
     -L$$TOP_DIR/gutil/lib \
-    #-lGUtil
+    -L$$TOP_DIR/lib \
+    -lGUtil \
+    -lGKChess_core
 
 unix {
     target.path = /usr/lib
