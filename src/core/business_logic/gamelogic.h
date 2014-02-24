@@ -62,6 +62,37 @@ public:
     virtual void Redo();
 
 
+    /** Encodes the ways a move can be validated. */
+    enum MoveValidationEnum
+    {
+        /** Means the move is valid. */
+        ValidMove = 0,
+
+        /** Invalid move because pieces can't move that way according to the rules of chess.
+         *  (i.e. a pawn moving backwards).
+        */
+        InvalidTechnical = 1,
+
+        /** Invalid because you would be leaving the king in check. */
+        InvalidCheck = 2,
+
+        /** The source square does not have a piece on it. */
+        InvalidEmptySquare = 3,
+
+        /** The squares must belong to this game logic, otherwise you get this error. */
+        InvalidUnknownSquare = 4,
+
+
+        /** If you are extending this class for your own custom rules then you'll base
+         *  your validation types with this value.
+        */
+        CustomInvalidMoveOffset = 100
+    };
+
+    /** Determines if the move is valid, according to the rules of standard chess. */
+    virtual MoveValidationEnum ValidateMove(const Square &source, const Square &destination) const;
+
+
     /** Returns a list of squares that are valid for the given square.
      *  If there is no piece on the square, or the piece has no moves, then an empty list is returned.
     */

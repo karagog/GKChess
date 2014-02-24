@@ -161,6 +161,102 @@ void GameLogic::Move(Square &source, Square &destination)
     }
 }
 
+
+int __cmp_with_zero(int n)
+{
+    int ret = 0;
+    if(0 < n)
+        ret = 1;
+    else if(0 > n)
+        ret = -1;
+    return ret;
+}
+
+// This function assumes that source and destination are in a straight line away from each
+//  other, horizontally, vertically or diagonally. Any other inputs will probably seg fault.
+// It is this way intentionally as an optimization to make it as fast as possible.
+static bool __is_path_blocked(Square const &s, Square const &d, Piece::AllegienceEnum a)
+{
+    bool ret = false;
+    Square const *cur = &s;
+    int cmp_res_col = __cmp_with_zero(d.GetColumn() - cur->GetColumn());
+    int cmp_res_row = __cmp_with_zero(d.GetRow() - cur->GetRow());
+
+    while(1)
+    {
+        cur = &(*cur->GetBoard())
+                [cur->GetColumn() + cmp_res_col]
+                [cur->GetRow() + cmp_res_row];
+
+        Piece *p = cur->GetPiece();
+        if(cur == &d)
+        {
+            // The destination square is only blocked if there is a piece that belongs
+            //  to the same allegience as the piece being moved.
+            if(p)
+                ret = a == p->GetAllegience();
+            break;
+        }
+        else if(p)
+        {
+            ret = true;
+            break;
+        }
+    };
+    return ret;
+}
+
+GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Square &d) const
+{
+    if(!(&m_board == s.GetBoard() && &m_board == d.GetBoard()))
+        return InvalidUnknownSquare;
+
+    Piece *p( s.GetPiece() );
+    if(!p)
+        return InvalidEmptySquare;
+
+
+    // Validate the low-level technical aspects of the move, ignoring threats to the king
+
+    // A piece cannot stay in the same place if it is moving
+    if(&s == &d)
+        return InvalidTechnical;
+
+    bool technically_ok = false;
+    int col_diff = d.GetColumn() - s.GetColumn();
+    int row_diff = d.GetRow() - s.GetRow();
+    int col_diff_abs = Abs(col_diff);
+    int row_diff_abs = Abs(row_diff);
+    switch(p->GetType())
+    {
+    case Piece::Pawn:
+        break;
+    case Piece::Bishop:
+        if(col_diff_abs == row_diff_abs)
+            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+        break;
+    case Piece::Knight:
+        break;
+    case Piece::Rook:
+        if(0 == col_diff_abs || 0 == row_diff_abs)
+            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+        break;
+    case Piece::Queen:
+        if(0 == col_diff_abs || 0 == row_diff_abs || col_diff_abs == row_diff_abs)
+            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+        break;
+    case Piece::King:
+        if(1 >= col_diff_abs && 1 >= row_diff_abs)
+            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+        break;
+    default:
+        // We should not have an unkown piece type
+        THROW_NEW_GUTIL_EXCEPTION(Exception);
+    }
+
+    return ValidMove;
+}
+
 void GameLogic::_execute_move(Square &source, Square &dest)
 {
     MoveData md;
