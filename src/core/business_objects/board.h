@@ -68,6 +68,11 @@ public:
     void InitPiece(Piece *p, GUINT32 column, GUINT32 row){
         m_board[column][row].SetPiece(p);
     }
+    
+    /** Initializes a new piece on the given square.  The board will take
+        ownership of the piece's memory.
+    */
+    void InitPiece(Piece *, GUINT32 column, GUINT32 row);
 
     /** Moves the piece at the source to the given destination square.
      *  If the destination square is occupied, its piece will be replaced by

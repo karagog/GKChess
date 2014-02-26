@@ -26,6 +26,7 @@ NAMESPACE_GKCHESS;
 class Piece :
         public GUtil::Utils::SharedData
 {
+    friend class Board;
 public:
 
     /** Describes all the different types of pieces.
