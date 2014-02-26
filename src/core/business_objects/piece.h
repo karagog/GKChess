@@ -26,7 +26,6 @@ NAMESPACE_GKCHESS;
 class Piece :
         public GUtil::Utils::SharedData
 {
-    friend class Board;
 public:
 
     /** Describes all the different types of pieces.
@@ -53,7 +52,7 @@ public:
 
 
     /** Constructs a piece with the given allegience and type. */
-    explicit Piece(AllegienceEnum, PieceTypeEnum);
+    Piece(AllegienceEnum, PieceTypeEnum);
     virtual ~Piece();
 
     /** Returns the type of the piece. */
