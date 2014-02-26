@@ -27,8 +27,6 @@ NAMESPACE_GKCHESS;
 */
 class PGN_Player
 {
-    PGN_Player();
-
     struct MoveData
     {
         Piece::PieceTypeEnum PieceType;
@@ -49,15 +47,17 @@ class PGN_Player
         MoveData();
     };
 
-    GameLogic m_game;
+    GameLogic *m_game;
     GUtil::DataObjects::Vector<MoveData> m_moves;
 
     GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> m_tags;
 
 public:
 
-    static PGN_Player FromText(const GUtil::DataObjects::String &pgn_text);
-    static PGN_Player FromFile(const GUtil::DataObjects::String &pgn_filename);
+    PGN_Player(GameLogic *);
+
+    void LoadFromString(const GUtil::DataObjects::String &);
+    void LoadFromFile(const GUtil::DataObjects::String &);
 
 };
 

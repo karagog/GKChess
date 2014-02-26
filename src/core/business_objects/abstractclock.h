@@ -15,10 +15,9 @@ limitations under the License.*/
 #ifndef GKCHESS_ABSTRACTCLOCK_H
 #define GKCHESS_ABSTRACTCLOCK_H
 
-#include "gkchess_globals.h"
 #include <QTime>
 
-NAMESPACE_GKCHESS;
+namespace GKChess{
 
 
 /** Describes a chess clock interface. */
@@ -59,7 +58,7 @@ public:
     /** Pauses the clock. Call PushClock() to make it run again.
         Call InitClock() to start a new game.
     */
-    virtual void Stop() = 0;
+    virtual void Pause() = 0;
     
     /** Returns the amount of time remaining on the clock at the given index. */
     virtual QTime GetRemainingTime(ClockIndex) = 0;
@@ -75,6 +74,6 @@ signals:
 };
 
 
-END_NAMESPACE_GKCHESS;
+}
 
 #endif // GKCHESS_ABSTRACTCLOCK_H

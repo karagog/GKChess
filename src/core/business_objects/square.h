@@ -20,40 +20,14 @@ limitations under the License.*/
 
 NAMESPACE_GKCHESS;
 
-class Board;
 class Piece;
 
 
 /** Describes one square of the chess board. */
 class Square
 {
-    Board *board;
-
     GUtil::Utils::SharedSmartPointer<Piece> piece;
-    
 public:
-
-    /** Constructing a null square is meaningless, so this only exists to support
-     *  arrays of squares. But you must later initialize it with the assignment operator.
-    */
-    Square();
-
-    /** The main constructor for a square. You must give it a reference
-     *  to the parent board and tell it what row and column it is.
-    */
-    Square(Board *parent_board, int column, int row);
-
-    Square(const Square &);
-    Square &operator = (const Square &);
-
-    virtual ~Square();
-
-    
-    /** References the piece that is on the square (if any). */
-    Piece const *GetPiece() const{ return piece; }
-    Piece *GetPiece(){ return piece; }
-
-    void SetPiece(Piece *);
 
     /** Holds the column that the square is in. */
     READONLY_PROPERTY(Column, int);
@@ -67,11 +41,37 @@ public:
     /** Returns true if the king may castle on this square. */
     PROPERTY(CastleAvailable, bool);
 
-    /** Returns the board to which this square belongs. */
-    Board const *GetBoard() const{ return board; }
+
+    /** Constructing a null square is meaningless, so this only exists to support
+     *  arrays of squares. But you must later initialize it with the assignment operator.
+    */
+    Square();
+
+    /** The main constructor for a square. You must tell it what row and column it is. */
+    Square(int column, int row);
+
+    Square(const Square &);
+    Square &operator = (const Square &);
+
+    virtual ~Square();
+
+    
+    /** References the piece that is on the square (if any). */
+    Piece const *GetPiece() const{ return piece; }
+    /** References the piece that is on the square (if any). */
+    Piece *GetPiece(){ return piece; }
+
+    /** Sets the piece on the square.
+     *  The pieces are shared explicitly between boards, to support not having to
+     *  reallocate a set of pieces for every board simulation.
+    */
+    void SetPiece(Piece *);
 
     /** Returns true if there is no piece on the square. */
     bool IsEmpty() const{ return NULL == GetPiece(); }
+
+    /** A convenience function that tells you if this square is light or dark. */
+    bool IsDarkSquare() const{ return (0x1 & GetRow()) == (0x1 & GetColumn()); }
 
     /** Returns true if the squares are the same. */
     bool operator == (const Square &other);

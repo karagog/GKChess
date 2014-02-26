@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "boardview.h"
+#include "gkchess_piece.h"
 #include <QXmlStreamWriter>
 #include <QVBoxLayout>
 USING_NAMESPACE_GUTIL;
@@ -63,20 +64,13 @@ static QString __generate_row_style(const BoardView::HtmlFormattingOptions &)
     return "vertical-align:bottom;";
 }
 
-static QColor __get_square_color(Square::ColorEnum c, const BoardView::HtmlFormattingOptions &f)
+static QColor __get_square_color(Square const &s, const BoardView::HtmlFormattingOptions &f)
 {
     QColor ret;
-    switch(c)
-    {
-    case Square::Light:
-        ret = f.LightSquareColor;
-        break;
-    case Square::Dark:
+    if((0x1 & s.GetColumn()) == (0x1 &s.GetRow()))
         ret = f.DarkSquareColor;
-        break;
-    default:
-        break;
-    }
+    else
+        ret = f.LightSquareColor;
     return ret;
 }
 
@@ -93,7 +87,7 @@ static QString __generate_cell_style(const Square &s, const BoardView::HtmlForma
             .arg(f.SquareSize)
             .arg(f.SquareSize)
             .arg(f.BorderSize)
-            .arg(0x00FFFFFF & __get_square_color(s.GetColor(), f).rgb(), 6, 16, QChar('0'));
+            .arg(0x00FFFFFF & __get_square_color(s, f).rgb(), 6, 16, QChar('0'));
 }
 
 static QString __generate_piece_style(const Piece &, const BoardView::HtmlFormattingOptions &f)
@@ -128,7 +122,7 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
         sw.writeAttribute("style", __generate_table_style(f));
 
         // Write each row to html
-        for(GUINT32 i = b.RowCount() - 1; i < b.RowCount(); --i)
+        for(int i = b.RowCount() - 1; 0 <= i; --i)
         {
             sw.writeStartElement("tr");
             sw.writeAttribute("style", __generate_row_style(f));
@@ -142,15 +136,15 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
             sw.writeEndElement(); //td
 
             // Iterate through the columns and write each cell
-            for(GUINT32 j = 0; j < b.ColumnCount(); ++j)
+            for(int j = 0; j < b.ColumnCount(); ++j)
             {
-                Square const &s( b[j][i] );
+                Square const &s( b.GetSquare(j, i) );
 
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", __generate_cell_style(s, f));
 
                 // Put a piece in the square if there is one
-                Piece *p = s.GetPiece();
+                Piece const *p = s.GetPiece();
                 if(p)
                 {
                     sw.writeStartElement("span");
@@ -180,7 +174,7 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
             sw.writeEndElement(); //td
 
             char letter = 'a';
-            for(GUINT32 i = 0; i < b.RowCount(); ++i, ++letter)
+            for(int i = 0; i < b.RowCount(); ++i, ++letter)
             {
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", QString("font-size:%1pt;").arg(f.IndexSize));

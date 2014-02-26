@@ -25,23 +25,12 @@ class Piece;
 /** Describes a chess board. */
 class Board
 {
+    Square m_board[8][8];
 public:
 
-    Board(){
-        for(GINT32 i = 0; i < ColumnCount(); ++i){
-            for(GINT32 j = 0; j < RowCount(); ++j){
-                m_board[i][j] = Square(this, i, j);
-            }
-        }
-    }
+    Board();
 
-    Board(const Board &b){
-        for(GINT32 i = 0; i < ColumnCount(); ++i){
-            for(GINT32 j = 0; j < RowCount(); ++j){
-                m_board[i][j] = b.m_board[i][j];
-            }
-        }
-    }
+    Board(const Board &);
 
     /** Returns the number of rows. */
     int RowCount() const{ return 8; }
@@ -49,58 +38,32 @@ public:
     /** Returns the number of columns. */
     int ColumnCount() const{ return 8; }
 
-    /** Removes all pieces from the board.
-     *  \note This does not resize the board - The only way to do that would be to create a new board.
-    */
-    void Clear(){
-        for(int i = 0; i < ColumnCount(); ++i){
-            for(int j = 0; j < RowCount(); ++j){
-                RemovePiece(i, j);
-            }
-        }
-    }
+    /** Removes all pieces from the board. */
+    void Clear();
 
 
 
     /** Initializes a new piece on the given square.  The board will take
         ownership of the piece's memory.
     */
-    void InitPiece(Piece *p, GUINT32 column, GUINT32 row){
-        m_board[column][row].SetPiece(p);
-    }
-    
-    /** Initializes a new piece on the given square.  The board will take
-        ownership of the piece's memory.
-    */
-    void InitPiece(Piece *, GUINT32 column, GUINT32 row);
+    void InitPiece(Piece *, int column, int row);
 
     /** Moves the piece at the source to the given destination square.
      *  If the destination square is occupied, its piece will be replaced by
      *  the one from source. If source is an empty square, this function does nothing.
    
-        \note This does NOT do any chess rules validation, so it will assume any move
+        \note This does not do any chess rules validation, so it will assume any move
         is legal.
     */
-    void Move(Square &source, Square &dest){
-        Piece *p = source.GetPiece();
-        if(p)
-            dest.SetPiece(p);
-    }
+    void Move(Square &source, Square &dest);
     
     /** Removes any piece that is on the square. */
-    void RemovePiece(GUINT32 column, GUINT32 row){
-        Square &s(m_board[column][row]);
-        if(s.GetPiece())
-            s.SetPiece(0);
-    }
+    void RemovePiece(int column, int row);
 
     /** Returns the square at the given column and row. */
-    Square const &GetSquare(int column, int row) const{ return m_board[column][row]; }
-
-
-private:
-
-    Square m_board[8][8];
+    Square const &GetSquare(int column, int row) const;
+    /** Returns the square at the given column and row. */
+    Square &GetSquare(int column, int row);
 
 };
 

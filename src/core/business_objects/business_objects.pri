@@ -10,4 +10,5 @@ SOURCES += \
     business_objects/piece.cpp \
     business_objects/square.cpp \
     business_objects/abstractclock.cpp \
-    business_objects/clock.cpp
+    business_objects/clock.cpp \
+    business_objects/board.cpp

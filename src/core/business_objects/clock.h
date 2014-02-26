@@ -15,22 +15,35 @@ limitations under the License.*/
 #ifndef GKCHESS_CLOCK_H
 #define GKCHESS_CLOCK_H
 
-#include "gkchess_globals.h"
+#include "gkchess_abstractclock.h"
 
-NAMESPACE_GKCHESS;
+namespace GKChess{
 
 
 /** Describes a chess clock. */
-class Clock
+class Clock :
+        public AbstractClock
 {
+    Q_OBJECT
 public:
 
-    Clock();
+    Clock(QObject * = 0);
     virtual ~Clock();
+
+
+    /** \name AbstractClock interface
+     *  \{
+    */
+    virtual void InitClock(ClockIndex, int, int);
+    virtual void PushClock(ClockIndex);
+    virtual void AdjustClock(ClockIndex, int);
+    virtual void Pause();
+    virtual QTime GetRemainingTime(ClockIndex);
+    /** \} */
 
 };
 
 
-END_NAMESPACE_GKCHESS;
+}
 
 #endif // GKCHESS_CLOCK_H

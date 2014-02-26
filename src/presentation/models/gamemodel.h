@@ -102,7 +102,8 @@ public:
 
 private:
 
-    void _updated_squares(Square::ColorEnum);
+    /** Pass 0 to update dark squares, 1 for light. */
+    void _updated_squares(int);
     void _updated_pieces();
 
 

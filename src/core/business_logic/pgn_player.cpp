@@ -15,6 +15,7 @@ limitations under the License.*/
 #include "pgn_player.h"
 #include "gutil_file.h"
 USING_NAMESPACE_GUTIL1(DataAccess);
+USING_NAMESPACE_GUTIL1(DataObjects);
 
 NAMESPACE_GKCHESS;
 
@@ -28,20 +29,22 @@ PGN_Player::MoveData::MoveData()
 {}
 
 
-PGN_Player::PGN_Player()
+PGN_Player::PGN_Player(GameLogic *g)
+    :m_game(g)
+{}
+
+void PGN_Player::LoadFromString(const String &pgn_text)
 {
+
 }
 
-PGN_Player PGN_Player::FromText(const GUtil::DataObjects::String &pgn_text)
-{
-
-}
-
-PGN_Player PGN_Player::FromFile(const GUtil::DataObjects::String &pgn_filename)
+void PGN_Player::LoadFromFile(const String &pgn_filename)
 {
     File f(pgn_filename);
     f.Open(File::OpenRead);
-    return FromText(f.Read());
+    String s( f.Read() );
+    f.Close();
+    LoadFromString(s);
 }
 
 

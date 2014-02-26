@@ -54,7 +54,7 @@ void GameModel::SetLightColor(const QColor &c)
     m_lightColor = c;
 
     // Cause the view to update the light squares:
-    _updated_squares(Square::Light);
+    _updated_squares(1);
 }
 
 void GameModel::SetDarkColor(const QColor &c)
@@ -62,7 +62,7 @@ void GameModel::SetDarkColor(const QColor &c)
     m_darkColor = c;
 
     // Cause the view to update the dark squares:
-    _updated_squares(Square::Dark);
+    _updated_squares(0);
 }
 
 void GameModel::SetPieceColor(const QColor &c)
@@ -81,14 +81,15 @@ void GameModel::SetPieceSize(int s)
     _updated_pieces();
 }
 
-void GameModel::_updated_squares(Square::ColorEnum c)
+void GameModel::_updated_squares(int n)
 {
-    for(GUINT32 i = 0; i < GetBoard().ColumnCount(); ++i)
+    for(int i = 0; i < GetBoard().ColumnCount(); ++i)
     {
-        for(GUINT32 j = 0; j < GetBoard().RowCount(); ++j)
+        for(int j = 0; j < GetBoard().RowCount(); ++j)
         {
-            Square const &s( GetBoard()[i][j] );
-            if(Square::InvalidColor == c || c == s.GetColor())
+            Square const &s( GetBoard().GetSquare(i, j) );
+            if((0 == n && s.IsDarkSquare()) ||
+                    (1 == n && !s.IsDarkSquare()))
             {
                 QModelIndex ind( ConvertSquareToIndex(s) );
                 emit dataChanged(ind, ind);
@@ -99,11 +100,11 @@ void GameModel::_updated_squares(Square::ColorEnum c)
 
 void GameModel::_updated_pieces()
 {
-    for(GUINT32 i = 0; i < GetBoard().ColumnCount(); ++i)
+    for(int i = 0; i < GetBoard().ColumnCount(); ++i)
     {
-        for(GUINT32 j = 0; j < GetBoard().RowCount(); ++j)
+        for(int j = 0; j < GetBoard().RowCount(); ++j)
         {
-            Square const &s( GetBoard()[i][j] );
+            Square const &s( GetBoard().GetSquare(i, j) );
             if(s.GetPiece())
             {
                 QModelIndex ind( ConvertSquareToIndex(s) );
@@ -117,12 +118,12 @@ void GameModel::_updated_pieces()
 Square const *GameModel::ConvertIndexToSquare(const QModelIndex &i) const
 {
     Square const *ret(0);
-    GUINT32 r = i.row(), c = i.column();
+    int r = i.row(), c = i.column();
     if(i.isValid() &&
             this == i.model() &&
             GetBoard().ColumnCount() > c &&
             GetBoard().RowCount() > r)
-        ret = &GetBoard()[c][r];
+        ret = &GetBoard().GetSquare(c, r);
     return ret;
 }
 
@@ -160,7 +161,7 @@ QVariant GameModel::data(const QModelIndex &i, int role) const
     Square const *s = ConvertIndexToSquare(i);
     if(s)
     {
-        Piece *p = s->GetPiece();
+        Piece const *p = s->GetPiece();
 
         switch((Qt::ItemDataRole)role)
         {
@@ -185,17 +186,10 @@ QVariant GameModel::data(const QModelIndex &i, int role) const
             }
             break;
         case Qt::BackgroundColorRole:
-            switch(s->GetColor())
-            {
-            case Square::Light:
-                ret = GetLightColor();
-                break;
-            case Square::Dark:
+            if(s->IsDarkSquare())
                 ret = GetDarkColor();
-                break;
-            default:
-                break;
-            }
+            else
+                ret = GetLightColor();
             break;
         case Qt::ForegroundRole:
             ret = GetPieceColor();

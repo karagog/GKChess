@@ -20,6 +20,8 @@ limitations under the License.*/
 
 NAMESPACE_GKCHESS;
 
+class AbstractClock;
+
 
 /** Describes the game logic for standard chess. */
 class GameLogic
@@ -28,7 +30,9 @@ class GameLogic
     Piece::AllegienceEnum m_currentTurn;
 
 public:
-    GameLogic();
+
+    /** You must give the game logic a board to play on. It will not own the board. */
+    explicit GameLogic();
     virtual ~GameLogic();
 
     /** Returns the game board. */
@@ -79,9 +83,6 @@ public:
 
         /** The source square does not have a piece on it. */
         InvalidEmptySquare = 3,
-
-        /** The squares must belong to this game logic, otherwise you get this error. */
-        InvalidUnknownSquare = 4,
 
 
         /** If you are extending this class for your own custom rules then you'll base

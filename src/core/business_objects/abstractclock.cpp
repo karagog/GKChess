@@ -17,6 +17,7 @@ limitations under the License.*/
 */
 
 #include "abstractclock.h"
+#include "gkchess_globals.h"
 
 NAMESPACE_GKCHESS;
 

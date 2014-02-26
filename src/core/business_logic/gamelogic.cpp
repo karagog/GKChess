@@ -20,8 +20,7 @@ NAMESPACE_GKCHESS;
 
 
 GameLogic::GameLogic()
-    :m_board(),
-      m_currentTurn(Piece::White),
+    :m_currentTurn(Piece::White),
       m_moveHistoryIndex(-1)
 {}
 
@@ -168,7 +167,7 @@ int __cmp_with_zero(int n)
 // This function assumes that source and destination are in a straight line away from each
 //  other, horizontally, vertically or diagonally. Any other inputs will probably seg fault.
 // It is this way intentionally as an optimization to make it as fast as possible.
-static bool __is_path_blocked(Square const &s, Square const &d, Piece::AllegienceEnum a)
+static bool __is_path_blocked(Board const *b, Square const &s, Square const &d, Piece::AllegienceEnum a)
 {
     bool ret = false;
     Square const *cur = &s;
@@ -177,7 +176,7 @@ static bool __is_path_blocked(Square const &s, Square const &d, Piece::Allegienc
 
     while(1)
     {
-        cur = &cur->GetBoard()->GetSquare(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
+        cur = &b->GetSquare(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
 
         Piece const *p = cur->GetPiece();
         if(cur == &d)
@@ -199,9 +198,6 @@ static bool __is_path_blocked(Square const &s, Square const &d, Piece::Allegienc
 
 GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Square &d) const
 {
-    if(!(&m_board == s.GetBoard() && &m_board == d.GetBoard()))
-        return InvalidUnknownSquare;
-
     Piece const *p( s.GetPiece() );
     if(!p)
         return InvalidEmptySquare;
@@ -224,21 +220,21 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Squ
         break;
     case Piece::Bishop:
         if(col_diff_abs == row_diff_abs)
-            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(&m_board, s, d, p->GetAllegience());
         break;
     case Piece::Knight:
         break;
     case Piece::Rook:
         if(0 == col_diff_abs || 0 == row_diff_abs)
-            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(&m_board, s, d, p->GetAllegience());
         break;
     case Piece::Queen:
         if(0 == col_diff_abs || 0 == row_diff_abs || col_diff_abs == row_diff_abs)
-            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(&m_board, s, d, p->GetAllegience());
         break;
     case Piece::King:
         if(1 >= col_diff_abs && 1 >= row_diff_abs)
-            technically_ok = !__is_path_blocked(s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(&m_board, s, d, p->GetAllegience());
         break;
     default:
         // We should not have an unkown piece type

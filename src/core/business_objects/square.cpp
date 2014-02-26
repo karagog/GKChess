@@ -20,17 +20,15 @@ NAMESPACE_GKCHESS;
 Square::Square()
 {}
 
-Square::Square(Board *b, int col, int row)
-    :board(b),
-      _p_Column(col),
+Square::Square(int col, int row)
+    :_p_Column(col),
       _p_Row(row),
       _p_EnPassantAvailable(false),
       _p_CastleAvailable(false)
 {}
 
 Square::Square(const Square &o)
-    :board(o.board),
-      piece(o.piece),
+    :piece(o.piece),
       _p_Column(o._p_Column),
       _p_Row(o._p_Row),
       _p_EnPassantAvailable(o._p_EnPassantAvailable),
@@ -39,12 +37,12 @@ Square::Square(const Square &o)
 
 Square &Square::operator = (const Square &o)
 {
-    board = o.board;
     piece = o.piece;
     _p_Column = o._p_Column;
     _p_Row = o._p_Row;
     _p_EnPassantAvailable = o._p_EnPassantAvailable;
     _p_CastleAvailable = o._p_CastleAvailable;
+    return *this;
 }
 
 Square::~Square()
@@ -52,15 +50,13 @@ Square::~Square()
 
 bool Square::operator == (const Square &other)
 {
-    return board == other.board &&
-            GetColumn() == other.GetColumn() &&
+    return GetColumn() == other.GetColumn() &&
             GetRow() == other.GetRow();
 }
 
 bool Square::operator != (const Square &other)
 {
-    return board != other.board ||
-            GetColumn() != other.GetColumn() ||
+    return GetColumn() != other.GetColumn() ||
             GetRow() != other.GetRow();
 }
 
