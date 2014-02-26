@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_GAMELOGIC_H
 
 #include "gkchess_board.h"
+#include "gkchess_piece.h"
 
 NAMESPACE_GKCHESS;
 
@@ -24,14 +25,14 @@ NAMESPACE_GKCHESS;
 class GameLogic
 {
     Board m_board;
-    Piece::AllegienceEnum m_currentMove;
+    Piece::AllegienceEnum m_currentTurn;
 
 public:
     GameLogic();
     virtual ~GameLogic();
 
     /** Returns the game board. */
-    inline Board const &GetBoard() const{ return m_board; }
+    Board const &GetBoard() const{ return m_board; }
 
     /** Describes different ways the board could be set up. */
     enum SetupTypeEnum

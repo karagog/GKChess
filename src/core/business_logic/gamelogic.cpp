@@ -20,8 +20,8 @@ NAMESPACE_GKCHESS;
 
 
 GameLogic::GameLogic()
-    :m_board(8, 8),
-      m_currentMove(Piece::White),
+    :m_board(),
+      m_currentTurn(Piece::White),
       m_moveHistoryIndex(-1)
 {}
 
@@ -30,43 +30,42 @@ GameLogic::~GameLogic()
 
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
 {
-    if(!m_board.IsEmpty())
-        m_board.Clear();
+    m_board.Clear();
 
     switch(ste)
     {
     case StandardChess:
         // First set up Pawns:
-        for(GUINT32 i = 0; i < m_board.ColumnCount(); ++i){
-            m_board[i][1].SetPiece(new Piece(Piece::White, Piece::Pawn));
-            m_board[i][6].SetPiece(new Piece(Piece::Black, Piece::Pawn));
+        for(int i = 0; i < m_board.ColumnCount(); ++i){
+            m_board.InitPiece(new Piece(Piece::White, Piece::Pawn), i, 1);
+            m_board.InitPiece(new Piece(Piece::Black, Piece::Pawn), i, 6);
         }
 
         // Then Rooks:
-        m_board[0][0].SetPiece(new Piece(Piece::White, Piece::Rook));
-        m_board[7][0].SetPiece(new Piece(Piece::White, Piece::Rook));
-        m_board[0][7].SetPiece(new Piece(Piece::Black, Piece::Rook));
-        m_board[7][7].SetPiece(new Piece(Piece::Black, Piece::Rook));
+        m_board.InitPiece(new Piece(Piece::White, Piece::Rook), 0, 0);
+        m_board.InitPiece(new Piece(Piece::White, Piece::Rook), 7, 0);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Rook), 0, 7);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Rook), 7, 7);
 
         // Then Knights:
-        m_board[1][0].SetPiece(new Piece(Piece::White, Piece::Knight));
-        m_board[6][0].SetPiece(new Piece(Piece::White, Piece::Knight));
-        m_board[1][7].SetPiece(new Piece(Piece::Black, Piece::Knight));
-        m_board[6][7].SetPiece(new Piece(Piece::Black, Piece::Knight));
+        m_board.InitPiece(new Piece(Piece::White, Piece::Knight), 1, 0);
+        m_board.InitPiece(new Piece(Piece::White, Piece::Knight), 6, 0);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Knight), 1, 7);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Knight), 6, 7);
 
         // Then Bishops:
-        m_board[2][0].SetPiece(new Piece(Piece::White, Piece::Bishop));
-        m_board[5][0].SetPiece(new Piece(Piece::White, Piece::Bishop));
-        m_board[2][7].SetPiece(new Piece(Piece::Black, Piece::Bishop));
-        m_board[5][7].SetPiece(new Piece(Piece::Black, Piece::Bishop));
+        m_board.InitPiece(new Piece(Piece::White, Piece::Bishop), 2, 0);
+        m_board.InitPiece(new Piece(Piece::White, Piece::Bishop), 5, 0);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Bishop), 2, 7);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Bishop), 5, 7);
 
         // Then Queens:
-        m_board[3][0].SetPiece(new Piece(Piece::White, Piece::Queen));
-        m_board[3][7].SetPiece(new Piece(Piece::Black, Piece::Queen));
+        m_board.InitPiece(new Piece(Piece::White, Piece::Queen), 3, 0);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::Queen), 3, 7);
 
         // Then Kings:
-        m_board[4][0].SetPiece(new Piece(Piece::White, Piece::King));
-        m_board[4][7].SetPiece(new Piece(Piece::Black, Piece::King));
+        m_board.InitPiece(new Piece(Piece::White, Piece::King), 4, 0);
+        m_board.InitPiece(new Piece(Piece::Black, Piece::King), 4, 7);
 
         break;
     default:
@@ -99,14 +98,8 @@ Vector<Square *> GameLogic::GetPossibleMoves(const Square &s) const
             switch(s.GetPiece()->GetAllegience())
             {
             case Piece::White:
-                temp1 = s.north;
-                if(s.south && !s.south->south)
-                    temp2 = s.north->north;
                 break;
             case Piece::Black:
-                temp1 = s.south;
-                if(s.north && !s.north->north)
-                    temp2 = s.south->south;
                 break;
             default:
                 break;
@@ -184,11 +177,9 @@ static bool __is_path_blocked(Square const &s, Square const &d, Piece::Allegienc
 
     while(1)
     {
-        cur = &(*cur->GetBoard())
-                [cur->GetColumn() + cmp_res_col]
-                [cur->GetRow() + cmp_res_row];
+        cur = &cur->GetBoard()->GetSquare(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
 
-        Piece *p = cur->GetPiece();
+        Piece const *p = cur->GetPiece();
         if(cur == &d)
         {
             // The destination square is only blocked if there is a piece that belongs
@@ -211,7 +202,7 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Squ
     if(!(&m_board == s.GetBoard() && &m_board == d.GetBoard()))
         return InvalidUnknownSquare;
 
-    Piece *p( s.GetPiece() );
+    Piece const *p( s.GetPiece() );
     if(!p)
         return InvalidEmptySquare;
 

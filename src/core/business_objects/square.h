@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_SQUARE_H
 
 #include "gkchess_globals.h"
+#include "gutil_smartpointer.h"
 
 NAMESPACE_GKCHESS;
 
@@ -26,64 +27,33 @@ class Piece;
 /** Describes one square of the chess board. */
 class Square
 {
-    friend class Board;
-    friend class GameLogic;
-
     Board *board;
 
-    int column;
-    int row;
-    
-    Square *north;
-    Square *north_east;
-    Square *east;
-    Square *south_east;
-    Square *south;
-    Square *south_west;
-    Square *west;
-    Square *north_west;
-    
-    bool en_passant;
-    bool castle_available;
+    GUtil::Utils::SharedSmartPointer<Piece> piece;
     
 public:
 
+    /** Constructing a null square is meaningless, so this only exists to support
+     *  arrays of squares. But you must later initialize it with the assignment operator.
+    */
+    Square();
+
+    /** The main constructor for a square. You must give it a reference
+     *  to the parent board and tell it what row and column it is.
+    */
+    Square(Board *parent_board, int column, int row);
+
+    Square(const Square &);
+    Square &operator = (const Square &);
+
     virtual ~Square();
 
-    /** Describes the different colors of squares. */
-    enum ColorEnum
-    {
-        InvalidColor = 0,
-
-        Light = 1,
-        Dark = 2,
-
-        /** For extending the board's functionality. */
-        CustomColorOffset = 10
-    };
-    
-    /** This is used to reference the squares surrounding this one. */
-    enum RelativeSquareEnum
-    {
-        InvalidSquare = 0,
-        
-        North = 1,
-        NorthEast = 2,
-        East = 3,
-        SouthEast = 4,
-        South = 5,
-        SouthWest = 6,
-        West = 7,
-        NorthWest = 8,
-        
-        CustomSquareOffset = 10
-    };
-
-    /** Describes the color of the square. */
-    PROPERTY(Color, ColorEnum);
     
     /** References the piece that is on the square (if any). */
-    PROPERTY_POINTER(Piece, Piece);
+    Piece const *GetPiece() const{ return piece; }
+    Piece *GetPiece(){ return piece; }
+
+    void SetPiece(Piece *);
 
     /** Holds the column that the square is in. */
     READONLY_PROPERTY(Column, int);
@@ -91,35 +61,23 @@ public:
     /** Holds the row that the square is in. */
     READONLY_PROPERTY(Row, int);
 
-    
-    /** Returns the square relative to this one. */
-    Square const *GetSquare(RelativeSquareEnum) const;
-    
-    /** Returns the square relative to this one. */
-    Square *GetSquare(RelativeSquareEnum);
+    /** Returns true if en passant is available on the square. */
+    PROPERTY(EnPassantAvailable, bool);
+
+    /** Returns true if the king may castle on this square. */
+    PROPERTY(CastleAvailable, bool);
 
     /** Returns the board to which this square belongs. */
-    inline Board const *GetBoard() const{ return board; }
-    
-    /** Returns true if en passant is available on the square. */
-    inline bool EnPassantAvailable() const{ return en_passant; }
-    
-    /** Returns true if the king may castle on this square. */
-    inline bool CastleAvailable() const{ return castle_available; }
+    Board const *GetBoard() const{ return board; }
 
     /** Returns true if there is no piece on the square. */
-    inline bool IsEmpty() const{ return NULL == GetPiece(); }
+    bool IsEmpty() const{ return NULL == GetPiece(); }
 
     /** Returns true if the squares are the same. */
     bool operator == (const Square &other);
 
     /** Returns true if the squares are not the same. */
     bool operator != (const Square &other);
-    
-    
-private:
-
-    Square(Board *parent_board, ColorEnum);
 
 };
 

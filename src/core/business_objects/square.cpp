@@ -13,85 +13,60 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "square.h"
+#include "piece.h"
 
 NAMESPACE_GKCHESS;
 
-
-Square::Square(Board *b, ColorEnum c)
-    :board(b),
-      north(NULL),
-      north_east(NULL),
-      east(NULL),
-      south_east(NULL),
-      south(NULL),
-      south_west(NULL),
-      west(NULL),
-      north_west(NULL),
-      en_passant(false),
-      castle_available(false),
-      _p_Color(c),
-      _p_Piece(0),
-      _p_Column(-1),
-      _p_Row(-1)
+Square::Square()
 {}
+
+Square::Square(Board *b, int col, int row)
+    :board(b),
+      _p_Column(col),
+      _p_Row(row),
+      _p_EnPassantAvailable(false),
+      _p_CastleAvailable(false)
+{}
+
+Square::Square(const Square &o)
+    :board(o.board),
+      piece(o.piece),
+      _p_Column(o._p_Column),
+      _p_Row(o._p_Row),
+      _p_EnPassantAvailable(o._p_EnPassantAvailable),
+      _p_CastleAvailable(o._p_CastleAvailable)
+{}
+
+Square &Square::operator = (const Square &o)
+{
+    board = o.board;
+    piece = o.piece;
+    _p_Column = o._p_Column;
+    _p_Row = o._p_Row;
+    _p_EnPassantAvailable = o._p_EnPassantAvailable;
+    _p_CastleAvailable = o._p_CastleAvailable;
+}
 
 Square::~Square()
 {}
 
-Square *Square::GetSquare(Square::RelativeSquareEnum r)
-{
-    return const_cast<Square *>(
-                const_cast<Square const *>(this)->GetSquare(r)
-           );
-}
-
-Square const *Square::GetSquare(Square::RelativeSquareEnum r) const
-{
-    Square const *ret(NULL);
-    switch(r)
-    {
-    case North:
-        ret = north;
-        break;
-    case NorthEast:
-        ret = north_east;
-        break;
-    case East:
-        ret = east;
-        break;
-    case SouthEast:
-        ret = south_east;
-        break;
-    case South:
-        ret = south;
-        break;
-    case SouthWest:
-        ret = south_west;
-        break;
-    case West:
-        ret = west;
-        break;
-    case NorthWest:
-        ret = north_west;
-        break;
-    default:
-        break;
-    }
-    return ret;
-}
-
 bool Square::operator == (const Square &other)
 {
-    // Two squares that share the same north square must be the same.
-    //  If the north square is off the board, then check the south
     return board == other.board &&
-        north ? north == other.north : south == other.south;
+            GetColumn() == other.GetColumn() &&
+            GetRow() == other.GetRow();
 }
 
 bool Square::operator != (const Square &other)
 {
     return board != other.board ||
-        north ? north != other.north : south != other.south;
+            GetColumn() != other.GetColumn() ||
+            GetRow() != other.GetRow();
+}
+
+void Square::SetPiece(Piece *p)
+{
+    piece = p;
 }
 
 

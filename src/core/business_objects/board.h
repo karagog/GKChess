@@ -15,11 +15,11 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARD_H
 #define GKCHESS_BOARD_H
 
-#include "gkchess_piece.h"
 #include "gkchess_square.h"
-#include "gutil_vector.h"
 
 NAMESPACE_GKCHESS;
+
+class Piece;
 
 
 /** Describes a chess board. */
@@ -27,45 +27,75 @@ class Board
 {
 public:
 
-    Board(GINT32 columns = 8, GINT32 rows = 8);
-    Board(const Board &);
-    virtual ~Board();
+    Board(){
+        for(GINT32 i = 0; i < ColumnCount(); ++i){
+            for(GINT32 j = 0; j < RowCount(); ++j){
+                m_board[i][j] = Square(this, i, j);
+            }
+        }
+    }
+
+    Board(const Board &b){
+        for(GINT32 i = 0; i < ColumnCount(); ++i){
+            for(GINT32 j = 0; j < RowCount(); ++j){
+                m_board[i][j] = b.m_board[i][j];
+            }
+        }
+    }
 
     /** Returns the number of rows. */
-    GUINT32 RowCount() const;
+    int RowCount() const{ return 8; }
 
     /** Returns the number of columns. */
-    GUINT32 ColumnCount() const;
+    int ColumnCount() const{ return 8; }
 
     /** Removes all pieces from the board.
      *  \note This does not resize the board - The only way to do that would be to create a new board.
     */
-    void Clear();
+    void Clear(){
+        for(int i = 0; i < ColumnCount(); ++i){
+            for(int j = 0; j < RowCount(); ++j){
+                RemovePiece(i, j);
+            }
+        }
+    }
 
-    /** Returns true if there are no pieces on the board. */
-    bool IsEmpty() const;
 
 
-    /** Returns a reference to the square at the given column and row.
-     *  It does not check your bounds for performance reasons.
+    /** Initializes a new piece on the given square.  The board will take
+        ownership of the piece's memory.
     */
-    Square const &GetSquare(GUINT32 column, GUINT32 row) const;
+    void InitPiece(Piece *p, GUINT32 column, GUINT32 row){
+        m_board[column][row].SetPiece(p);
+    }
 
+    /** Moves the piece at the source to the given destination square.
+     *  If the destination square is occupied, its piece will be replaced by
+     *  the one from source. If source is an empty square, this function does nothing.
+   
+        \note This does NOT do any chess rules validation, so it will assume any move
+        is legal.
+    */
+    void Move(Square &source, Square &dest){
+        Piece *p = source.GetPiece();
+        if(p)
+            dest.SetPiece(p);
+    }
+    
+    /** Removes any piece that is on the square. */
+    void RemovePiece(GUINT32 column, GUINT32 row){
+        Square &s(m_board[column][row]);
+        if(s.GetPiece())
+            s.SetPiece(0);
+    }
 
-    /** Returns a column of squares in an array. */
-    inline Square *operator [] (int column){ return m_board[column]; }
-
-    /** Returns a column of squares in an array. */
-    inline Square const *operator [] (int column) const{ return m_board[column]; }
-
-    Board &operator = (const Board &);
+    /** Returns the square at the given column and row. */
+    Square const &GetSquare(int column, int row) const{ return m_board[column][row]; }
 
 
 private:
 
-    ::GUtil::DataObjects::Vector< ::GUtil::DataObjects::Vector<Square> > m_board;
-
-    void _init(GINT32 columns, GINT32 rows);
+    Square m_board[8][8];
 
 };
 

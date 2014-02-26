@@ -17,12 +17,14 @@ limitations under the License.*/
 
 #include "gkchess_globals.h"
 #include "gutil_strings.h"
+#include "gutil_smartpointer.h"
 
 NAMESPACE_GKCHESS;
 
 
 /** Describes a chess piece. */
-class Piece
+class Piece :
+        public GUtil::Utils::SharedData
 {
 public:
 
@@ -53,8 +55,11 @@ public:
     explicit Piece(AllegienceEnum, PieceTypeEnum);
     virtual ~Piece();
 
-    PROPERTY(Type, PieceTypeEnum);
-    PROPERTY(Allegience, AllegienceEnum);
+    /** Returns the type of the piece. */
+    READONLY_PROPERTY(Type, PieceTypeEnum);
+
+    /** Returns the allegience of the piece. */
+    READONLY_PROPERTY(Allegience, AllegienceEnum);
 
     /** Returns a human-readable string to describe the piece. */
     virtual ::GUtil::DataObjects::String ToString(bool with_allegience = false) const;

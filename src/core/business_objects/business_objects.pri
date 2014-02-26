@@ -6,5 +6,4 @@ HEADERS += \
 
 SOURCES += \
     business_objects/piece.cpp \
-    business_objects/square.cpp \
-    business_objects/board.cpp
+    business_objects/square.cpp
