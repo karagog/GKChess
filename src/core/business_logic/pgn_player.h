@@ -27,8 +27,24 @@ NAMESPACE_GKCHESS;
 */
 class PGN_Player
 {
+public:
+
+    PGN_Player(GameLogic *);
+
+    void LoadFromString(const GUtil::DataObjects::String &);
+    void LoadFromFile(const GUtil::DataObjects::String &);
+
+    /** Returns the tag pairs. */
+    const GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> GetTags() const
+    { return m_tags; }
+
+    void Clear();
+
+
+    /** Describes all the data we need to remember each move. */
     struct MoveData
     {
+        int PlyNumber;
         Piece::PieceTypeEnum PieceType;
 
         int SourceColumn, SourceRow;
@@ -42,22 +58,33 @@ class PGN_Player
             CastleQueenSide
         } CastleType;
 
+        GUtil::DataObjects::String MoveText;
         GUtil::DataObjects::String Comment;
+
+        /** Returns true if this move was white's. */
+        bool IsWhitesMove() const{ return 0x1 & PlyNumber; }
 
         MoveData();
     };
+
+    /** Returns the moves from the file. */
+    const GUtil::DataObjects::Vector<MoveData> GetMoves() const{ return m_moves; }
+
+
+private:
 
     GameLogic *m_game;
     GUtil::DataObjects::Vector<MoveData> m_moves;
 
     GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> m_tags;
 
-public:
+    /** Populates the heading tags and returns an iterator to the start of the move data section. */
+    typename GUtil::DataObjects::String::UTF8ConstIterator
+        _parse_heading(const GUtil::DataObjects::String &);
 
-    PGN_Player(GameLogic *);
+    void _parse_moves(const GUtil::DataObjects::String &);
 
-    void LoadFromString(const GUtil::DataObjects::String &);
-    void LoadFromFile(const GUtil::DataObjects::String &);
+    void _parse_move(const GUtil::DataObjects::String &, MoveData &);
 
 };
 
