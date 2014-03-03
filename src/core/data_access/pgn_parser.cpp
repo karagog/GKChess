@@ -142,9 +142,9 @@ void PGN_Parser::_parse_moves(const String &move_text)
         move_number = number_text.ToInt(&ok);
         if(!ok)
             THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
-                                       "There was a problem parsing the move number");
+                                       String::Format("There was a problem parsing the move number: %s", number_text.ConstData()));
 
-        Vector<String> sl2( sl[i].Split(' ') );
+        Vector<String> sl2( sl[i].Split(' ', false) );
 
         if(0 < sl2.Length()){
             m_moves.PushBack(sl2[0]);
