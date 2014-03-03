@@ -21,6 +21,7 @@ unix {
 
 include(business_objects/business_objects.pri)
 include(business_logic/business_logic.pri)
+include(data_access/data_access.pri)
 
 HEADERS += \
     globals.h

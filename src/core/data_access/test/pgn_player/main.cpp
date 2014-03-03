@@ -15,15 +15,15 @@ limitations under the License.*/
 #include "gutil_console.h"
 #include "gutil_consolelogger.h"
 #include "gutil_strings.h"
-#include "gkchess_pgn_player.h"
-#include "gkchess_gamelogic.h"
+#include "gutil_file.h"
+#include "gkchess_pgn_parser.h"
 USING_NAMESPACE_GUTIL1(DataAccess);
 USING_NAMESPACE_GUTIL1(DataObjects);
 USING_NAMESPACE_GUTIL1(Logging);
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
-#define PGN_FILENAME "../../sample_pgn/"
+void _parse_pgn(String const &);
 
 int main(int argc, char *argv[])
 {
@@ -31,18 +31,29 @@ int main(int argc, char *argv[])
         Console::WriteLine("You must pass a single file path to a pgn file.");
     }
 
-    GameLogic logic;
-    PGN_Player pgn(&logic);
-
     try
     {
-        pgn.LoadFromFile(argv[1]);
+        String pgn_text;
+        File f(argv[1]);
+        f.Open(File::OpenRead);
+        pgn_text = f.Read();
+        f.Close();
+
+        _parse_pgn(pgn_text);
     }
     catch(const Exception<> &ex)
     {
         ConsoleLogger().LogException(ex);
         return -1;
     }
+
+    return 0;
+}
+
+
+void _parse_pgn(const String &s)
+{
+    PGN_Parser pgn(s);
 
     // Show the tag pairs we read
     Console::WriteLine("\nShowing tag section contents:");
@@ -58,19 +69,15 @@ int main(int argc, char *argv[])
     // Show the moves we read:
     Console::WriteLine("\nShowing move text:");
 
-    Vector<PGN_Player::MoveData> const &moves( pgn.GetMoves() );
-    for(typename Vector<PGN_Player::MoveData>::const_iterator iter(moves.begin());
+    Vector<String> const &moves( pgn.GetMoves() );
+    int cnt = 0;
+    for(typename Vector<String>::const_iterator iter(moves.begin());
         iter != moves.end();
-        ++iter)
+        ++iter, ++cnt)
     {
-        if(iter->IsWhitesMove())
-            Console::Write("W: ");
+        if((0x1 & cnt) == 0)
+            Console::Write(String::Format("%d. %s ", (2+cnt)/2, iter->ConstData()));
         else
-            Console::Write("B: ");
-
-        Console::WriteLine(String::Format("%d. %s", iter->PlyNumber, iter->MoveText.ConstData()));
+            Console::WriteLine(iter->ConstData());
     }
-
-
-    return 0;
 }
