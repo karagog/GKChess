@@ -19,6 +19,12 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
+PGN_Parser::MoveData::MoveData()
+    :Piece(Piece::Pawn), PiecePromoted(Piece::Pawn),
+     SourceFile(-1), SourceRank(-1), DestFile(-1), DestRank(-1)
+{}
+
+
 PGN_Parser::PGN_Parser(String const &s)
 {
     if(!s.IsValidUTF8())

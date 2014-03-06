@@ -74,5 +74,44 @@ String Piece::ToString(bool wa) const
     return ret;
 }
 
+int Piece::UnicodeValue() const
+{
+    return (int)GetAllegience() + GetType();
+}
+
+String Piece::GetUtf8Char() const
+{
+    return String::FromUnicode(UnicodeValue());
+}
+
+char Piece::GetAsciiChar() const
+{
+    char ret(-1);
+    switch(GetType())
+    {
+    case Pawn:
+        ret = '\0';
+        break;
+    case Knight:
+        ret = 'N';
+        break;
+    case Bishop:
+        ret = 'B';
+        break;
+    case Rook:
+        ret = 'R';
+        break;
+    case Queen:
+        ret = 'Q';
+        break;
+    case King:
+        ret = 'K';
+        break;
+    default:
+        break;
+    }
+    return ret;
+}
+
 
 END_NAMESPACE_GKCHESS;

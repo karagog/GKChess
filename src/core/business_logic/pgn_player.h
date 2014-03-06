@@ -44,33 +44,6 @@ public:
     /** Clears the PGN_Player and reclaims resources. */
     void Clear();
 
-    /** Enumerates the types of moves. */
-    enum MoveTypeEnum
-    {
-        /** Indicates a simple translational move. */
-        NormalMove,
-        
-        /** Indicates a move where a piece was captured. */
-        CaptureMove,
-        
-        /** Indicates a King-side castle. */
-        CastleNormal,
-        
-        /** Indicates a Queen-side castle. */
-        CastleQueenSide,
-        
-        /** Indicates a move where the opposing king is put in check. */
-        Check,
-        
-        /** Indicates a move where the opposing king is put in checkmate. */
-        CheckMate,
-        
-        /** Indicates a move where a pawn was promoted. */
-        PromotePawn
-    };
-
-    /** An object to help flag different move types. */
-    GUTIL_DECLARE_FLAGS(MoveTypeFlags, MoveTypeEnum);
 
     /** Describes all the data we need to remember each move. */
     struct MoveData

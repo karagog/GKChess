@@ -67,7 +67,13 @@ public:
     /** Returns the unicode point of the piece. You can display this in any text viewer
      *  that supports unicode characters.
     */
-    inline int UnicodeValue() const{ return (int)GetAllegience() + GetType(); }
+    int UnicodeValue() const;
+    
+    /** Returns the UTF-8 multi-byte representation of the piece. */
+    GUtil::DataObjects::String GetUtf8Char() const;
+    
+    /** Returns the ascii representation of the piece. */
+    char GetAsciiChar() const;
 
 };
 
