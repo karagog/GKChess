@@ -18,7 +18,7 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
-Piece::Piece(AllegienceEnum a, PieceTypeEnum pt)
+Piece::Piece(PieceTypeEnum pt, AllegienceEnum a)
     :_p_Type(pt),
       _p_Allegience(a)
 {}
@@ -81,7 +81,7 @@ int Piece::UnicodeValue() const
 
 String Piece::GetUtf8Char() const
 {
-    return String::FromUnicode(UnicodeValue());
+    return String().AppendUnicode(UnicodeValue());
 }
 
 char Piece::GetAsciiChar() const
@@ -110,6 +110,52 @@ char Piece::GetAsciiChar() const
     default:
         break;
     }
+    return ret;
+}
+
+Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
+{
+    String s(3);
+    PieceTypeEnum ret = Piece::InvalidPiece;
+    s.AppendUnicode(uc);
+    if(1 == s.Length())
+    {
+        // The unicode point is an ascii character
+        switch(s[0])
+        {
+        case 'K':
+            ret = Piece::King;
+            break;
+        case 'Q':
+            ret = Piece::Queen;
+            break;
+        case 'R':
+            ret = Piece::Rook;
+            break;
+        case 'B':
+            ret = Piece::Bishop;
+            break;
+        case 'N':
+            ret = Piece::Knight;
+            break;
+        case 'P':
+            ret = Piece::Pawn;
+            break;
+        default:
+            break;
+        }
+    }
+    else
+    {
+        // The unicode point is a chess piece
+        int tmp = uc - (int)Black;
+        if(0 > tmp)
+            tmp = uc - (int)White;
+
+        if(0 <= tmp && tmp < 6)
+            ret = (PieceTypeEnum)tmp;
+    }
+
     return ret;
 }
 

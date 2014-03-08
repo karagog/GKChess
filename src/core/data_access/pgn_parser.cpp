@@ -20,12 +20,99 @@ NAMESPACE_GKCHESS;
 
 
 PGN_Parser::MoveData::MoveData()
-    :Piece(Piece::Pawn), PiecePromoted(Piece::Pawn),
+    :PieceMoved(Piece::Pawn), PiecePromoted(Piece::Pawn),
      SourceFile(-1), SourceRank(-1), DestFile(-1), DestRank(-1)
 {}
 
+/** Converts an array index to a string. */
+static char const *__index_to_string(int indx)
+{
+    switch(indx)
+    {
+    case 0:
+        return "a";
+    case 1:
+        return "b";
+    case 2:
+        return "c";
+    case 3:
+        return "d";
+    case 4:
+        return "e";
+    case 5:
+        return "f";
+    case 6:
+        return "g";
+    case 7:
+        return "h";
+    default:
+        return 0;
+    }
+}
+
+/** Converts a string to an array index. */
+static int __string_to_index(char c)
+{
+    int ret = -1;
+    int tmp = (int)(c - 'a');
+    if(0 <= tmp && tmp < 8)
+        ret = tmp;
+    return ret;
+}
+
+String PGN_Parser::MoveData::ToString() const
+{
+    String ret(25);
+    if(Flags.TestFlag(CastleNormal))
+        ret.Append("Castle");
+    else if(Flags.TestFlag(CastleQueenSide))
+        ret.Append("Castle Queenside");
+    else
+    {
+        ret.Append(Piece(PieceMoved).ToString(false));
+
+        if(-1 != SourceFile){
+            ret.Append(String::Format(" on %s", __index_to_string(SourceFile)));
+            if(-1 != SourceRank)
+                ret.Append(String::FromInt(SourceRank + 1));
+        }
+
+        if(Flags.TestFlag(Capture))
+            ret.Append(" takes ");
+        else
+            ret.Append(" to ");
+
+        ret.Append(String::Format("%s%d", __index_to_string(DestFile), DestRank + 1));
+
+        if(Piece::Pawn != PiecePromoted)
+            ret.Append(String::Format(" promotes to %s",
+                                      Piece(PiecePromoted).ToString(false).ConstData()));
+    }
+
+    if(Flags.TestFlag(Check))
+        ret.Append(" check");
+    else if(Flags.TestFlag(CheckMate))
+        ret.Append(" checkmate");
+
+    if(Flags.TestFlag(Blunder))
+        ret.Append(" (blunder)");
+    else if(Flags.TestFlag(Mistake))
+        ret.Append(" (mistake)");
+    else if(Flags.TestFlag(Dubious))
+        ret.Append(" (dubious move)");
+    else if(Flags.TestFlag(Interesting))
+        ret.Append(" (interesting move)");
+    else if(Flags.TestFlag(Good))
+        ret.Append(" (good move)");
+    else if(Flags.TestFlag(Brilliant))
+        ret.Append(" (brilliant move)");
+
+    return ret;
+}
+
 
 PGN_Parser::PGN_Parser(String const &s)
+    :m_result(0)
 {
     if(!s.IsValidUTF8())
         THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
@@ -133,6 +220,167 @@ typename String::UTF8ConstIterator PGN_Parser::_parse_heading(const String &pgn_
     return move_section_start;
 }
 
+static int __get_valid_rank_number(char n)
+{
+    int ret = -1;
+    bool ok = false;
+    int tmpnum = String(n).ToInt(&ok);
+    if(ok && 1 <= tmpnum && tmpnum <= 8)
+        ret = tmpnum - 1;
+    return ret;
+}
+
+bool PGN_Parser::_new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
+{
+    bool ret = true;
+    m.Text = s;
+
+    // Strip the comment (if any)
+    GUINT32 ind = s.IndexOf('{');
+    if(UINT_MAX != ind){
+        GUINT32 ind2 = s.IndexOf('}', ind + 1);
+
+        if(UINT_MAX == ind2)
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unterminated comment");
+        if(UINT_MAX != s.IndexOf('{', ind + 1))
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Nested comment");
+
+        m.Comment = s.SubString(ind + 1, ind2 - ind - 1);
+        m.Text.Truncate(ind);
+    }
+
+    m.Text = m.Text.Trimmed();
+
+    printf("%s", String::Format("Parsing '%s'\n", m.Text.ConstData()).ConstData());
+
+    if(UINT_MAX != m.Text.IndexOf("O-O-O"))
+        m.Flags.SetFlag(PGN_Parser::CastleQueenSide, true);
+    else if(UINT_MAX != m.Text.IndexOf("O-O"))
+        m.Flags.SetFlag(PGN_Parser::CastleNormal, true);
+    else if(UINT_MAX != m.Text.IndexOf("1-0")){
+        m_result = 1;
+        ret = false;
+    }
+    else if(UINT_MAX != m.Text.IndexOf("0-1")){
+        m_result = -1;
+        ret = false;
+    }
+    else if(UINT_MAX != m.Text.IndexOf("1/2-1/2")){
+        m_result = 0;
+        ret = false;
+    }
+    else
+    {
+        typename String::UTF8ConstIterator iter(m.Text.beginUTF8());
+
+        // The first character must be a piece type, or it's a pawn
+        Piece::PieceTypeEnum pt = Piece::GetTypeFromUnicodeValue(iter.UnicodeValue());
+        if(Piece::InvalidPiece != pt){
+            m.PieceMoved = pt;
+            ++iter;
+        }
+
+        // Parse the source and destination squares
+        int file1 = -1, file2 = -1;
+        int rank1 = -1, rank2 = -1;
+        for(; iter != m.Text.endUTF8(); ++iter)
+        {
+            char c = *iter.Current();
+            int tmp_file = __string_to_index(c);
+            int tmp_number = __get_valid_rank_number(c);
+
+            if(-1 != tmp_file)
+            {
+                // If a file is given, it may be a source or destination file,
+                //  so we just remember it until we have more information.
+                if(-1 == file1)
+                    file1 = tmp_file;
+                else if(-1 == file2)
+                    file2 = tmp_file;
+                else
+                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
+            }
+            else if(-1 != tmp_number)
+            {
+                // If a number is given, it is paired with the last given file.
+                if(-1 != file2){
+                    if(-1 == rank2)
+                        rank2 = tmp_number;
+                    else
+                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
+                }
+                else if(-1 != file1)
+                    rank1 = tmp_number;
+                else
+                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
+            }
+            else if('x' == c)
+            {
+                if(m.Flags.TestFlag(PGN_Parser::Capture))
+                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
+                m.Flags.SetFlag(PGN_Parser::Capture, true);
+            }
+            else if('-' == c)
+            {
+                // Ignore this unnecessary character
+            }
+            else
+            {
+                // Any other characters mean we have reached the end of the move info
+                break;
+            }
+        }
+
+        // Now we can sort out what the source and destination squares are:
+        if(-1 != file2){
+            m.SourceFile = file1;
+            m.DestFile = file2;
+        }
+        else if(-1 != file1)
+            m.DestFile = file1;
+
+        if(-1 != rank2)
+            m.DestRank = rank2;
+        if(-1 != rank1){
+            if(-1 == m.SourceFile)
+                m.DestRank = rank1;
+            else
+                m.SourceRank = rank1;
+        }
+
+
+        // Is there a piece promotion?
+        GUINT32 ind = m.Text.IndexOfUTF8("=");
+        if(UINT_MAX != ind){
+            if(ind + 1 >= m.Text.LengthUTF8())
+                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Promotion piece not given");
+            m.PiecePromoted = Piece::GetTypeFromUnicodeValue((m.Text.beginUTF8() + (++ind)).UnicodeValue());
+        }
+    }
+
+    // See if the move puts the king in check or checkmate
+    if(UINT_MAX != m.Text.IndexOf('#'))
+        m.Flags.SetFlag(PGN_Parser::CheckMate, true);
+    else if(UINT_MAX != m.Text.IndexOf('+'))
+        m.Flags.SetFlag(PGN_Parser::Check, true);
+
+    // See if the annotator has an assessment of this move
+    if(UINT_MAX != m.Text.IndexOf("??"))
+        m.Flags.SetFlag(PGN_Parser::Blunder, true);
+    else if(UINT_MAX != m.Text.IndexOf("!!"))
+        m.Flags.SetFlag(PGN_Parser::Brilliant, true);
+    else if(UINT_MAX != m.Text.IndexOf("!?"))
+        m.Flags.SetFlag(PGN_Parser::Interesting, true);
+    else if(UINT_MAX != m.Text.IndexOf("?!"))
+        m.Flags.SetFlag(PGN_Parser::Dubious, true);
+    else if(UINT_MAX != m.Text.IndexOf('?'))
+        m.Flags.SetFlag(PGN_Parser::Mistake, true);
+    else if(UINT_MAX != m.Text.IndexOf('!'))
+        m.Flags.SetFlag(PGN_Parser::Good, true);
+
+    return ret;
+}
+
 void PGN_Parser::_parse_moves(const String &move_text)
 {
     int move_number = -1;
@@ -153,11 +401,17 @@ void PGN_Parser::_parse_moves(const String &move_text)
         Vector<String> sl2( sl[i].Split(' ', false) );
 
         if(0 < sl2.Length()){
-            m_moves.PushBack(sl2[0]);
-        }
+            {
+                MoveData m;
+                if(_new_movedata_from_string(m, sl2[0]))
+                    m_moves.PushBack(m);
+            }
 
-        if(1 < sl2.Length()){
-            m_moves.PushBack(sl2[1]);
+            if(1 < sl2.Length()){
+                MoveData m;
+                if(_new_movedata_from_string(m, sl2[1]))
+                    m_moves.PushBack(m);
+            }
         }
 
         if(2 < sl2.Length()){

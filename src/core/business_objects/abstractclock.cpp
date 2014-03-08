@@ -12,7 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-/** \file Even though this file seems trivial, it is necessary 
+/** \file
+ *  Even though this file seems trivial, it is necessary
     because the AbstractClock is derived from QObject
 */
 

@@ -51,7 +51,6 @@ public:
         int PlyNumber;
         Piece::PieceTypeEnum PieceType;
         Piece::PieceTypeEnum PieceType_Promoted;
-        MoveTypeFlags MoveType;
 
         int SourceColumn, SourceRow;
         int DestColumn, DestRow;

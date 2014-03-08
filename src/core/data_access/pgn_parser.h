@@ -15,9 +15,9 @@ limitations under the License.*/
 #ifndef PGN_PARSER_H
 #define PGN_PARSER_H
 
-#include "gkchess_globals.h"
-#include "gutil_strings.h"
+#include "gkchess_piece.h"
 #include "gutil_map.h"
+#include "gutil_flags.h"
 
 NAMESPACE_GKCHESS;
 
@@ -25,26 +25,24 @@ NAMESPACE_GKCHESS;
 /** Parses a PGN string and gives you the move text and tags. */
 class PGN_Parser
 {
-    GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> m_tags;
-    GUtil::DataObjects::Vector<GUtil::DataObjects::String> m_moves;
 public:
 
     /** Enumerates the types of moves. */
     enum MoveTypeEnum
     {
-        /** Indicates a move where a piece was captured. */
+        /** Indicates a move where a piece was captured (x in chess notation). */
         Capture,
         
-        /** Indicates a King-side castle. */
+        /** Indicates a King-side castle (O-O in chess notation). */
         CastleNormal,
         
-        /** Indicates a Queen-side castle. */
+        /** Indicates a Queen-side castle (O-O-O in chess notation). */
         CastleQueenSide,
         
-        /** Indicates a move where the opposing king is put in check. */
+        /** Indicates a move where the opposing king is put in check (+ in chess notation). */
         Check,
         
-        /** Indicates a move where the opposing king is put in checkmate. */
+        /** Indicates a move where the opposing king is put in checkmate (# in chess notation). */
         CheckMate,
         
         /** Indicates that the move was a blunder (?? in chess notation). */
@@ -75,7 +73,7 @@ public:
     struct MoveData
     {
         /** The type of piece being moved. */
-        Piece::PieceTypeEnum Piece;
+        Piece::PieceTypeEnum PieceMoved;
         
         /** If the piece was promoted, then this is anything but a Pawn. */
         Piece::PieceTypeEnum PiecePromoted;
@@ -98,10 +96,15 @@ public:
         MoveTypeFlags Flags;
         
         /** Holds the move text directly from the PGN file. */
-        String Text;
+        GUtil::DataObjects::String Text;
         
         /** If there is a comment for the move it is stored here. */
-        String Comment;
+        GUtil::DataObjects::String Comment;
+
+        /** Returns a human-readable description of the move.
+         *  For example: "Pawn takes e5"
+        */
+        GUtil::DataObjects::String ToString() const;
         
         MoveData();
     };
@@ -124,17 +127,28 @@ public:
     { return m_tags; }
 
     /** Returns the move texts. */
-    GUtil::DataObjects::Vector<GUtil::DataObjects::String> const &GetMoves() const
+    GUtil::DataObjects::Vector<MoveData> const &GetMoves() const
     { return m_moves;  }
+
+    /** Returns the result of the match.
+     *  \returns 1 if White won, -1 if Black won and 0 if it was a draw.
+    */
+    int GetResult() const{ return m_result; }
 
 
 private:
+
+    GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> m_tags;
+    GUtil::DataObjects::Vector<MoveData> m_moves;
+    int m_result;
 
     /** Populates the heading tags and returns an iterator to the start of the move data section. */
     typename GUtil::DataObjects::String::UTF8ConstIterator
         _parse_heading(const GUtil::DataObjects::String &);
 
     void _parse_moves(const GUtil::DataObjects::String &);
+
+    bool _new_movedata_from_string(MoveData &, const GUtil::DataObjects::String &);
 
 };
 

@@ -27,7 +27,6 @@ PGN_Player::MoveData::MoveData()
     :PlyNumber(0),
       PieceType(Piece::Pawn),
       PieceType_Promoted(Piece::Pawn),
-      MoveType(NormalMove),
       SourceColumn(-1), SourceRow(-1),
       DestColumn(-1), DestRow(-1)
 {}

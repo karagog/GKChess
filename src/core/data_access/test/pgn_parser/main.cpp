@@ -69,15 +69,22 @@ void _parse_pgn(const String &s)
     // Show the moves we read:
     Console::WriteLine("\nShowing move text:");
 
-    Vector<String> const &moves( pgn.GetMoves() );
+    Vector<PGN_Parser::MoveData> const &moves( pgn.GetMoves() );
     int cnt = 0;
-    for(typename Vector<String>::const_iterator iter(moves.begin());
+    for(typename Vector<PGN_Parser::MoveData>::const_iterator iter(moves.begin());
         iter != moves.end();
         ++iter, ++cnt)
     {
         if((0x1 & cnt) == 0)
-            Console::Write(String::Format("%d. %s ", (2+cnt)/2, iter->ConstData()));
+            Console::WriteLine(String::Format("%d. %s %s", (2+cnt)/2, iter->Text.ConstData(), iter->ToString().ConstData()));
         else
-            Console::WriteLine(iter->ConstData());
+            Console::WriteLine(String::Format("  ...%s %s", iter->Text.ConstData(), iter->ToString().ConstData()));
     }
+
+    if(1 == pgn.GetResult())
+        Console::WriteLine("White Wins!");
+    else if(-1 == pgn.GetResult())
+        Console::WriteLine("Black Wins!");
+    else if(0 == pgn.GetResult())
+        Console::WriteLine("The game ended in a draw");
 }

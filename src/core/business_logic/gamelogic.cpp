@@ -36,35 +36,35 @@ void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
     case StandardChess:
         // First set up Pawns:
         for(int i = 0; i < m_board.ColumnCount(); ++i){
-            m_board.InitPiece(new Piece(Piece::White, Piece::Pawn), i, 1);
-            m_board.InitPiece(new Piece(Piece::Black, Piece::Pawn), i, 6);
+            m_board.InitPiece(new Piece(Piece::Pawn, Piece::White), i, 1);
+            m_board.InitPiece(new Piece(Piece::Pawn, Piece::Black), i, 6);
         }
 
         // Then Rooks:
-        m_board.InitPiece(new Piece(Piece::White, Piece::Rook), 0, 0);
-        m_board.InitPiece(new Piece(Piece::White, Piece::Rook), 7, 0);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Rook), 0, 7);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Rook), 7, 7);
+        m_board.InitPiece(new Piece(Piece::Rook, Piece::White), 0, 0);
+        m_board.InitPiece(new Piece(Piece::Rook, Piece::White), 7, 0);
+        m_board.InitPiece(new Piece(Piece::Rook, Piece::Black), 0, 7);
+        m_board.InitPiece(new Piece(Piece::Rook, Piece::Black), 7, 7);
 
         // Then Knights:
-        m_board.InitPiece(new Piece(Piece::White, Piece::Knight), 1, 0);
-        m_board.InitPiece(new Piece(Piece::White, Piece::Knight), 6, 0);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Knight), 1, 7);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Knight), 6, 7);
+        m_board.InitPiece(new Piece(Piece::Knight, Piece::White), 1, 0);
+        m_board.InitPiece(new Piece(Piece::Knight, Piece::White), 6, 0);
+        m_board.InitPiece(new Piece(Piece::Knight, Piece::Black), 1, 7);
+        m_board.InitPiece(new Piece(Piece::Knight, Piece::Black), 6, 7);
 
         // Then Bishops:
-        m_board.InitPiece(new Piece(Piece::White, Piece::Bishop), 2, 0);
-        m_board.InitPiece(new Piece(Piece::White, Piece::Bishop), 5, 0);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Bishop), 2, 7);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Bishop), 5, 7);
+        m_board.InitPiece(new Piece(Piece::Bishop, Piece::White), 2, 0);
+        m_board.InitPiece(new Piece(Piece::Bishop, Piece::White), 5, 0);
+        m_board.InitPiece(new Piece(Piece::Bishop, Piece::Black), 2, 7);
+        m_board.InitPiece(new Piece(Piece::Bishop, Piece::Black), 5, 7);
 
         // Then Queens:
-        m_board.InitPiece(new Piece(Piece::White, Piece::Queen), 3, 0);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::Queen), 3, 7);
+        m_board.InitPiece(new Piece(Piece::Queen, Piece::White), 3, 0);
+        m_board.InitPiece(new Piece(Piece::Queen, Piece::Black), 3, 7);
 
         // Then Kings:
-        m_board.InitPiece(new Piece(Piece::White, Piece::King), 4, 0);
-        m_board.InitPiece(new Piece(Piece::Black, Piece::King), 4, 7);
+        m_board.InitPiece(new Piece(Piece::King, Piece::White), 4, 0);
+        m_board.InitPiece(new Piece(Piece::King, Piece::Black), 4, 7);
 
         break;
     default:

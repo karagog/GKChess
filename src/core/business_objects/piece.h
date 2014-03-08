@@ -33,6 +33,8 @@ public:
     */
     enum PieceTypeEnum
     {
+        InvalidPiece = -1,
+
         King = 0,
         Queen = 1,
         Rook = 2,
@@ -46,13 +48,15 @@ public:
     */
     enum AllegienceEnum
     {
+        AnyAllegience = 0,
+
         White = 0x2654,
         Black = 0x265A,
     };
 
 
     /** Constructs a piece with the given allegience and type. */
-    Piece(AllegienceEnum, PieceTypeEnum);
+    Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
     virtual ~Piece();
 
     /** Returns the type of the piece. */
@@ -74,6 +78,11 @@ public:
     
     /** Returns the ascii representation of the piece. */
     char GetAsciiChar() const;
+
+    /** This translates a unicode point to a chess piece. The code point
+     *  can either be the ascii characters or the unicode chess pieces.
+    */
+    static PieceTypeEnum GetTypeFromUnicodeValue(int);
 
 };
 
