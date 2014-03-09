@@ -16,8 +16,8 @@ limitations under the License.*/
 #define PGN_PARSER_H
 
 #include "gkchess_piece.h"
+#include "gkchess_move_data.h"
 #include "gutil_map.h"
-#include "gutil_flags.h"
 
 NAMESPACE_GKCHESS;
 
@@ -26,98 +26,6 @@ NAMESPACE_GKCHESS;
 class PGN_Parser
 {
 public:
-
-    /** Enumerates the types of moves. */
-    enum MoveTypeEnum
-    {
-        /** Indicates a move where a piece was captured (x in chess notation). */
-        Capture,
-        
-        /** Indicates a King-side castle (O-O in chess notation). */
-        CastleNormal,
-        
-        /** Indicates a Queen-side castle (O-O-O in chess notation). */
-        CastleQueenSide,
-        
-        /** Indicates a move where the opposing king is put in check (+ in chess notation). */
-        Check,
-        
-        /** Indicates a move where the opposing king is put in checkmate (# in chess notation). */
-        CheckMate,
-        
-        /** Indicates that the move was a blunder (?? in chess notation). */
-        Blunder,
-        
-        /** Indicates that the move was a mistake (? in chess notation). */
-        Mistake,
-        
-        /** Indicates that the move was dubious (?! in chess notation). */
-        Dubious,
-        
-        /** Indicates that the move was interesting (!? in chess notation). */
-        Interesting,
-        
-        /** Indicates the the move was a good move (! in chess notation). */
-        Good,
-        
-        /** Indicates the the move was a brilliant move (!! in chess notation). */
-        Brilliant
-    };
-
-    /** An object to help flag different move types. */
-    GUTIL_DECLARE_FLAGS(MoveTypeFlags, MoveTypeEnum);
-
-    /** A queryable data object that holds all the data parsed from a move
-        in a PGN file.
-    */
-    struct MoveData
-    {
-        /** The type of piece being moved. */
-        Piece::PieceTypeEnum PieceMoved;
-        
-        /** If the piece was promoted, then this is anything but a Pawn. */
-        Piece::PieceTypeEnum PiecePromoted;
-        
-        /** The source file is not always given, but if it is this will not be -1. */
-        int SourceFile;
-        
-        /** The source rank is not always given, but if it is this will not be -1. */
-        int SourceRank;
-        
-        /** The destination file is always given on non-castling moves. */
-        int DestFile;
-        
-        /** The destination rank is always given on non-castling moves. */
-        int DestRank;
-        
-        /** Contains information about the move, like whether it puts the
-            opponent king in check, or if it is a blunder, etc...
-        */
-        MoveTypeFlags Flags;
-        
-        /** Holds the move text directly from the PGN file. */
-        GUtil::DataObjects::String Text;
-        
-        /** If there is a comment for the move it is stored here. */
-        GUtil::DataObjects::String Comment;
-
-        /** Returns a human-readable description of the move.
-         *  For example: "Pawn takes e5"
-        */
-        GUtil::DataObjects::String ToString() const;
-        
-        MoveData();
-    };
-    
-    /** Holds a pair of moves. */
-    struct MoveDataPair
-    {
-        /** This is white's move. */
-        MoveData WhitesMove;
-        
-        /** This is black's move. */
-        MoveData BlacksMove;
-    };
 
     /** Parses the UTF-8 string. Throws an exception on error. */
     PGN_Parser(const GUtil::DataObjects::String &utf8);
