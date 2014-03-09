@@ -134,17 +134,16 @@ static int __get_valid_rank_number(char n)
     bool ok = false;
     int tmpnum = String(n).ToInt(&ok);
     if(ok && 1 <= tmpnum && tmpnum <= 8)
-        ret = tmpnum - 1;
+        ret = tmpnum;
     return ret;
 }
 
 /** Converts a string to an array index. */
-static int __string_to_index(char c)
+static bool __validate_file_char(char c)
 {
-    int ret = -1;
-    int tmp = (int)(c - 'a');
-    if(0 <= tmp && tmp < 8)
-        ret = tmp;
+    int ret = false;
+    if('a' <= c && c <= 'h')
+        ret = true;
     return ret;
 }
 
@@ -199,35 +198,34 @@ bool PGN_Parser::_new_movedata_from_string(MoveData &m, const String &s)
         }
 
         // Parse the source and destination squares
-        int file1 = -1, file2 = -1;
-        int rank1 = -1, rank2 = -1;
+        char file1 = 0, file2 = 0;
+        int rank1 = 0, rank2 = 0;
         for(; iter != m.Text.endUTF8(); ++iter)
         {
             char c = *iter.Current();
-            int tmp_file = __string_to_index(c);
             int tmp_number = __get_valid_rank_number(c);
 
-            if(-1 != tmp_file)
+            if(__validate_file_char(c))
             {
                 // If a file is given, it may be a source or destination file,
                 //  so we just remember it until we have more information.
-                if(-1 == file1)
-                    file1 = tmp_file;
-                else if(-1 == file2)
-                    file2 = tmp_file;
+                if(0 == file1)
+                    file1 = c;
+                else if(0 == file2)
+                    file2 = c;
                 else
                     THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
             }
             else if(-1 != tmp_number)
             {
                 // If a number is given, it is paired with the last given file.
-                if(-1 != file2){
-                    if(-1 == rank2)
+                if(0 != file2){
+                    if(0 == rank2)
                         rank2 = tmp_number;
                     else
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
                 }
-                else if(-1 != file1)
+                else if(0 != file1)
                     rank1 = tmp_number;
                 else
                     THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
@@ -250,17 +248,17 @@ bool PGN_Parser::_new_movedata_from_string(MoveData &m, const String &s)
         }
 
         // Now we can sort out what the source and destination squares are:
-        if(-1 != file2){
+        if(0 != file2){
             m.SourceFile = file1;
             m.DestFile = file2;
         }
-        else if(-1 != file1)
+        else if(0 != file1)
             m.DestFile = file1;
 
-        if(-1 != rank2)
+        if(0 != rank2)
             m.DestRank = rank2;
-        if(-1 != rank1){
-            if(-1 == m.SourceFile)
+        if(0 != rank1){
+            if(0 == m.SourceFile)
                 m.DestRank = rank1;
             else
                 m.SourceRank = rank1;

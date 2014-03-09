@@ -72,14 +72,14 @@ struct MoveData
     /** If the piece was promoted, then this is anything but a Pawn. */
     Piece::PieceTypeEnum PiecePromoted;
 
-    /** The source file is not always given, but if it is this will not be -1. */
-    int SourceFile;
+    /** The source file is not always given, but if it is this will not be 0. */
+    char SourceFile;
 
-    /** The source rank is not always given, but if it is this will not be -1. */
+    /** The source rank is not always given, but if it is this will not be 0. */
     int SourceRank;
 
     /** The destination file is always given on non-castling moves. */
-    int DestFile;
+    char DestFile;
 
     /** The destination rank is always given on non-castling moves. */
     int DestRank;

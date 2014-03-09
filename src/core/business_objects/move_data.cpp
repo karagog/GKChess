@@ -21,34 +21,8 @@ NAMESPACE_GKCHESS;
 
 MoveData::MoveData()
     :PieceMoved(Piece::Pawn), PiecePromoted(Piece::Pawn),
-     SourceFile(-1), SourceRank(-1), DestFile(-1), DestRank(-1)
+     SourceFile(0), SourceRank(0), DestFile(0), DestRank(0)
 {}
-
-/** Converts an array index to a string. */
-static char const *__index_to_string(int indx)
-{
-    switch(indx)
-    {
-    case 0:
-        return "a";
-    case 1:
-        return "b";
-    case 2:
-        return "c";
-    case 3:
-        return "d";
-    case 4:
-        return "e";
-    case 5:
-        return "f";
-    case 6:
-        return "g";
-    case 7:
-        return "h";
-    default:
-        return 0;
-    }
-}
 
 String MoveData::ToString() const
 {
@@ -61,10 +35,10 @@ String MoveData::ToString() const
     {
         ret.Append(Piece(PieceMoved).ToString(false));
 
-        if(-1 != SourceFile){
-            ret.Append(String::Format(" on %s", __index_to_string(SourceFile)));
-            if(-1 != SourceRank)
-                ret.Append(String::FromInt(SourceRank + 1));
+        if(0 != SourceFile){
+            ret.Append(String::Format(" on %c", SourceFile));
+            if(0 != SourceRank)
+                ret.Append(String::FromInt(SourceRank));
         }
 
         if(Flags.TestFlag(Capture))
@@ -72,7 +46,7 @@ String MoveData::ToString() const
         else
             ret.Append(" to ");
 
-        ret.Append(String::Format("%s%d", __index_to_string(DestFile), DestRank + 1));
+        ret.Append(String::Format("%c%d", DestFile, DestRank));
 
         if(Piece::Pawn != PiecePromoted)
             ret.Append(String::Format(" promotes to %s",
