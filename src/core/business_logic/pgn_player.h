@@ -45,25 +45,6 @@ public:
     void Clear();
 
 
-    /** Describes all the data we need to remember each move. */
-    struct MoveData
-    {
-        int PlyNumber;
-        Piece::PieceTypeEnum PieceType;
-        Piece::PieceTypeEnum PieceType_Promoted;
-
-        int SourceColumn, SourceRow;
-        int DestColumn, DestRow;
-
-        GUtil::DataObjects::String MoveText;
-        GUtil::DataObjects::String Comment;
-
-        /** Returns true if this move was white's. */
-        bool IsWhiteMove() const{ return 0x1 & PlyNumber; }
-
-        MoveData();
-    };
-
     /** Returns the moves from the file. */
     const GUtil::DataObjects::Vector<MoveData> GetMoves() const{ return m_moves; }
 

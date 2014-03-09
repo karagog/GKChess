@@ -19,6 +19,12 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
+GameLogic::move_data_t::move_data_t()
+    :Source(0),
+      Destination(0),
+      CastleType(0)
+{}
+
 GameLogic::GameLogic()
     :m_currentTurn(Piece::White),
       m_moveHistoryIndex(-1)
@@ -26,6 +32,11 @@ GameLogic::GameLogic()
 
 GameLogic::~GameLogic()
 {}
+
+Piece::AllegienceEnum GameLogic::WhoseTurn() const
+{
+    return (0x1 & m_moveHistoryIndex) ? Piece::White : Piece::Black;
+}
 
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
 {
@@ -72,85 +83,57 @@ void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
     }
 }
 
-
-GameLogic::MoveData::MoveData()
-    :SourceSquare(NULL),
-      DestSquare(NULL),
-      CapturedPiece(NULL)
-{}
-
-Vector<Square *> GameLogic::GetPossibleMoves(const Square &s) const
+Vector<Square const *> GameLogic::GetPossibleMoves(const Square &s, const Piece &p) const
 {
-    Vector<Square *> ret;
+    Vector<Square const *> ret;
 
-    if(s.GetPiece())
+    switch(p.GetType())
     {
-        switch(s.GetPiece()->GetType())
+    case Piece::Pawn:
+    {
+        // The pawn can always move one or two steps forward if not capturing
+        Square *temp1(NULL), *temp2(NULL);
+        switch(p.GetAllegience()>GetAllegience())
         {
-        case Piece::Pawn:
-        {
-            // We need to know the last move to know if en passant is legal
-            MoveData const *last_move( _get_last_move() );
-
-            // The pawn can always move one or two steps forward if not capturing
-            Square *temp1(NULL), *temp2(NULL);
-            switch(s.GetPiece()->GetAllegience())
-            {
-            case Piece::White:
-                break;
-            case Piece::Black:
-                break;
-            default:
-                break;
-            }
-
-            // Test to see if it's unoccupied
-            if(temp1 && !temp1->GetPiece())
-            {
-                ret.PushBack(temp1);
-
-                if(temp2 && !temp2->GetPiece())
-                    ret.PushBack(temp1);
-            }
-
-
-            // If the pawn is capturing then it moves diagonally forwards and sideways
-        }
+        case Piece::White:
             break;
-        case Piece::Knight:
-            break;
-        case Piece::Bishop:
-            break;
-        case Piece::Rook:
-            break;
-        case Piece::Queen:
-            break;
-        case Piece::King:
+        case Piece::Black:
             break;
         default:
             break;
         }
+
+        // Test to see if it's unoccupied
+        if(temp1 && !temp1->GetPiece())
+        {
+            ret.PushBack(temp1);
+
+            if(temp2 && !temp2->GetPiece())
+                ret.PushBack(temp1);
+        }
+
+
+        // If the pawn is capturing then it moves diagonally forwards and sideways
+    }
+        break;
+    case Piece::Knight:
+        break;
+    case Piece::Bishop:
+        break;
+    case Piece::Rook:
+        break;
+    case Piece::Queen:
+        break;
+    case Piece::King:
+        break;
+    default:
+        break;
     }
 
 
     // Now we must prune the possible moves depending if they would put the moving side in Check
 
     return ret;
-}
-
-void GameLogic::Move(Square &source, Square &destination)
-{
-    if(source == destination)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Pieces must move to a different square");
-
-    Vector<Square *> possible_moves( GetPossibleMoves(source) );
-    if(possible_moves.Contains(&destination)){
-        // The move is valid, so execute it
-        _execute_move(source, destination);
-    }
-    else{
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid Move");
-    }
 }
 
 
@@ -244,37 +227,103 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Squ
     return ValidMove;
 }
 
-void GameLogic::_execute_move(Square &source, Square &dest)
+void GameLogic::Move(const MoveData &md)
 {
-    MoveData md;
-    md.SourceSquare = &source;
-    md.DestSquare = &dest;
-    md.CapturedPiece = dest.GetPiece();
-
-    dest.SetPiece(source.GetPiece());
-    source.SetPiece(0);
-
-    // Prune the history if necessary
-    if(m_moveHistoryIndex < (GINT32)m_moveHistory.Length() - 1)
-        m_moveHistory.Resize(m_moveHistoryIndex + 1);
-
-    m_moveHistory.PushBack(md);
-    ++m_moveHistoryIndex;
+    move_protected(_translate_move_data(md));
 }
 
-GameLogic::MoveData const *GameLogic::_get_last_move() const
+GameLogic::move_data_t GameLogic::_translate_move_data(const MoveData &m) const
 {
-    MoveData const *ret( NULL );
-    if(0 <= m_moveHistoryIndex)
-        ret = &m_moveHistory[m_moveHistoryIndex];
+    move_data_t ret;
+
+    if(m.Flags.TestFlag(MoveData::CastleNormal))
+        ret.CastleType = 1;
+    else if(m.Flags.TestFlag(MoveData::CastleQueenSide))
+        ret.CastleType = -1;
+    else
+    {
+        // Get the destination square (this is always given)
+        ret.Destination = &m_board.GetSquare(m.DestFile - 'a', m.DestRank - 1);
+
+        if(m.Flags.TestFlag(MoveData::Capture))
+        {
+            if(ret.Destination->GetPiece())
+                ret.PieceCaptured = ret.Destination->GetPiece();
+            else
+                THROW_NEW_GUTIL_EXCEPTION2(Exception, "I was told to capture but there is no piece");
+        }
+
+        // Find the source square (this is only seldom given; normally we have to search)
+        int tmp_file = -1;
+        if(m.SourceFile != 0){
+            tmp_file = m.SourceFile - 'a';
+            if(m.SourceRank != 0)
+            {
+                // The source was specified explicitly, so no search needed
+                ret.Source = &m_board.GetSquare(tmp_file, m.SourceRank - 1);
+            }
+            else
+            {
+                // Only the file was specified, so we have to find the piece
+            }
+        }
+        else
+        {
+            // No source information was given, except for the type of piece
+        }
+    }
+
     return ret;
+}
+
+void GameLogic::move_protected(const move_data_t &m)
+{
+    if(direction)
+    {
+        if(1 == m.CastleType)
+        {
+            // Normal castle
+        }
+        else if(-1 == m.CastleType)
+        {
+            // Queenside castle
+        }
+        else
+        {
+            if(m.PiecePromoted)
+                m.Destination->SetPiece(m.PiecePromoted);
+            else
+                m.Destination->SetPiece(m.PieceMoved);
+
+            m.Source->SetPiece(0);
+        }
+    }
+    else
+    {
+        if(1 == m.CastleType)
+        {
+            // Normal castle
+        }
+        else if(-1 == m.CastleType)
+        {
+            // Queenside castle
+        }
+        else
+        {
+            m.Source->SetPiece(m.PieceMoved);
+            if(m.PieceCaptured)
+                m.Destination->SetPiece(m.PieceCaptured);
+            else
+                m.Destination->SetPiece(0);
+        }
+    }
 }
 
 void GameLogic::Undo()
 {
     if(0 <= m_moveHistoryIndex)
     {
-        MoveData &cur( m_moveHistory[m_moveHistoryIndex] );
+        move_data_t &cur( m_moveHistory[m_moveHistoryIndex] );
 
         cur.SourceSquare->SetPiece(cur.DestSquare->GetPiece());
         cur.DestSquare->SetPiece(cur.CapturedPiece);
@@ -287,7 +336,7 @@ void GameLogic::Redo()
 {
     if((GINT32)m_moveHistory.Length() > m_moveHistoryIndex + 1)
     {
-        MoveData &cur( m_moveHistory[m_moveHistoryIndex + 1] );
+        move_data_t &cur( m_moveHistory[m_moveHistoryIndex + 1] );
 
         cur.DestSquare->SetPiece(cur.SourceSquare->GetPiece());
         cur.SourceSquare->SetPiece(0);

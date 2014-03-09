@@ -16,7 +16,7 @@ limitations under the License.*/
 #define GKCHESS_GAMELOGIC_H
 
 #include "gkchess_board.h"
-#include "gkchess_piece.h"
+#include "gkchess_move_data.h"
 
 NAMESPACE_GKCHESS;
 
@@ -54,17 +54,17 @@ public:
     /** Sets up the board for a new game. */
     virtual void SetupNewGame(SetupTypeEnum = StandardChess);
 
-    /** Attempts to move the piece at the source square to the destination.
-     *  If the move is not possible (according to the rules of standard chess)
-     *  it will throw an exception.
-    */
-    virtual void Move(Square &source, Square &destination);
+    /** Moves based on a MoveData object, which is created from the PGN parser. */
+    void Move(const MoveData &);
 
     /** Causes the last move to be undone. */
     virtual void Undo();
 
     /** Causes the last move that was undone to be redone. */
     virtual void Redo();
+
+    /** Returns the allegience whose turn it is. */
+    Piece::AllegienceEnum WhoseTurn() const;
 
 
     /** Encodes the ways a move can be validated. */
@@ -95,29 +95,37 @@ public:
     virtual MoveValidationEnum ValidateMove(const Square &source, const Square &destination) const;
 
 
-    /** Returns a list of squares that are valid for the given square.
-     *  If there is no piece on the square, or the piece has no moves, then an empty list is returned.
-    */
-    ::GUtil::DataObjects::Vector<Square *> GetPossibleMoves(const Square &) const;
+    /** Returns a list of squares that are valid for the given square and piece. */
+    ::GUtil::DataObjects::Vector<Square const *> GetPossibleMoves(const Square &, const Piece &) const;
+
+
+protected:
+
+    /** Describes all the data we need to remember each move. */
+    struct move_data_t
+    {
+        Square *Source, *Destination;
+
+        int CastleType;
+
+        GUtil::Utils::SharedSmartPointer<Piece> PieceMoved;
+        GUtil::Utils::SharedSmartPointer<Piece> PieceCaptured;
+        GUtil::Utils::SharedSmartPointer<Piece> PiecePromoted;
+
+        move_data_t();
+    };
+
+    /** This function actually carries out the move. */
+    virtual void move_protected(const move_data_t &);
 
 
 private:
 
-    struct MoveData
-    {
-        Square *SourceSquare;
-        Square *DestSquare;
-
-        Piece *CapturedPiece;
-
-        MoveData();
-    };
-
-    ::GUtil::DataObjects::Vector<MoveData> m_moveHistory;
+    ::GUtil::DataObjects::Vector<move_data_t> m_moveHistory;
     GINT32 m_moveHistoryIndex;
 
-    void _execute_move(Square &source, Square &dest);
-    MoveData const *_get_last_move() const;
+    /** Maps a MoveData object to our own move_data type. */
+    move_data_t _translate_move_data(const MoveData &) const;
 
 };
 
