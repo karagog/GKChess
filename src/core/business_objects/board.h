@@ -45,8 +45,9 @@ public:
 
     /** Initializes a new piece on the given square.  The board will take
         ownership of the piece's memory.
+        \returns A reference to the square on which the piece was initialized.
     */
-    void InitPiece(Piece *, int column, int row);
+    Square *InitPiece(Piece *, int column, int row);
 
     /** Moves the piece at the source to the given destination square.
      *  If the destination square is occupied, its piece will be replaced by

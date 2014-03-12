@@ -74,9 +74,11 @@ void Board::Move(Square &source, Square &dest)
         dest.SetPiece(p);
 }
 
-void Board::InitPiece(Piece *p, int column, int row)
+Square *Board::InitPiece(Piece *p, int column, int row)
 {
-    m_board[column][row].SetPiece(p);
+    Square *ret = &m_board[column][row];
+    ret->SetPiece(p);
+    return ret;
 }
 
 END_NAMESPACE_GKCHESS;

@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_board.h"
 #include "gkchess_pgn_move_data.h"
+#include "gutil_map.h"
 #include <QObject>
 
 namespace GKChess{
@@ -35,12 +36,6 @@ class GameLogic :
 
 public:
 
-    explicit GameLogic(QObject * = 0);
-    virtual ~GameLogic();
-
-    /** Returns the game board. */
-    Board const &GetBoard() const{ return m_board; }
-
     /** Describes different ways the board could be set up. */
     enum SetupTypeEnum
     {
@@ -53,50 +48,6 @@ public:
         /** You can create your own custom board setups starting from this offset. */
         CustomSetupOffset = 100
     };
-
-    /** Sets up the board for a new game. */
-    virtual void SetupNewGame(SetupTypeEnum = StandardChess);
-
-    /** Causes the last move to be undone. */
-    virtual void Undo();
-
-    /** Causes the last move that was undone to be redone. */
-    virtual void Redo();
-
-    /** Returns the allegience whose turn it is. */
-    Piece::AllegienceEnum WhoseTurn() const;
-
-
-    /** Encodes the ways a move can be validated. */
-    enum MoveValidationEnum
-    {
-        /** Means the move is valid. */
-        ValidMove = 0,
-
-        /** Invalid move because pieces can't move that way according to the rules of chess.
-         *  (i.e. a pawn moving backwards).
-        */
-        InvalidTechnical = 1,
-
-        /** Invalid because you would be leaving the king in check. */
-        InvalidCheck = 2,
-
-        /** The source square does not have a piece on it. */
-        InvalidEmptySquare = 3,
-
-
-        /** If you are extending this class for your own custom rules then you'll base
-         *  your validation types with this value.
-        */
-        CustomInvalidMoveOffset = 100
-    };
-
-    /** Determines if the move is valid, according to the rules of standard chess. */
-    virtual MoveValidationEnum ValidateMove(const Square &source, const Square &destination) const;
-
-
-    /** Returns a list of squares that are valid for the given square and piece. */
-    ::GUtil::DataObjects::Vector<Square const *> GetPossibleMoves(const Square &, const Piece &) const;
 
     /** Holds all the information we need to do and undo a move*/
     struct MoveData
@@ -130,11 +81,73 @@ public:
         MoveData();
     };
 
+    explicit GameLogic(QObject * = 0);
+    virtual ~GameLogic();
+
+    /** Returns the game board. */
+    Board const &GetBoard() const{ return m_board; }
+
+
+    /** Sets up the board for a new game. */
+    virtual void SetupNewGame(SetupTypeEnum = StandardChess);
+
+    /** Convenience function clears the board. */
+    void Clear(){ SetupNewGame(Empty); }
+
+    /** Returns a list of squares occupied by the type of piece specified.
+     *  The list will be empty if it didn't find any.
+     *
+     *  This lookup is done in O(log(N)) time, where N is the number of different types of pieces.
+    */
+    GUtil::DataObjects::Vector<Square const *> FindPieces(Piece::AllegienceEnum,
+                                                          Piece::PieceTypeEnum) const;
+
+    /** Encodes the ways a move can be validated. */
+    enum MoveValidationEnum
+    {
+        /** Means the move is valid. */
+        ValidMove = 0,
+
+        /** Invalid move because pieces can't move that way according to the rules of chess.
+         *  (i.e. a pawn moving backwards).
+        */
+        InvalidTechnical = 1,
+
+        /** Invalid because you would be leaving the king in check. */
+        InvalidCheck = 2,
+
+        /** The source square does not have a piece on it. */
+        InvalidEmptySquare = 3,
+
+
+        /** If you are extending this class for your own custom rules then you'll base
+         *  your validation types with this value.
+        */
+        CustomInvalidMoveOffset = 100
+    };
+
+    /** Determines if the move is valid, according to the rules of standard chess. */
+    virtual MoveValidationEnum ValidateMove(const Square &source, const Square &destination) const;
+
+
+    /** Returns a list of squares that are valid for the given square and piece. */
+    ::GUtil::DataObjects::Vector<Square const *> GetPossibleMoves(const Square &, const Piece &) const;
+
+
     /** Moves based on a PGN_MoveData object, which is created from the PGN parser. */
     void Move(const PGN_MoveData &);
 
     /** Moves based on a MoveData object. */
     void Move(const MoveData &);
+
+    /** Causes the last move to be undone. */
+    void Undo();
+
+    /** Causes the last move that was undone to be redone. */
+    void Redo();
+
+    /** Returns the allegience whose turn it is. */
+    Piece::AllegienceEnum WhoseTurn() const;
 
 
 signals:
@@ -142,16 +155,27 @@ signals:
     /** This is emitted whenever a piece is moved. */
     void NotifyMove(const GameLogic::MoveData &);
 
+    /** This is emitted whenever a new game is set up.
+     *  The optional argument is the setup type, which usually is StandardChess, but
+     *  it will also be Empty if the board was cleared.
+    */
+    void NotifyNewGame(int setup_type = StandardChess);
+
 
 private:
 
-    ::GUtil::DataObjects::Vector<MoveData> m_moveHistory;
+    // This facilitates fast piece lookups
+    GUtil::DataObjects::Map<Piece::PieceTypeEnum, Square const *> m_whitePieceIndex;
+    GUtil::DataObjects::Map<Piece::PieceTypeEnum, Square const *> m_blackPieceIndex;
+
+    GUtil::DataObjects::Vector<MoveData> m_moveHistory;
     GINT32 m_moveHistoryIndex;
 
     /** Maps a MoveData object to our own move_data type. */
     MoveData _translate_move_data(const PGN_MoveData &);
 
-    void _move(const MoveData &, bool direction = true);
+    void _move(const MoveData &, bool reverse = false);
+    void _init_piece(int, int, Piece::AllegienceEnum, Piece::PieceTypeEnum);
 
 };
 
