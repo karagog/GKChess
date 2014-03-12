@@ -19,14 +19,18 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
-GameLogic::move_data_t::move_data_t()
+GameLogic::MoveData::MoveData()
     :Source(0),
       Destination(0),
-      CastleType(0)
+      CastleType(NoCastle),
+      PieceMoved(),
+      PieceCaptured(),
+      PiecePromoted()
 {}
 
-GameLogic::GameLogic()
-    :m_currentTurn(Piece::White),
+GameLogic::GameLogic(QObject *p)
+    :QObject(p),
+      m_currentTurn(Piece::White),
       m_moveHistoryIndex(-1)
 {}
 
@@ -93,7 +97,7 @@ Vector<Square const *> GameLogic::GetPossibleMoves(const Square &s, const Piece 
     {
         // The pawn can always move one or two steps forward if not capturing
         Square *temp1(NULL), *temp2(NULL);
-        switch(p.GetAllegience()>GetAllegience())
+        switch(p.GetAllegience())
         {
         case Piece::White:
             break;
@@ -227,28 +231,102 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Squ
     return ValidMove;
 }
 
-void GameLogic::Move(const MoveData &md)
+void GameLogic::Move(const PGN_MoveData &md)
 {
-    move_protected(_translate_move_data(md));
+    Move(_translate_move_data(md));
 }
 
-GameLogic::move_data_t GameLogic::_translate_move_data(const MoveData &m) const
+void GameLogic::Move(const MoveData &m)
 {
-    move_data_t ret;
+    _move(m);
+}
 
-    if(m.Flags.TestFlag(MoveData::CastleNormal))
-        ret.CastleType = 1;
-    else if(m.Flags.TestFlag(MoveData::CastleQueenSide))
-        ret.CastleType = -1;
+static void __validate_square(Square const *s)
+{
+    if(NULL == s)
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Both the source and destination squares must be given");
+
+    if(0 > s->GetRow() || 7 < s->GetRow() || 0 > s->GetColumn() || 7 < s->GetColumn())
+        THROW_NEW_GUTIL_EXCEPTION2(IndexOutOfRangeException, "Invalid square");
+}
+
+void GameLogic::_move(const MoveData &md, bool direction)
+{
+    Square *source = 0, *dest = 0;
+
+    if(direction)
+    {
+        if(MoveData::CastleNormal == md.CastleType)
+        {
+
+        }
+        else if(MoveData::CastleQueenside == md.CastleType)
+        {
+            // Queenside castle
+        }
+        else
+        {
+            __validate_square(md.Source);
+            __validate_square(md.Destination);
+
+            // Get the non-const squares
+            source = &m_board.GetSquare(md.Source->GetColumn(), md.Source->GetRow());
+            dest = &m_board.GetSquare(md.Destination->GetColumn(), md.Destination->GetRow());
+
+            if(md.PiecePromoted)
+                dest->SetPiece(md.PiecePromoted);
+            else
+                dest->SetPiece(md.PieceMoved);
+
+            source->SetPiece(0);
+        }
+    }
+    else
+    {
+        if(MoveData::CastleNormal == md.CastleType)
+        {
+
+        }
+        else if(MoveData::CastleQueenside == md.CastleType)
+        {
+
+        }
+        else
+        {
+            __validate_square(md.Source);
+            __validate_square(md.Destination);
+
+            // Get the non-const squares
+            source = &m_board.GetSquare(md.Source->GetColumn(), md.Source->GetRow());
+            dest = &m_board.GetSquare(md.Destination->GetColumn(), md.Destination->GetRow());
+
+            source->SetPiece(md.PieceMoved);
+            if(md.PieceCaptured)
+                dest->SetPiece(md.PieceCaptured);
+            else
+                dest->SetPiece(0);
+        }
+    }
+}
+
+GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
+{
+    MoveData ret;
+
+    if(m.Flags.TestFlag(PGN_MoveData::CastleNormal))
+        ret.CastleType = MoveData::CastleNormal;
+    else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
+        ret.CastleType = MoveData::CastleQueenside;
     else
     {
         // Get the destination square (this is always given)
-        ret.Destination = &m_board.GetSquare(m.DestFile - 'a', m.DestRank - 1);
+        Square *dest = &m_board.GetSquare(m.DestFile - 'a', m.DestRank - 1);
+        ret.Destination = dest;
 
-        if(m.Flags.TestFlag(MoveData::Capture))
+        if(m.Flags.TestFlag(PGN_MoveData::Capture))
         {
             if(ret.Destination->GetPiece())
-                ret.PieceCaptured = ret.Destination->GetPiece();
+                ret.PieceCaptured = dest->GetPiece();
             else
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "I was told to capture but there is no piece");
         }
@@ -276,58 +354,11 @@ GameLogic::move_data_t GameLogic::_translate_move_data(const MoveData &m) const
     return ret;
 }
 
-void GameLogic::move_protected(const move_data_t &m)
-{
-    if(direction)
-    {
-        if(1 == m.CastleType)
-        {
-            // Normal castle
-        }
-        else if(-1 == m.CastleType)
-        {
-            // Queenside castle
-        }
-        else
-        {
-            if(m.PiecePromoted)
-                m.Destination->SetPiece(m.PiecePromoted);
-            else
-                m.Destination->SetPiece(m.PieceMoved);
-
-            m.Source->SetPiece(0);
-        }
-    }
-    else
-    {
-        if(1 == m.CastleType)
-        {
-            // Normal castle
-        }
-        else if(-1 == m.CastleType)
-        {
-            // Queenside castle
-        }
-        else
-        {
-            m.Source->SetPiece(m.PieceMoved);
-            if(m.PieceCaptured)
-                m.Destination->SetPiece(m.PieceCaptured);
-            else
-                m.Destination->SetPiece(0);
-        }
-    }
-}
-
 void GameLogic::Undo()
 {
     if(0 <= m_moveHistoryIndex)
     {
-        move_data_t &cur( m_moveHistory[m_moveHistoryIndex] );
-
-        cur.SourceSquare->SetPiece(cur.DestSquare->GetPiece());
-        cur.DestSquare->SetPiece(cur.CapturedPiece);
-
+        _move(m_moveHistory[m_moveHistoryIndex]);
         --m_moveHistoryIndex;
     }
 }
@@ -336,11 +367,7 @@ void GameLogic::Redo()
 {
     if((GINT32)m_moveHistory.Length() > m_moveHistoryIndex + 1)
     {
-        move_data_t &cur( m_moveHistory[m_moveHistoryIndex + 1] );
-
-        cur.DestSquare->SetPiece(cur.SourceSquare->GetPiece());
-        cur.SourceSquare->SetPiece(0);
-
+        _move(m_moveHistory[m_moveHistoryIndex + 1]);
         ++m_moveHistoryIndex;
     }
 }

@@ -147,7 +147,7 @@ static bool __validate_file_char(char c)
     return ret;
 }
 
-bool PGN_Parser::_new_movedata_from_string(MoveData &m, const String &s)
+bool PGN_Parser::_new_movedata_from_string(PGN_MoveData &m, const String &s)
 {
     bool ret = true;
     m.Text = s;
@@ -171,9 +171,9 @@ bool PGN_Parser::_new_movedata_from_string(MoveData &m, const String &s)
     printf("%s", String::Format("Parsing '%s'\n", m.Text.ConstData()).ConstData());
 
     if(UINT_MAX != m.Text.IndexOf("O-O-O"))
-        m.Flags.SetFlag(MoveData::CastleQueenSide, true);
+        m.Flags.SetFlag(PGN_MoveData::CastleQueenSide, true);
     else if(UINT_MAX != m.Text.IndexOf("O-O"))
-        m.Flags.SetFlag(MoveData::CastleNormal, true);
+        m.Flags.SetFlag(PGN_MoveData::CastleNormal, true);
     else if(UINT_MAX != m.Text.IndexOf("1-0")){
         m_result = 1;
         ret = false;
@@ -232,9 +232,9 @@ bool PGN_Parser::_new_movedata_from_string(MoveData &m, const String &s)
             }
             else if('x' == c)
             {
-                if(m.Flags.TestFlag(MoveData::Capture))
+                if(m.Flags.TestFlag(PGN_MoveData::Capture))
                     THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
-                m.Flags.SetFlag(MoveData::Capture, true);
+                m.Flags.SetFlag(PGN_MoveData::Capture, true);
             }
             else if('-' == c)
             {
@@ -276,23 +276,23 @@ bool PGN_Parser::_new_movedata_from_string(MoveData &m, const String &s)
 
     // See if the move puts the king in check or checkmate
     if(UINT_MAX != m.Text.IndexOf('#'))
-        m.Flags.SetFlag(MoveData::CheckMate, true);
+        m.Flags.SetFlag(PGN_MoveData::CheckMate, true);
     else if(UINT_MAX != m.Text.IndexOf('+'))
-        m.Flags.SetFlag(MoveData::Check, true);
+        m.Flags.SetFlag(PGN_MoveData::Check, true);
 
     // See if the annotator has an assessment of this move
     if(UINT_MAX != m.Text.IndexOf("??"))
-        m.Flags.SetFlag(MoveData::Blunder, true);
+        m.Flags.SetFlag(PGN_MoveData::Blunder, true);
     else if(UINT_MAX != m.Text.IndexOf("!!"))
-        m.Flags.SetFlag(MoveData::Brilliant, true);
+        m.Flags.SetFlag(PGN_MoveData::Brilliant, true);
     else if(UINT_MAX != m.Text.IndexOf("!?"))
-        m.Flags.SetFlag(MoveData::Interesting, true);
+        m.Flags.SetFlag(PGN_MoveData::Interesting, true);
     else if(UINT_MAX != m.Text.IndexOf("?!"))
-        m.Flags.SetFlag(MoveData::Dubious, true);
+        m.Flags.SetFlag(PGN_MoveData::Dubious, true);
     else if(UINT_MAX != m.Text.IndexOf('?'))
-        m.Flags.SetFlag(MoveData::Mistake, true);
+        m.Flags.SetFlag(PGN_MoveData::Mistake, true);
     else if(UINT_MAX != m.Text.IndexOf('!'))
-        m.Flags.SetFlag(MoveData::Good, true);
+        m.Flags.SetFlag(PGN_MoveData::Good, true);
 
     return ret;
 }
@@ -318,13 +318,13 @@ void PGN_Parser::_parse_moves(const String &move_text)
 
         if(0 < sl2.Length()){
             {
-                MoveData m;
+                PGN_MoveData m;
                 if(_new_movedata_from_string(m, sl2[0]))
                     m_moves.PushBack(m);
             }
 
             if(1 < sl2.Length()){
-                MoveData m;
+                PGN_MoveData m;
                 if(_new_movedata_from_string(m, sl2[1]))
                     m_moves.PushBack(m);
             }

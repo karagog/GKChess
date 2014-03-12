@@ -16,7 +16,7 @@ limitations under the License.*/
 #define PGN_PARSER_H
 
 #include "gkchess_piece.h"
-#include "gkchess_move_data.h"
+#include "gkchess_pgn_move_data.h"
 #include "gutil_map.h"
 
 NAMESPACE_GKCHESS;
@@ -35,7 +35,7 @@ public:
     { return m_tags; }
 
     /** Returns the move texts. */
-    GUtil::DataObjects::Vector<MoveData> const &GetMoves() const
+    GUtil::DataObjects::Vector<PGN_MoveData> const &GetMoves() const
     { return m_moves;  }
 
     /** Returns the result of the match.
@@ -47,7 +47,7 @@ public:
 private:
 
     GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> m_tags;
-    GUtil::DataObjects::Vector<MoveData> m_moves;
+    GUtil::DataObjects::Vector<PGN_MoveData> m_moves;
     int m_result;
 
     /** Populates the heading tags and returns an iterator to the start of the move data section. */
@@ -56,7 +56,7 @@ private:
 
     void _parse_moves(const GUtil::DataObjects::String &);
 
-    bool _new_movedata_from_string(MoveData &, const GUtil::DataObjects::String &);
+    bool _new_movedata_from_string(PGN_MoveData &, const GUtil::DataObjects::String &);
 
 };
 

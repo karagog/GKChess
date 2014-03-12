@@ -12,8 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_MOVE_DATA_H
-#define GKCHESS_MOVE_DATA_H
+#ifndef GKCHESS_PGN_MOVE_DATA_H
+#define GKCHESS_PGN_MOVE_DATA_H
 
 #include "gkchess_piece.h"
 #include "gutil_flags.h"
@@ -24,7 +24,7 @@ NAMESPACE_GKCHESS;
 /** A queryable data object that holds all the data parsed from a move
     in a PGN file.
 */
-struct MoveData
+struct PGN_MoveData
 {
     /** Enumerates the types of moves. */
     enum MoveTypeEnum
@@ -100,10 +100,10 @@ struct MoveData
     */
     GUtil::DataObjects::String ToString() const;
 
-    MoveData();
+    PGN_MoveData();
 };
 
 
 END_NAMESPACE_GKCHESS;
 
-#endif // GKCHESS_MOVE_DATA_H
+#endif // GKCHESS_PGN_MOVE_DATA_H

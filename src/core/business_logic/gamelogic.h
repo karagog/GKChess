@@ -16,23 +16,26 @@ limitations under the License.*/
 #define GKCHESS_GAMELOGIC_H
 
 #include "gkchess_board.h"
-#include "gkchess_move_data.h"
+#include "gkchess_pgn_move_data.h"
+#include <QObject>
 
-NAMESPACE_GKCHESS;
+namespace GKChess{
 
 class AbstractClock;
 
 
 /** Describes the game logic for standard chess. */
-class GameLogic
+class GameLogic :
+        public QObject
 {
+    Q_OBJECT
+
     Board m_board;
     Piece::AllegienceEnum m_currentTurn;
 
 public:
 
-    /** You must give the game logic a board to play on. It will not own the board. */
-    explicit GameLogic();
+    explicit GameLogic(QObject * = 0);
     virtual ~GameLogic();
 
     /** Returns the game board. */
@@ -53,9 +56,6 @@ public:
 
     /** Sets up the board for a new game. */
     virtual void SetupNewGame(SetupTypeEnum = StandardChess);
-
-    /** Moves based on a MoveData object, which is created from the PGN parser. */
-    void Move(const MoveData &);
 
     /** Causes the last move to be undone. */
     virtual void Undo();
@@ -98,38 +98,64 @@ public:
     /** Returns a list of squares that are valid for the given square and piece. */
     ::GUtil::DataObjects::Vector<Square const *> GetPossibleMoves(const Square &, const Piece &) const;
 
-
-protected:
-
-    /** Describes all the data we need to remember each move. */
-    struct move_data_t
+    /** Holds all the information we need to do and undo a move*/
+    struct MoveData
     {
-        Square *Source, *Destination;
+        /** The starting square.  If the move was a castle this will be null. */
+        Square const *Source;
 
-        int CastleType;
+        /** The ending square.  If the move was a castle this will be null. */
+        Square const *Destination;
 
+        /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
+        enum CastleTypeEnum
+        {
+            NoCastle = 0,
+            CastleNormal = 1,
+            CastleQueenside = -1
+        }
+        CastleType;
+
+        /** A reference to the piece being moved. */
         GUtil::Utils::SharedSmartPointer<Piece> PieceMoved;
+
+        /** Stores a reference to the captured piece, if any. If this is null then the
+         *  move did not involve a capture.
+        */
         GUtil::Utils::SharedSmartPointer<Piece> PieceCaptured;
+
+        /** The piece that was promoted, if any. */
         GUtil::Utils::SharedSmartPointer<Piece> PiecePromoted;
 
-        move_data_t();
+        MoveData();
     };
 
-    /** This function actually carries out the move. */
-    virtual void move_protected(const move_data_t &);
+    /** Moves based on a PGN_MoveData object, which is created from the PGN parser. */
+    void Move(const PGN_MoveData &);
+
+    /** Moves based on a MoveData object. */
+    void Move(const MoveData &);
+
+
+signals:
+
+    /** This is emitted whenever a piece is moved. */
+    void NotifyMove(const GameLogic::MoveData &);
 
 
 private:
 
-    ::GUtil::DataObjects::Vector<move_data_t> m_moveHistory;
+    ::GUtil::DataObjects::Vector<MoveData> m_moveHistory;
     GINT32 m_moveHistoryIndex;
 
     /** Maps a MoveData object to our own move_data type. */
-    move_data_t _translate_move_data(const MoveData &) const;
+    MoveData _translate_move_data(const PGN_MoveData &);
+
+    void _move(const MoveData &, bool direction = true);
 
 };
 
 
-END_NAMESPACE_GKCHESS;
+}
 
 #endif // GKCHESS_GAMELOGIC_H

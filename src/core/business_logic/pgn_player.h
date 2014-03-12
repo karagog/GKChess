@@ -46,13 +46,13 @@ public:
 
 
     /** Returns the moves from the file. */
-    const GUtil::DataObjects::Vector<MoveData> GetMoves() const{ return m_moves; }
+    const GUtil::DataObjects::Vector<PGN_MoveData> GetMoves() const{ return m_moves; }
 
 
 private:
 
     GameLogic *m_game;
-    GUtil::DataObjects::Vector<MoveData> m_moves;
+    GUtil::DataObjects::Vector<PGN_MoveData> m_moves;
 
 };
 

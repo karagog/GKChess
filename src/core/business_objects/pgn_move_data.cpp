@@ -12,19 +12,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "move_data.h"
+#include "pgn_move_data.h"
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(DataObjects);
 
 NAMESPACE_GKCHESS;
 
 
-MoveData::MoveData()
+PGN_MoveData::PGN_MoveData()
     :PieceMoved(Piece::Pawn), PiecePromoted(Piece::Pawn),
      SourceFile(0), SourceRank(0), DestFile(0), DestRank(0)
 {}
 
-String MoveData::ToString() const
+String PGN_MoveData::ToString() const
 {
     String ret(25);
     if(Flags.TestFlag(CastleNormal))
