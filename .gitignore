@@ -3,6 +3,7 @@ debug
 
 doc
 include
+bin
 
 build-*-Debug
 build-*-Release
