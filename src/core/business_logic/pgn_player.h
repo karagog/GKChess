@@ -30,29 +30,37 @@ class PGN_Player
 {
 public:
 
-    PGN_Player(GameLogic *);
+    PGN_Player();
 
+    /** Parses the PGN data from the given string. */
     void LoadFromString(const GUtil::DataObjects::String &);
+    
+    /** Parses the PGN data from the given file. */
     void LoadFromFile(const GUtil::DataObjects::String &);
+
+    /** Returns true if PGN data has been successfully loaded. */
+    bool IsLoaded() const{ return m_pgnData; }
+    
+    /** Unloads the PGN data.  After calling this, "IsLoaded()" returns false. */
+    void Clear();
     
     /** After loading a PGN string, you can step through the moves with this. */
     void Next();
     
     /** After loading a PGN string, you can step back through the moves with this. */
-    void Prev();
+    void Previous();
 
-    /** Clears the PGN_Player and reclaims resources. */
-    void Clear();
+    /** Returns the game logic object used by the PGN player. */
+    const GameLogic &GetGameLogic() const{ return m_game; }
 
-
-    /** Returns the moves from the file. */
-    const GUtil::DataObjects::Vector<PGN_MoveData> GetMoves() const{ return m_moves; }
+    /** Returns the moves from the file.  This will be null if data has not been loaded. */
+    PGN_Parser::Data const *GetPGNData() const{ return m_pgnData; }
 
 
 private:
 
-    GameLogic *m_game;
-    GUtil::DataObjects::Vector<PGN_MoveData> m_moves;
+    GameLogic m_game;
+    GUtil::Utils::SmartPointer<PGN_Parser::Data> m_pgnData;
 
 };
 

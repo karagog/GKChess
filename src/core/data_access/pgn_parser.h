@@ -30,25 +30,25 @@ public:
     /** Parses the UTF-8 string. Throws an exception on error. */
     PGN_Parser(const GUtil::DataObjects::String &utf8);
 
-    /** Returns the tag pairs. */
-    const GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> GetTags() const
-    { return m_tags; }
-
-    /** Returns the move texts. */
-    GUtil::DataObjects::Vector<PGN_MoveData> const &GetMoves() const
-    { return m_moves;  }
-
-    /** Returns the result of the match.
-     *  \returns 1 if White won, -1 if Black won and 0 if it was a draw.
-    */
-    int GetResult() const{ return m_result; }
-
+    /** Holds all data parsed by the PGN_Parser. */
+    struct Data
+    {
+        /** The string tags that precede the moves. */
+        GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> Tags;
+        
+        /** All the move data. */
+        GUtil::DataObjects::Vector<PGN_MoveData> Moves;
+        
+        /** The result is 1 if White won, -1 if Black won and 0 if it was a draw. */
+        int Result;    
+    };
+    
+    /** Returns the data that was parsed from the file. */
+    Data const &GetData() const{ return m_data; }
 
 private:
 
-    GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> m_tags;
-    GUtil::DataObjects::Vector<PGN_MoveData> m_moves;
-    int m_result;
+    Data m_data;
 
     /** Populates the heading tags and returns an iterator to the start of the move data section. */
     typename GUtil::DataObjects::String::UTF8ConstIterator

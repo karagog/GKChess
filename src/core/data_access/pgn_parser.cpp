@@ -20,7 +20,6 @@ NAMESPACE_GKCHESS;
 
 
 PGN_Parser::PGN_Parser(String const &s)
-    :m_result(0)
 {
     if(!s.IsValidUTF8())
         THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
@@ -63,7 +62,7 @@ typename String::UTF8ConstIterator PGN_Parser::_parse_heading(const String &pgn_
                                                "Invalid nested brackets");
                     break;
                 case ']':
-                    m_tags.Insert(tmp_key, tmp_value);
+                    m_data.Tags.Insert(tmp_key, tmp_value);
                     inside_tag = false;
                     skip_char = true;
                     break;
@@ -168,11 +167,11 @@ bool PGN_Parser::_new_movedata_from_string(PGN_MoveData &m, const String &s)
 
     m.Text = m.Text.Trimmed();
 
-    printf("%s", String::Format("Parsing '%s'\n", m.Text.ConstData()).ConstData());
+    GDEBUG(String::Format("Parsing '%s'\n", m.Text.ConstData()));
 
-    if(UINT_MAX != m.Text.IndexOf("O-O-O"))
+    if(UINT_MAX != m.Text.ToUpper().IndexOf("O-O-O"))
         m.Flags.SetFlag(PGN_MoveData::CastleQueenSide, true);
-    else if(UINT_MAX != m.Text.IndexOf("O-O"))
+    else if(UINT_MAX != m.Text.ToUpper().IndexOf("O-O"))
         m.Flags.SetFlag(PGN_MoveData::CastleNormal, true);
     else if(UINT_MAX != m.Text.IndexOf("1-0")){
         m_result = 1;

@@ -23,21 +23,17 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS;
 
 
-PGN_Player::PGN_Player(GameLogic *g)
-    :m_game(g)
+PGN_Player::PGN_Player()
 {}
 
 void PGN_Player::Clear()
 {
-    m_moves.Empty();
+    m_pgnData.Clear();
 }
 
 void PGN_Player::LoadFromString(const String &pgn_text)
 {
-    PGN_Parser p(pgn_text);
-    Clear();
-
-    /** \todo parse the move text into our MoveData objects */
+    m_pgnData = new PGN_Parser::Data(PGN_Parser(pgn_text).GetData());
 }
 
 void PGN_Player::LoadFromFile(const String &pgn_filename)
