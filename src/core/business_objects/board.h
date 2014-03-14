@@ -15,60 +15,36 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARD_H
 #define GKCHESS_BOARD_H
 
-#include "gkchess_square.h"
+#include "gkchess_abstractboard.h"
 
-NAMESPACE_GKCHESS;
-
-class Piece;
+namespace GKChess{
 
 
-/** Describes a chess board. */
-class Board
+/** The implementation for the GKChess board.
+ *  See AbstractBoard for the interface description.
+ * \sa AbstractBoard
+*/
+class Board :
+        public AbstractBoard
 {
-    Square m_board[8][8];
+    Q_OBJECT
+    void *d;
 public:
 
-    Board();
-
-    Board(const Board &);
-
-    /** Returns the number of rows. */
-    int RowCount() const{ return 8; }
-
-    /** Returns the number of columns. */
-    int ColumnCount() const{ return 8; }
-
-    /** Removes all pieces from the board. */
-    void Clear();
+    explicit Board(QObject *parent = 0);
+    virtual ~Board();
 
 
-
-    /** Initializes a new piece on the given square.  The board will take
-        ownership of the piece's memory.
-        \returns A reference to the square on which the piece was initialized.
+    /** \name AbstractBoard interface
+     *  \{
     */
-    Square *InitPiece(Piece *, int column, int row);
-
-    /** Moves the piece at the source to the given destination square.
-     *  If the destination square is occupied, its piece will be replaced by
-     *  the one from source. If source is an empty square, this function does nothing.
-   
-        \note This does not do any chess rules validation, so it will assume any move
-        is legal.
-    */
-    void Move(Square &source, Square &dest);
-    
-    /** Removes any piece that is on the square. */
-    void RemovePiece(int column, int row);
-
-    /** Returns the square at the given column and row. */
-    Square const &GetSquare(int column, int row) const;
-    /** Returns the square at the given column and row. */
-    Square &GetSquare(int column, int row);
+    virtual void SetPiece(const Piece &, int column, int row);
+    virtual Square const &GetSquare(int column, int row) const;
+    /** \}*/
 
 };
 
 
-END_NAMESPACE_GKCHESS;
+}
 
 #endif // GKCHESS_BOARD_H

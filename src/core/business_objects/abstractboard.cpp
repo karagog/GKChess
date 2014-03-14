@@ -12,29 +12,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "square.h"
-#include "piece.h"
+#include "abstractboard.h"
 
 NAMESPACE_GKCHESS;
 
-Square::~Square()
+
+AbstractBoard::AbstractBoard(QObject *p)
+    :QObject(p)
 {}
 
-bool Square::operator == (const Square &other)
-{
-    return GetColumn() == other.GetColumn() &&
-            GetRow() == other.GetRow();
-}
+AbstractBoard::~AbstractBoard()
+{}
 
-bool Square::operator != (const Square &other)
-{
-    return GetColumn() != other.GetColumn() ||
-            GetRow() != other.GetRow();
-}
 
-bool Square::IsDarkSquare() const
+void AbstractBoard::Clear()
 {
-    return (0x1 & GetRow()) == (0x1 & GetColumn());
+    for(int i = 0; i < ColumnCount(); ++i)
+        for(int j = 0; j < RowCount(); ++j)
+            SetPiece(Piece::NoPiece, i, j);
 }
 
 

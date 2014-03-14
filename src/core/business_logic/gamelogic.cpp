@@ -45,7 +45,7 @@ Piece::AllegienceEnum GameLogic::WhoseTurn() const
 void GameLogic::_init_piece(int c, int r, Piece::AllegienceEnum a, Piece::PieceTypeEnum t)
 {
     (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)
-            ->InsertMulti(t, m_board.InitPiece(new Piece(t, a), c, r));
+            ->InsertMulti(t, m_board.SetPiece(new Piece(t, a), c, r));
 }
 
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)

@@ -23,8 +23,7 @@ NAMESPACE_GKCHESS;
 
 
 /** Describes a chess piece. */
-class Piece :
-        public GUtil::Utils::SharedData
+class Piece
 {
 public:
 
@@ -33,14 +32,14 @@ public:
     */
     enum PieceTypeEnum
     {
-        InvalidPiece = -1,
-
         King = 0,
         Queen = 1,
         Rook = 2,
         Bishop = 3,
         Knight = 4,
-        Pawn = 5
+        Pawn = 5,
+
+        NoPiece = 7
     };
 
     /** Describes which side the piece fights on.

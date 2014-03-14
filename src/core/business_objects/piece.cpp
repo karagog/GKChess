@@ -116,7 +116,7 @@ char Piece::GetAsciiChar() const
 Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
 {
     String s(3);
-    PieceTypeEnum ret = Piece::InvalidPiece;
+    PieceTypeEnum ret = Piece::NoPiece;
     s.AppendUnicode(uc);
     if(1 == s.Length())
     {

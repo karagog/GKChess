@@ -191,7 +191,7 @@ bool PGN_Parser::_new_movedata_from_string(PGN_MoveData &m, const String &s)
 
         // The first character must be a piece type, or it's a pawn
         Piece::PieceTypeEnum pt = Piece::GetTypeFromUnicodeValue(iter.UnicodeValue());
-        if(Piece::InvalidPiece != pt){
+        if(Piece::NoPiece != pt){
             m.PieceMoved = pt;
             ++iter;
         }

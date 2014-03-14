@@ -15,69 +15,57 @@ limitations under the License.*/
 #ifndef GKCHESS_SQUARE_H
 #define GKCHESS_SQUARE_H
 
-#include "gkchess_globals.h"
-#include "gutil_smartpointer.h"
+#include "gkchess_piece.h"
 
 NAMESPACE_GKCHESS;
 
-class Piece;
 
-
-/** Describes one square of the chess board. */
+/** Describes one square of the chess board.
+ *  This is an abstract interface, because its implementation depends on
+ *  the board's implementation
+*/
 class Square
 {
-    GUtil::Utils::SharedSmartPointer<Piece> piece;
 public:
 
+    /** \name Interface
+     *  This is the interface you have to implement
+     *  \{
+    */
+
     /** Holds the column that the square is in. */
-    READONLY_PROPERTY(Column, int);
+    virtual int GetColumn() const = 0;
 
     /** Holds the row that the square is in. */
-    READONLY_PROPERTY(Row, int);
+    virtual int GetRow() const = 0;
+
+    /** Returns the piece on the square. If there is no piece, then the return
+     *  object will have piece type NoPiece.
+    */
+    virtual Piece GetPiece() const = 0;
 
     /** Returns true if en passant is available on the square. */
-    PROPERTY(EnPassantAvailable, bool);
+    virtual bool GetEnPassantAvailable() const = 0;
 
-    /** Returns true if the king may castle on this square. */
-    PROPERTY(CastleAvailable, bool);
-
-
-    /** Constructing a null square is meaningless, so this only exists to support
-     *  arrays of squares. But you must later initialize it with the assignment operator.
-    */
-    Square();
-
-    /** The main constructor for a square. You must tell it what row and column it is. */
-    Square(int column, int row);
-
-    Square(const Square &);
-    Square &operator = (const Square &);
+    /** \} */
 
     virtual ~Square();
 
-    
-    /** References the piece that is on the square (if any). */
-    Piece const *GetPiece() const{ return piece; }
-    /** References the piece that is on the square (if any). */
-    Piece *GetPiece(){ return piece; }
 
-    /** Sets the piece on the square.
-     *  The pieces are shared explicitly between boards, to support not having to
-     *  reallocate a set of pieces for every board simulation.
+    /** \name Convenience Functions
+     *  Here are functions for your convenience
+     *  \{
     */
-    void SetPiece(Piece *);
 
-    /** Returns true if there is no piece on the square. */
-    bool IsEmpty() const{ return NULL == GetPiece(); }
 
     /** A convenience function that tells you if this square is light or dark. */
-    bool IsDarkSquare() const{ return (0x1 & GetRow()) == (0x1 & GetColumn()); }
+    bool IsDarkSquare() const;
 
-    /** Returns true if the squares are the same. */
-    bool operator == (const Square &other);
+    bool operator == (const Square &);
+    bool operator != (const Square &);
 
-    /** Returns true if the squares are not the same. */
-    bool operator != (const Square &other);
+
+    /** \} */
 
 };
 
