@@ -18,6 +18,11 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
+Piece::Piece()
+    :_p_Type(NoPiece),
+      _p_Allegience(White)
+{}
+
 Piece::Piece(PieceTypeEnum pt, AllegienceEnum a)
     :_p_Type(pt),
       _p_Allegience(a)

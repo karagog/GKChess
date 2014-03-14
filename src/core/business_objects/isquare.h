@@ -12,19 +12,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_SQUARE_H
-#define GKCHESS_SQUARE_H
+#ifndef GKCHESS_ISQUARE_H
+#define GKCHESS_ISQUARE_H
 
-#include "gkchess_piece.h"
+#include "gkchess_globals.h"
 
 NAMESPACE_GKCHESS;
 
 
+class Piece;
+
+
 /** Describes one square of the chess board.
- *  This is an abstract interface, because its implementation depends on
+ *  This is an interface because its implementation depends on
  *  the board's implementation
 */
-class Square
+class ISquare
 {
 public:
 
@@ -39,18 +42,16 @@ public:
     /** Holds the row that the square is in. */
     virtual int GetRow() const = 0;
 
-    /** Returns the piece on the square. If there is no piece, then the return
-     *  object will have piece type NoPiece.
+    /** Returns the piece on the square. If there is no piece, then a null pointer is returned.
     */
-    virtual Piece GetPiece() const = 0;
+    virtual Piece const *GetPiece() const = 0;
 
     /** Returns true if en passant is available on the square. */
     virtual bool GetEnPassantAvailable() const = 0;
 
     /** \} */
 
-    virtual ~Square();
-
+    
 
     /** \name Convenience Functions
      *  Here are functions for your convenience
@@ -59,10 +60,21 @@ public:
 
 
     /** A convenience function that tells you if this square is light or dark. */
-    bool IsDarkSquare() const;
+    bool IsDarkSquare() const{ 
+        return (0x1 & GetRow()) == (0x1 & GetColumn()); 
+    }
 
-    bool operator == (const Square &);
-    bool operator != (const Square &);
+    /** Compares squares based on their row and column. */
+    bool operator == (const ISquare &other){
+        return GetColumn() == other.GetColumn() &&
+                GetRow() == other.GetRow();
+    }
+    
+    /** Compares squares based on their row and column. */
+    bool operator != (const ISquare &other){
+        return GetColumn() != other.GetColumn() ||
+                GetRow() != other.GetRow();
+    }
 
 
     /** \} */
@@ -72,4 +84,4 @@ public:
 
 END_NAMESPACE_GKCHESS;
 
-#endif // GKCHESS_SQUARE_H
+#endif // GKCHESS_ISQUARE_H

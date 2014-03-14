@@ -53,10 +53,10 @@ public:
     struct MoveData
     {
         /** The starting square.  If the move was a castle this will be null. */
-        Square const *Source;
+        ISquare const *Source;
 
         /** The ending square.  If the move was a castle this will be null. */
-        Square const *Destination;
+        ISquare const *Destination;
 
         /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
         enum CastleTypeEnum
@@ -99,7 +99,7 @@ public:
      *
      *  This lookup is done in O(log(N)) time, where N is the number of different types of pieces.
     */
-    GUtil::DataObjects::Vector<Square const *> FindPieces(Piece::AllegienceEnum,
+    GUtil::DataObjects::Vector<ISquare const *> FindPieces(Piece::AllegienceEnum,
                                                           Piece::PieceTypeEnum) const;
 
     /** Encodes the ways a move can be validated. */
@@ -127,11 +127,11 @@ public:
     };
 
     /** Determines if the move is valid, according to the rules of standard chess. */
-    virtual MoveValidationEnum ValidateMove(const Square &source, const Square &destination) const;
+    virtual MoveValidationEnum ValidateMove(const ISquare &source, const ISquare &destination) const;
 
 
     /** Returns a list of squares that are valid for the given square and piece. */
-    ::GUtil::DataObjects::Vector<Square const *> GetPossibleMoves(const Square &, const Piece &) const;
+    ::GUtil::DataObjects::Vector<ISquare const *> GetPossibleMoves(const ISquare &, const Piece &) const;
 
 
     /** Moves based on a PGN_MoveData object, which is created from the PGN parser. */
@@ -165,8 +165,8 @@ signals:
 private:
 
     // This facilitates fast piece lookups
-    GUtil::DataObjects::Map<Piece::PieceTypeEnum, Square const *> m_whitePieceIndex;
-    GUtil::DataObjects::Map<Piece::PieceTypeEnum, Square const *> m_blackPieceIndex;
+    GUtil::DataObjects::Map<Piece::PieceTypeEnum, ISquare const *> m_whitePieceIndex;
+    GUtil::DataObjects::Map<Piece::PieceTypeEnum, ISquare const *> m_blackPieceIndex;
 
     GUtil::DataObjects::Vector<MoveData> m_moveHistory;
     GINT32 m_moveHistoryIndex;

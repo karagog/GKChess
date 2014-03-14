@@ -33,7 +33,7 @@ void GameModel::SetupNewGame(SetupTypeEnum s)
     endResetModel();
 }
 
-void GameModel::Move(Square &s, Square &d)
+void GameModel::Move(ISquare &s, ISquare &d)
 {
     GameLogic::Move(s, d);
 }
@@ -87,7 +87,7 @@ void GameModel::_updated_squares(int n)
     {
         for(int j = 0; j < GetBoard().RowCount(); ++j)
         {
-            Square const &s( GetBoard().GetSquare(i, j) );
+            ISquare const &s( GetBoard().GetSquare(i, j) );
             if((0 == n && s.IsDarkSquare()) ||
                     (1 == n && !s.IsDarkSquare()))
             {
@@ -104,7 +104,7 @@ void GameModel::_updated_pieces()
     {
         for(int j = 0; j < GetBoard().RowCount(); ++j)
         {
-            Square const &s( GetBoard().GetSquare(i, j) );
+            ISquare const &s( GetBoard().GetSquare(i, j) );
             if(s.GetPiece())
             {
                 QModelIndex ind( ConvertSquareToIndex(s) );
@@ -115,9 +115,9 @@ void GameModel::_updated_pieces()
 }
 
 
-Square const *GameModel::ConvertIndexToSquare(const QModelIndex &i) const
+ISquare const *GameModel::ConvertIndexToSquare(const QModelIndex &i) const
 {
-    Square const *ret(0);
+    ISquare const *ret(0);
     int r = i.row(), c = i.column();
     if(i.isValid() &&
             this == i.model() &&
@@ -127,7 +127,7 @@ Square const *GameModel::ConvertIndexToSquare(const QModelIndex &i) const
     return ret;
 }
 
-QModelIndex GameModel::ConvertSquareToIndex(const Square &s) const
+QModelIndex GameModel::ConvertSquareToIndex(const ISquare &s) const
 {
     QModelIndex ret;
 
@@ -158,7 +158,7 @@ int GameModel::columnCount(const QModelIndex &i) const
 QVariant GameModel::data(const QModelIndex &i, int role) const
 {
     QVariant ret;
-    Square const *s = ConvertIndexToSquare(i);
+    ISquare const *s = ConvertIndexToSquare(i);
     if(s)
     {
         Piece const *p = s->GetPiece();

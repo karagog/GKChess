@@ -61,10 +61,10 @@ public:
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
     */
-    Square const *ConvertIndexToSquare(const QModelIndex &) const;
+    ISquare const *ConvertIndexToSquare(const QModelIndex &) const;
 
     /** Returns the model index corresponding to the given square. */
-    QModelIndex ConvertSquareToIndex(const Square &) const;
+    QModelIndex ConvertSquareToIndex(const ISquare &) const;
 
 
     inline QColor GetLightColor() const{ return m_lightColor; }
@@ -84,7 +84,7 @@ public:
      *  \{
     */
     virtual void SetupNewGame(SetupTypeEnum = StandardChess);
-    virtual void Move(Square &, Square &);
+    virtual void Move(ISquare &, ISquare &);
     virtual void Undo();
     virtual void Redo();
     /** \} */

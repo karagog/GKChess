@@ -64,7 +64,7 @@ static QString __generate_row_style(const BoardView::HtmlFormattingOptions &)
     return "vertical-align:bottom;";
 }
 
-static QColor __get_square_color(Square const &s, const BoardView::HtmlFormattingOptions &f)
+static QColor __get_square_color(ISquare const &s, const BoardView::HtmlFormattingOptions &f)
 {
     QColor ret;
     if((0x1 & s.GetColumn()) == (0x1 &s.GetRow()))
@@ -75,7 +75,7 @@ static QColor __get_square_color(Square const &s, const BoardView::HtmlFormattin
 }
 
 
-static QString __generate_cell_style(const Square &s, const BoardView::HtmlFormattingOptions &f)
+static QString __generate_cell_style(const ISquare &s, const BoardView::HtmlFormattingOptions &f)
 {
     return QString("width:%1pt;"
                    "height:%2pt;"
@@ -138,7 +138,7 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
             // Iterate through the columns and write each cell
             for(int j = 0; j < b.ColumnCount(); ++j)
             {
-                Square const &s( b.GetSquare(j, i) );
+                ISquare const &s( b.GetSquare(j, i) );
 
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", __generate_cell_style(s, f));

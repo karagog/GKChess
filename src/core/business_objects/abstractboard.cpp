@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "abstractboard.h"
+#include "piece.h"
 
 NAMESPACE_GKCHESS;
 
@@ -29,7 +30,7 @@ void AbstractBoard::Clear()
 {
     for(int i = 0; i < ColumnCount(); ++i)
         for(int j = 0; j < RowCount(); ++j)
-            SetPiece(Piece::NoPiece, i, j);
+            SetPiece(Piece(), i, j);
 }
 
 

@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_BOARD_H
 
 #include "gkchess_abstractboard.h"
+#include "gkchess_piece.h"
 
 namespace GKChess{
 
@@ -28,7 +29,29 @@ class Board :
         public AbstractBoard
 {
     Q_OBJECT
-    void *d;
+    
+    /** Our square implementation. */
+    class Square :
+            public ISquare
+    {
+        // For fast lookups
+        Piece m_piece;
+        char m_column;
+        char m_row;
+        bool m_enPassantAvailable;
+    public:
+
+        Square(int col, int row);
+        virtual int GetColumn() const;
+        virtual int GetRow() const;
+        virtual bool GetEnPassantAvailable() const;
+        virtual Piece const *GetPiece() const;
+
+        /** This function is not part of the interface, but it's necessary anyways */
+        void SetPiece(const Piece &p);
+    };
+    
+    GUtil::DataObjects::Vector<Square> m_squares;
 public:
 
     explicit Board(QObject *parent = 0);
@@ -39,7 +62,7 @@ public:
      *  \{
     */
     virtual void SetPiece(const Piece &, int column, int row);
-    virtual Square const &GetSquare(int column, int row) const;
+    virtual ISquare const &GetSquare(int column, int row) const;
     /** \}*/
 
 };

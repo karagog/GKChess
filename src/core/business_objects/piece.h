@@ -54,8 +54,12 @@ public:
     };
 
 
+    /** Constructs an empty piece (type NoPiece). */
+    Piece();
+    
     /** Constructs a piece with the given allegience and type. */
     Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
+    
     virtual ~Piece();
 
     /** Returns the type of the piece. */

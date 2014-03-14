@@ -97,9 +97,9 @@ void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
     emit NotifyNewGame((int)ste);
 }
 
-Vector<Square const *> GameLogic::FindPieces(Piece::AllegienceEnum a, Piece::PieceTypeEnum t) const
+Vector<ISquare const *> GameLogic::FindPieces(Piece::AllegienceEnum a, Piece::PieceTypeEnum t) const
 {
-    Vector<Square const *> ret( (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)->Values(t) );
+    Vector<ISquare const *> ret( (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)->Values(t) );
 
     // To help debug, make sure all the returned pieces are the correct type
     for(GUINT32 i = 0; i < ret.Length(); ++i){
@@ -111,16 +111,16 @@ Vector<Square const *> GameLogic::FindPieces(Piece::AllegienceEnum a, Piece::Pie
     return ret;
 }
 
-Vector<Square const *> GameLogic::GetPossibleMoves(const Square &s, const Piece &p) const
+Vector<ISquare const *> GameLogic::GetPossibleMoves(const ISquare &s, const Piece &p) const
 {
-    Vector<Square const *> ret;
+    Vector<ISquare const *> ret;
 
     switch(p.GetType())
     {
     case Piece::Pawn:
     {
         // The pawn can always move one or two steps forward if not capturing
-        Square *temp1(NULL), *temp2(NULL);
+        ISquare *temp1(NULL), *temp2(NULL);
         switch(p.GetAllegience())
         {
         case Piece::White:
@@ -178,10 +178,10 @@ int __cmp_with_zero(int n)
 // This function assumes that source and destination are in a straight line away from each
 //  other, horizontally, vertically or diagonally. Any other inputs will probably seg fault.
 // It is this way intentionally as an optimization to make it as fast as possible.
-static bool __is_path_blocked(Board const &b, Square const &s, Square const &d, Piece::AllegienceEnum a)
+static bool __is_path_blocked(Board const &b, ISquare const &s, ISquare const &d, Piece::AllegienceEnum a)
 {
     bool ret = false;
-    Square const *cur = &s;
+    ISquare const *cur = &s;
     int cmp_res_col = __cmp_with_zero(d.GetColumn() - cur->GetColumn());
     int cmp_res_row = __cmp_with_zero(d.GetRow() - cur->GetRow());
 
@@ -207,7 +207,7 @@ static bool __is_path_blocked(Board const &b, Square const &s, Square const &d, 
     return ret;
 }
 
-GameLogic::MoveValidationEnum GameLogic::ValidateMove(const Square &s, const Square &d) const
+GameLogic::MoveValidationEnum GameLogic::ValidateMove(const ISquare &s, const ISquare &d) const
 {
     Piece const *p( s.GetPiece() );
     if(!p)
@@ -265,7 +265,7 @@ void GameLogic::Move(const MoveData &m)
     _move(m);
 }
 
-static void __validate_square(Square const *s)
+static void __validate_square(ISquare const *s)
 {
     if(NULL == s)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Both the source and destination squares must be given");
@@ -276,7 +276,7 @@ static void __validate_square(Square const *s)
 
 void GameLogic::_move(const MoveData &md, bool reverse)
 {
-    Square *source = 0, *dest = 0;
+    ISquare *source = 0, *dest = 0;
 
     if(reverse)
     {
@@ -339,8 +339,8 @@ static int __allegience_to_rank_increment(Piece::AllegienceEnum a)
 }
 
 static bool __is_move_valid_for_bishop(Board const *b,
-                                       Square const *s,
-                                       Square const *d,
+                                       ISquare const *s,
+                                       ISquare const *d,
                                        Piece::AllegienceEnum a)
 {
     int col_diff_abs = Abs(s->GetColumn() - d->GetColumn());
@@ -350,8 +350,8 @@ static bool __is_move_valid_for_bishop(Board const *b,
 }
 
 static bool __is_move_valid_for_knight(Board const *b,
-                                       Square const *s,
-                                       Square const *d,
+                                       ISquare const *s,
+                                       ISquare const *d,
                                        Piece::AllegienceEnum a)
 {
     GUTIL_UNUSED(b);
@@ -363,8 +363,8 @@ static bool __is_move_valid_for_knight(Board const *b,
 }
 
 static bool __is_move_valid_for_rook(Board const *b,
-                                     Square const *s,
-                                     Square const *d,
+                                     ISquare const *s,
+                                     ISquare const *d,
                                      Piece::AllegienceEnum a)
 {
     int col_diff = s->GetColumn() - d->GetColumn();
@@ -376,8 +376,8 @@ static bool __is_move_valid_for_rook(Board const *b,
 }
 
 static bool __is_move_valid_for_queen(Board const *b,
-                                      Square const *s,
-                                      Square const *d,
+                                      ISquare const *s,
+                                      ISquare const *d,
                                       Piece::AllegienceEnum a)
 {
     int col_diff_abs = Abs(s->GetColumn() - d->GetColumn());
@@ -389,8 +389,8 @@ static bool __is_move_valid_for_queen(Board const *b,
 }
 
 static bool __is_move_valid_for_king(Board const *b,
-                                     Square const *s,
-                                     Square const *d,
+                                     ISquare const *s,
+                                     ISquare const *d,
                                      Piece::AllegienceEnum a)
 {
     GUTIL_UNUSED(b);
@@ -423,7 +423,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 
 
         // Get the destination square (this is always given)
-        Square *dest = &m_board.GetSquare(m.DestFile - 'a', m.DestRank - 1);
+        ISquare *dest = &m_board.GetSquare(m.DestFile - 'a', m.DestRank - 1);
         ret.Destination = dest;
 
         if(m.Flags.TestFlag(PGN_MoveData::Capture))
@@ -439,7 +439,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
         int tmp_source_column = 0 == m.SourceFile ? -1 : m.SourceFile - 'a';
         if(m.SourceFile != 0 && m.SourceRank != 0)
         {
-            Square *s = &m_board.GetSquare(tmp_source_column, m.SourceRank - 1);
+            ISquare *s = &m_board.GetSquare(tmp_source_column, m.SourceRank - 1);
 
             // Do a sanity check on the square they specified
             if(NULL == s->GetPiece())
@@ -470,13 +470,13 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                             1 != Abs(tmp_source_column - ret.Destination->GetColumn()))
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file for pawn capture");
 
-                    Vector<Square const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                    Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
                     if(0 == possible_sources.Length())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "There are no pieces of that type to move");
 
                     for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
                     {
-                        Square const *s = possible_sources[i];
+                        ISquare const *s = possible_sources[i];
 
                         if((1 == Abs(s->GetColumn() - ret.Destination->GetColumn())) &&
                                 s->GetRow() == ret.Destination->GetRow() + __allegience_to_rank_increment(turn))
@@ -512,7 +512,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                     if(0 > r || r > 7)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-                    Square const *s = &m_board.GetSquare(ret.Destination->GetColumn(), r);
+                    ISquare const *s = &m_board.GetSquare(ret.Destination->GetColumn(), r);
                     if(NULL == s->GetPiece())
                     {
                         // The pawn can move two squares on the first move
@@ -537,10 +537,10 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
             {
                 // Knights are easy, because they cannot be blocked. If they are in range of
                 //  the square then it is a valid move.
-                Vector<Square const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
                 for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    Square const *s = possible_sources[i];
+                    ISquare const *s = possible_sources[i];
 
                     if(__is_move_valid_for_knight(&m_board, s, ret.Destination, turn))
                     {
@@ -564,10 +564,10 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::Bishop:
             {
-                Vector<Square const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
                 for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    Square const *s = possible_sources[i];
+                    ISquare const *s = possible_sources[i];
 
                     if(__is_move_valid_for_bishop(&m_board, s, ret.Destination, turn))
                     {
@@ -591,10 +591,10 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::Rook:
             {
-                Vector<Square const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
                 for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    Square const *s = possible_sources[i];
+                    ISquare const *s = possible_sources[i];
 
                     if(__is_move_valid_for_rook(&m_board, s, ret.Destination, turn))
                     {
@@ -618,10 +618,10 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::Queen:
             {
-                Vector<Square const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
                 for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    Square const *s = possible_sources[i];
+                    ISquare const *s = possible_sources[i];
 
                     if(__is_move_valid_for_queen(&m_board, s, ret.Destination, turn))
                     {
@@ -645,12 +645,12 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::King:
             {
-                Vector<Square const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
 
                 // There can only be one king
                 GASSERT(1 == possible_sources.Length());
 
-                Square const *s = possible_sources[0];
+                ISquare const *s = possible_sources[0];
                 if(__is_move_valid_for_king(&m_board, s, ret.Destination, turn))
                     ret.Source = s;
             }

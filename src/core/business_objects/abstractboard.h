@@ -15,8 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_ABSTRACTBOARD_H
 #define GKCHESS_ABSTRACTBOARD_H
 
-#include "gkchess_square.h"
-#include "gkchess_piece.h"
+#include "gkchess_isquare.h"
 #include <QObject>
 
 namespace GKChess{
@@ -46,13 +45,13 @@ public:
     virtual void SetPiece(const Piece &, int column, int row) = 0;
 
     /** Convenience function returns the piece on the given square. */
-    Piece GetPiece(int column, int row) const{ return GetSquare(column, row).GetPiece(); }
+    Piece const *GetPiece(int column, int row) const{ return GetSquare(column, row).GetPiece(); }
 
     /** Returns the square at the given column and row.
      *  The square is valid as long as the board is.
      * \warning It is not the responsibility of this class to check inputs for valid bounds
     */
-    virtual Square const &GetSquare(int column, int row) const = 0;
+    virtual ISquare const &GetSquare(int column, int row) const = 0;
 
 
     /** Returns the number of rows. */
