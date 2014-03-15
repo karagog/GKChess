@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_piece.h"
 #include "gkchess_pgn_move_data.h"
+#include "gkchess_board.h"
 #include "gutil_map.h"
 
 NAMESPACE_GKCHESS;
@@ -35,6 +36,11 @@ public:
     {
         /** The string tags that precede the moves. */
         GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> Tags;
+
+        /** Stores the initial position given in the PGN file, in the SetUp tag in X-FEN notation.
+         *  If the board is null, then you can assume the standard chess starting position.
+        */
+        GUtil::Utils::SmartPointer<Board> InitialPosition;
         
         /** All the move data. */
         GUtil::DataObjects::Vector<PGN_MoveData> Moves;
@@ -42,6 +48,13 @@ public:
         /** The result is 1 if White won, -1 if Black won and 0 if it was a draw. */
         int Result;    
     };
+
+    /** Returns a board object with the position given in X-FEN notation.
+     *
+     *  Since X-FEN is backwards compatible with FEN (Forsyth-Edwards Notation) you
+     *  can also pass FEN strings to it.
+    */
+    static Board FromX_FEN(const GUtil::DataObjects::String &);
     
     /** Returns the data that was parsed from the file. */
     Data const &GetData() const{ return m_data; }

@@ -46,9 +46,6 @@ public:
     */
     virtual Piece const *GetPiece() const = 0;
 
-    /** Returns true if en passant is available on the square. */
-    virtual bool GetEnPassantAvailable() const = 0;
-
     /** \} */
 
     

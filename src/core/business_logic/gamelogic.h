@@ -67,16 +67,17 @@ public:
         }
         CastleType;
 
-        /** A reference to the piece being moved. */
-        GUtil::Utils::SharedSmartPointer<Piece> PieceMoved;
+        /** The piece being moved. */
+        Piece PieceMoved;
 
-        /** Stores a reference to the captured piece, if any. If this is null then the
+        /** The captured piece, if any. If this is type NoPiece then the
          *  move did not involve a capture.
         */
-        GUtil::Utils::SharedSmartPointer<Piece> PieceCaptured;
+        Piece PieceCaptured;
 
-        /** The piece that was promoted, if any. */
-        GUtil::Utils::SharedSmartPointer<Piece> PiecePromoted;
+        /** The piece that was promoted, if any. If this is type NoPiece then the
+         *  move did not involve a promotion. */
+        Piece PiecePromoted;
 
         MoveData();
     };

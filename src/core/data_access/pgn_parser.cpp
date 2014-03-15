@@ -19,6 +19,8 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
+#define SETUP_TAG "SetUp"
+
 PGN_Parser::PGN_Parser(String const &s)
 {
     if(!s.IsValidUTF8())
@@ -27,6 +29,12 @@ PGN_Parser::PGN_Parser(String const &s)
 
     typename String::UTF8ConstIterator move_section_start( _parse_heading(s) );
     _parse_moves(String(move_section_start, s.endUTF8()).Replace("\n", " "));
+
+    // If there was a "SetUp" tag, then parse the initial position
+    if(m_data.Tags.Contains(SETUP_TAG))
+    {
+        m_data.InitialPosition = new Board(FromX_FEN(m_data.Tags.Values(SETUP_TAG)[0]));
+    }
 }
 
 typename String::UTF8ConstIterator PGN_Parser::_parse_heading(const String &pgn_text)
@@ -333,6 +341,13 @@ void PGN_Parser::_parse_moves(const String &move_text)
             number_text = sl2[2];
         }
     }
+}
+
+Board PGN_Parser::FromX_FEN(const String &s)
+{
+    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    Board ret;
+    return ret;
 }
 
 

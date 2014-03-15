@@ -21,7 +21,7 @@ limitations under the License.*/
 namespace GKChess{
 
 
-/** The implementation for the GKChess board.
+/** The implementation for a standard chess board.
  *  See AbstractBoard for the interface description.
  * \sa AbstractBoard
 */
@@ -34,17 +34,15 @@ class Board :
     class Square :
             public ISquare
     {
-        // For fast lookups
+        // For fast lookups this is implemented as quickly queryable data types
         Piece m_piece;
-        char m_column;
-        char m_row;
-        bool m_enPassantAvailable;
+        int m_column;
+        int m_row;
     public:
 
         Square(int col, int row);
         virtual int GetColumn() const;
         virtual int GetRow() const;
-        virtual bool GetEnPassantAvailable() const;
         virtual Piece const *GetPiece() const;
 
         /** This function is not part of the interface, but it's necessary anyways */
@@ -52,6 +50,9 @@ class Board :
     };
     
     GUtil::DataObjects::Vector<Square> m_squares;
+    ISquare const *m_enPassantSquare;
+    GUINT8 m_whiteCastleInfo;
+    GUINT8 m_blackCastleInfo;
 public:
 
     explicit Board(QObject *parent = 0);
@@ -61,8 +62,14 @@ public:
     /** \name AbstractBoard interface
      *  \{
     */
+    virtual int ColumnCount() const;
+    virtual int RowCount() const;
     virtual void SetPiece(const Piece &, int column, int row);
-    virtual ISquare const &GetSquare(int column, int row) const;
+    virtual ISquare const &SquareAt(int column, int row) const;
+    virtual ISquare const *GetEnPassantSquare() const;
+    virtual void SetEnPassantSquare(ISquare const *);
+    virtual GUINT8 GetCastleInfo(Piece::AllegienceEnum) const;
+    virtual void SetCastleInfo(Piece::AllegienceEnum, GUINT8);
     /** \}*/
 
 };

@@ -44,8 +44,9 @@ Piece::AllegienceEnum GameLogic::WhoseTurn() const
 
 void GameLogic::_init_piece(int c, int r, Piece::AllegienceEnum a, Piece::PieceTypeEnum t)
 {
+    m_board.SetPiece(Piece(t, a), c, r);
     (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)
-            ->InsertMulti(t, m_board.SetPiece(new Piece(t, a), c, r));
+            ->InsertMulti(t, &m_board.SquareAt(c, r));
 }
 
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
@@ -187,7 +188,7 @@ static bool __is_path_blocked(Board const &b, ISquare const &s, ISquare const &d
 
     while(1)
     {
-        cur = &b.GetSquare(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
+        cur = &b.SquareAt(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
 
         Piece const *p = cur->GetPiece();
         if(cur == &d)
@@ -265,19 +266,8 @@ void GameLogic::Move(const MoveData &m)
     _move(m);
 }
 
-static void __validate_square(ISquare const *s)
-{
-    if(NULL == s)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Both the source and destination squares must be given");
-
-    if(0 > s->GetRow() || 7 < s->GetRow() || 0 > s->GetColumn() || 7 < s->GetColumn())
-        THROW_NEW_GUTIL_EXCEPTION2(IndexOutOfRangeException, "Invalid square");
-}
-
 void GameLogic::_move(const MoveData &md, bool reverse)
 {
-    ISquare *source = 0, *dest = 0;
-
     if(reverse)
     {
         if(MoveData::CastleNormal == md.CastleType)
@@ -290,18 +280,11 @@ void GameLogic::_move(const MoveData &md, bool reverse)
         }
         else
         {
-            __validate_square(md.Source);
-            __validate_square(md.Destination);
-
-            // Get the non-const squares
-            source = &m_board.GetSquare(md.Source->GetColumn(), md.Source->GetRow());
-            dest = &m_board.GetSquare(md.Destination->GetColumn(), md.Destination->GetRow());
-
-            source->SetPiece(md.PieceMoved);
-            if(md.PieceCaptured)
-                dest->SetPiece(md.PieceCaptured);
+            m_board.SetPiece(md.PieceMoved, md.Source->GetColumn(), md.Source->GetRow());
+            if(Piece::NoPiece != md.PieceCaptured.GetType())
+                m_board.SetPiece(md.PieceCaptured, md.Destination->GetColumn(), md.Destination->GetRow());
             else
-                dest->SetPiece(0);
+                m_board.SetPiece(Piece(), md.Destination->GetColumn(), md.Destination->GetRow());
         }
     }
     else
@@ -316,19 +299,13 @@ void GameLogic::_move(const MoveData &md, bool reverse)
         }
         else
         {
-            __validate_square(md.Source);
-            __validate_square(md.Destination);
-
             // Get the non-const squares
-            source = &m_board.GetSquare(md.Source->GetColumn(), md.Source->GetRow());
-            dest = &m_board.GetSquare(md.Destination->GetColumn(), md.Destination->GetRow());
-
-            if(md.PiecePromoted)
-                dest->SetPiece(md.PiecePromoted);
+            if(Piece::NoPiece != md.PiecePromoted.GetType())
+                m_board.SetPiece(md.PiecePromoted, md.Destination->GetColumn(), md.Destination->GetRow());
             else
-                dest->SetPiece(md.PieceMoved);
+                m_board.SetPiece(md.PieceMoved, md.Destination->GetColumn(), md.Destination->GetRow());
 
-            source->SetPiece(0);
+            m_board.SetPiece(Piece(), md.Source->GetColumn(), md.Source->GetRow());
         }
     }
 }
@@ -423,7 +400,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 
 
         // Get the destination square (this is always given)
-        ISquare *dest = &m_board.GetSquare(m.DestFile - 'a', m.DestRank - 1);
+        ISquare const *dest = &m_board.SquareAt(m.DestFile - 'a', m.DestRank - 1);
         ret.Destination = dest;
 
         if(m.Flags.TestFlag(PGN_MoveData::Capture))
@@ -439,7 +416,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
         int tmp_source_column = 0 == m.SourceFile ? -1 : m.SourceFile - 'a';
         if(m.SourceFile != 0 && m.SourceRank != 0)
         {
-            ISquare *s = &m_board.GetSquare(tmp_source_column, m.SourceRank - 1);
+            ISquare *s = &m_board.SquareAt(tmp_source_column, m.SourceRank - 1);
 
             // Do a sanity check on the square they specified
             if(NULL == s->GetPiece())
@@ -512,13 +489,13 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                     if(0 > r || r > 7)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-                    ISquare const *s = &m_board.GetSquare(ret.Destination->GetColumn(), r);
+                    ISquare const *s = &m_board.SquareAt(ret.Destination->GetColumn(), r);
                     if(NULL == s->GetPiece())
                     {
                         // The pawn can move two squares on the first move
                         r = s->GetRow() + __allegience_to_rank_increment(turn);
                         if((turn == Piece::White && 1 != r) || (turn == Piece::Black && 6 != r) ||
-                                NULL == (s = &m_board.GetSquare(ret.Destination->GetColumn(), r))->GetPiece())
+                                NULL == (s = &m_board.SquareAt(ret.Destination->GetColumn(), r))->GetPiece())
                             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
                     }
 
@@ -663,7 +640,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
         if(NULL == ret.Source)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-        ret.PieceMoved = m_board.GetSquare(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
+        ret.PieceMoved = m_board.SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
         GASSERT(NULL != ret.PieceMoved);
 
         // Add a promoted piece, if necessary

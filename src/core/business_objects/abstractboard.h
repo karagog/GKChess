@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_ABSTRACTBOARD_H
 
 #include "gkchess_isquare.h"
+#include "gkchess_piece.h"
 #include <QObject>
 
 namespace GKChess{
@@ -45,28 +46,51 @@ public:
     virtual void SetPiece(const Piece &, int column, int row) = 0;
 
     /** Convenience function returns the piece on the given square. */
-    Piece const *GetPiece(int column, int row) const{ return GetSquare(column, row).GetPiece(); }
+    Piece const *GetPiece(int column, int row) const;
 
     /** Returns the square at the given column and row.
      *  The square is valid as long as the board is.
      * \warning It is not the responsibility of this class to check inputs for valid bounds
     */
-    virtual ISquare const &GetSquare(int column, int row) const = 0;
+    virtual ISquare const &SquareAt(int column, int row) const = 0;
+
+    /** Returns the en passant square, if there is one. If not then returns null. */
+    virtual ISquare const *GetEnPassantSquare() const = 0;
+
+    /** Sets the en passant square, or clears it if you pass null */
+    virtual void SetEnPassantSquare(ISquare const *) = 0;
+
+    /** Returns the castle information, which is represented as the files of the rooks'
+     *  initial positions.  If So in standard chess this is (0,7), but is flexible enough
+     *  to support non-standard chess variants where the rooks can be elsewhere.
+     *
+     *  \returns A char with the first 4 bits as the first rook position, and the last 4
+     *  bits as the second rook position.  The position is given as a base-1 index, so you
+     *  can compare this char with 0 to see if castling is available at all before testing
+     *  further.  This is done for efficiency's sake, so you can quickly query the castle info.
+    */
+    virtual GUINT8 GetCastleInfo(Piece::AllegienceEnum) const = 0;
+
+    /** Sets the castle info for the allegience.
+     *
+     *  \param info A char with the first 4 bits as the first rook position, and the last 4
+     *  bits as the second rook position.  The position is given as a base-1 index, so you
+     *  can compare this char with 0 to see if castling is available at all before testing
+     *  further.  This is done for efficiency's sake, so you can quickly query the castle info.
+    */
+    virtual void SetCastleInfo(Piece::AllegienceEnum, GUINT8 info) = 0;
 
 
     /** Returns the number of rows. */
-    int RowCount() const{ return 8; }
+    virtual int RowCount() const = 0;
 
     /** Returns the number of columns. */
-    int ColumnCount() const{ return 8; }
+    virtual int ColumnCount() const = 0;
 
-    /** This function is provided for convenience, and merely iterates through the
-     *  squares and removes their pieces
-     *
-     * \note At the time of implementation, I couldn't see a reason to make this virtual,
-     * but I may think of a compelling reason later.
+    /** This function has a basic implementation provided for convenience, which merely
+     *  iterates through the squares and removes their pieces. Override it if you like.
     */
-    void Clear();
+    virtual void Clear();
 
 
 signals:

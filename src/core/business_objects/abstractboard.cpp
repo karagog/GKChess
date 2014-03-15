@@ -25,6 +25,10 @@ AbstractBoard::AbstractBoard(QObject *p)
 AbstractBoard::~AbstractBoard()
 {}
 
+Piece const *AbstractBoard::GetPiece(int column, int row) const
+{
+    return SquareAt(column, row).GetPiece();
+}
 
 void AbstractBoard::Clear()
 {
