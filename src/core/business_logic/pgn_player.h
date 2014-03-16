@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_PGN_PLAYER_H
 
 #include "gkchess_gamelogic.h"
+#include "gkchess_pgn_parser.h"
 #include "gutil_strings.h"
 #include "gutil_map.h"
 #include "gutil_flags.h"

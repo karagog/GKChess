@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "pgn_player.h"
-#include "gkchess_pgn_parser.h"
 #include "gutil_file.h"
 
 USING_NAMESPACE_GUTIL1(DataAccess);

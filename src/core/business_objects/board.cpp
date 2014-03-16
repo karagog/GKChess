@@ -50,6 +50,9 @@ void Board::Square::SetPiece(const Piece &p)
 Board::Board(QObject *parent)
     :AbstractBoard(parent),
       m_squares(ColumnCount() * RowCount()),
+      m_currentTurn(Piece::White),
+      m_halfMoveClock(0),
+      m_fullMoveNumber(0),
       m_enPassantSquare(0),
       m_whiteCastleInfo(0),
       m_blackCastleInfo(0)
@@ -57,6 +60,29 @@ Board::Board(QObject *parent)
     for(int c = 0; c < ColumnCount(); ++c)
         for(int r = 0; r < RowCount(); ++r)
             m_squares.PushBack(Square(c, r));
+}
+
+Board::Board(const Board &o)
+    :AbstractBoard(o.parent()),
+      m_squares(o.m_squares),
+      m_currentTurn(o.m_currentTurn),
+      m_halfMoveClock(o.m_halfMoveClock),
+      m_fullMoveNumber(o.m_fullMoveNumber),
+      m_enPassantSquare(o.m_enPassantSquare),
+      m_whiteCastleInfo(o.m_whiteCastleInfo),
+      m_blackCastleInfo(o.m_blackCastleInfo)
+{}
+
+Board &Board::operator = (const Board &o)
+{
+    m_squares = o.m_squares;
+    m_currentTurn = o.m_currentTurn;
+    m_halfMoveClock = o.m_halfMoveClock;
+    m_fullMoveNumber = o.m_fullMoveNumber;
+    m_enPassantSquare = o.m_enPassantSquare;
+    m_whiteCastleInfo = o.m_whiteCastleInfo;
+    m_blackCastleInfo = o.m_blackCastleInfo;
+    return *this;
 }
 
 Board::~Board()
@@ -70,6 +96,16 @@ int Board::ColumnCount() const
 int Board::RowCount() const
 {
     return 8;
+}
+
+Piece::AllegienceEnum Board::GetWhoseTurn() const
+{
+    return m_currentTurn;
+}
+
+void Board::SetWhoseTurn(Piece::AllegienceEnum a)
+{
+    m_currentTurn = a;
 }
 
 ISquare const *Board::GetEnPassantSquare() const
@@ -97,7 +133,29 @@ void Board::SetCastleInfo(Piece::AllegienceEnum a, GUINT8 info)
     case Piece::Black:
         m_blackCastleInfo = info;
         break;
+    default:
+        break;
     }
+}
+
+int Board::GetHalfMoveClock() const
+{
+    return m_halfMoveClock;
+}
+
+void Board::SetHalfMoveClock(int h)
+{
+    m_halfMoveClock = h;
+}
+
+int Board::GetFullMoveNumber() const
+{
+    return m_fullMoveNumber;
+}
+
+void Board::SetFullMoveNumber(int f)
+{
+    m_fullMoveNumber = f;
 }
 
 /** Maps col-row indices to a 1-dimensional index. */

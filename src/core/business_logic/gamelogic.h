@@ -176,7 +176,6 @@ private:
     MoveData _translate_move_data(const PGN_MoveData &);
 
     void _move(const MoveData &, bool reverse = false);
-    void _init_piece(int, int, Piece::AllegienceEnum, Piece::PieceTypeEnum);
 
 };
 

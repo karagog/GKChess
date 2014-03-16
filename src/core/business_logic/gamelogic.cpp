@@ -13,8 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "gamelogic.h"
+#include "gkchess_pgn_parser.h"
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(DataObjects);
+
+#define STANDARD_CHESS_FEN_STRING "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 
 NAMESPACE_GKCHESS;
 
@@ -42,13 +46,6 @@ Piece::AllegienceEnum GameLogic::WhoseTurn() const
     return (0x1 & m_moveHistoryIndex) ? Piece::White : Piece::Black;
 }
 
-void GameLogic::_init_piece(int c, int r, Piece::AllegienceEnum a, Piece::PieceTypeEnum t)
-{
-    m_board.SetPiece(Piece(t, a), c, r);
-    (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)
-            ->InsertMulti(t, &m_board.SquareAt(c, r));
-}
-
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
 {
     m_board.Clear();
@@ -58,41 +55,22 @@ void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
     switch(ste)
     {
     case StandardChess:
-        // First set up Pawns:
-        for(int i = 0; i < m_board.ColumnCount(); ++i){
-            _init_piece(i, 1, Piece::White, Piece::Pawn);
-            _init_piece(i, 6, Piece::Black, Piece::Pawn);
-        }
-
-        // Then Rooks:
-        _init_piece(0, 0, Piece::White, Piece::Rook);
-        _init_piece(7, 0, Piece::White, Piece::Rook);
-        _init_piece(0, 7, Piece::Black, Piece::Rook);
-        _init_piece(7, 7, Piece::Black, Piece::Rook);
-
-        // Then Knights:
-        _init_piece(1, 0, Piece::White, Piece::Knight);
-        _init_piece(6, 0, Piece::White, Piece::Knight);
-        _init_piece(1, 7, Piece::Black, Piece::Knight);
-        _init_piece(6, 7, Piece::Black, Piece::Knight);
-
-        // Then Bishops:
-        _init_piece(2, 0, Piece::White, Piece::Bishop);
-        _init_piece(5, 0, Piece::White, Piece::Bishop);
-        _init_piece(2, 7, Piece::Black, Piece::Bishop);
-        _init_piece(5, 7, Piece::Black, Piece::Bishop);
-
-        // Then Queens:
-        _init_piece(3, 0, Piece::White, Piece::Queen);
-        _init_piece(3, 7, Piece::Black, Piece::Queen);
-
-        // Then Kings:
-        _init_piece(4, 0, Piece::White, Piece::King);
-        _init_piece(4, 7, Piece::Black, Piece::King);
-
+        m_board = PGN_Parser::FromX_FEN(STANDARD_CHESS_FEN_STRING);
         break;
     default:
         break;
+    }
+
+    // Iterate through the board and add the pieces to our cache.
+    for(int c = 0; c < m_board.ColumnCount(); ++c){
+        for(int r = c; r < m_board.RowCount(); ++r){
+            ISquare const *s( &m_board.SquareAt(c, r) );
+            Piece const *p = s->GetPiece();
+            if(p){
+                (Piece::White == p->GetAllegience() ? m_whitePieceIndex : m_blackPieceIndex)
+                    .InsertMulti(p->GetType(), s);
+            }
+        }
     }
 
     emit NotifyNewGame((int)ste);
@@ -103,7 +81,7 @@ Vector<ISquare const *> GameLogic::FindPieces(Piece::AllegienceEnum a, Piece::Pi
     Vector<ISquare const *> ret( (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)->Values(t) );
 
     // To help debug, make sure all the returned pieces are the correct type
-    for(GUINT32 i = 0; i < ret.Length(); ++i){
+    for(GINT32 i = 0; i < ret.Length(); ++i){
         Piece const *p = ret[i]->GetPiece();
         GUTIL_UNUSED(p);
         GASSERT(p && t == p->GetType() && a == p->GetAllegience());
@@ -405,8 +383,8 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 
         if(m.Flags.TestFlag(PGN_MoveData::Capture))
         {
-            if(ret.Destination->GetPiece() && ret.Destination->GetPiece()->GetAllegience() != turn)
-                ret.PieceCaptured = dest->GetPiece();
+            if(dest->GetPiece() && dest->GetPiece()->GetAllegience() != turn)
+                ret.PieceCaptured = *dest->GetPiece();
             else
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid piece to capture at the destination square");
         }
@@ -416,7 +394,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
         int tmp_source_column = 0 == m.SourceFile ? -1 : m.SourceFile - 'a';
         if(m.SourceFile != 0 && m.SourceRank != 0)
         {
-            ISquare *s = &m_board.SquareAt(tmp_source_column, m.SourceRank - 1);
+            ISquare const *s = &m_board.SquareAt(tmp_source_column, m.SourceRank - 1);
 
             // Do a sanity check on the square they specified
             if(NULL == s->GetPiece())
@@ -451,7 +429,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                     if(0 == possible_sources.Length())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "There are no pieces of that type to move");
 
-                    for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+                    for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                     {
                         ISquare const *s = possible_sources[i];
 
@@ -515,7 +493,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 // Knights are easy, because they cannot be blocked. If they are in range of
                 //  the square then it is a valid move.
                 Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
-                for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
 
@@ -542,7 +520,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
             case Piece::Bishop:
             {
                 Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
-                for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
 
@@ -569,7 +547,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
             case Piece::Rook:
             {
                 Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
-                for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
 
@@ -596,7 +574,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
             case Piece::Queen:
             {
                 Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
-                for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
 
@@ -640,7 +618,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
         if(NULL == ret.Source)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-        ret.PieceMoved = m_board.SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
+        ret.PieceMoved = *m_board.SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
         GASSERT(NULL != ret.PieceMoved);
 
         // Add a promoted piece, if necessary
@@ -649,7 +627,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
             if(Piece::Pawn != m.PieceMoved)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Only pawns can be promoted");
 
-            ret.PiecePromoted = new Piece(m.PiecePromoted, turn);
+            ret.PiecePromoted = Piece(m.PiecePromoted, turn);
         }
     }
 

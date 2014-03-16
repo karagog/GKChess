@@ -50,12 +50,17 @@ class Board :
     };
     
     GUtil::DataObjects::Vector<Square> m_squares;
+    Piece::AllegienceEnum m_currentTurn;
+    int m_halfMoveClock;
+    int m_fullMoveNumber;
     ISquare const *m_enPassantSquare;
     GUINT8 m_whiteCastleInfo;
     GUINT8 m_blackCastleInfo;
 public:
 
     explicit Board(QObject *parent = 0);
+    Board(const Board &);
+    Board &operator = (const Board &);
     virtual ~Board();
 
 
@@ -66,6 +71,12 @@ public:
     virtual int RowCount() const;
     virtual void SetPiece(const Piece &, int column, int row);
     virtual ISquare const &SquareAt(int column, int row) const;
+    virtual Piece::AllegienceEnum GetWhoseTurn() const;
+    virtual void SetWhoseTurn(Piece::AllegienceEnum);
+    virtual int GetHalfMoveClock() const;
+    virtual void SetHalfMoveClock(int);
+    virtual int GetFullMoveNumber() const;
+    virtual void SetFullMoveNumber(int);
     virtual ISquare const *GetEnPassantSquare() const;
     virtual void SetEnPassantSquare(ISquare const *);
     virtual GUINT8 GetCastleInfo(Piece::AllegienceEnum) const;

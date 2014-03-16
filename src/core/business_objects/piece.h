@@ -59,6 +59,9 @@ public:
     
     /** Constructs a piece with the given allegience and type. */
     Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
+
+    /** Returns a piece initialized with a FEN notation character. */
+    Piece(char);
     
     virtual ~Piece();
 
@@ -67,6 +70,9 @@ public:
 
     /** Returns the allegience of the piece. */
     READONLY_PROPERTY(Allegience, AllegienceEnum);
+
+    /** Returns true if this piece has no type. */
+    bool IsNull() const{ return NoPiece == GetType(); }
 
     /** Returns a human-readable string to describe the piece. */
     virtual ::GUtil::DataObjects::String ToString(bool with_allegience = false) const;

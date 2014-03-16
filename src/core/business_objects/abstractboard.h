@@ -27,6 +27,7 @@ class AbstractBoard :
         public QObject
 {
     Q_OBJECT
+    GUTIL_DISABLE_COPY(AbstractBoard);
 public:
 
     AbstractBoard(QObject * = 0);
@@ -54,11 +55,13 @@ public:
     */
     virtual ISquare const &SquareAt(int column, int row) const = 0;
 
-    /** Returns the en passant square, if there is one. If not then returns null. */
-    virtual ISquare const *GetEnPassantSquare() const = 0;
 
-    /** Sets the en passant square, or clears it if you pass null */
-    virtual void SetEnPassantSquare(ISquare const *) = 0;
+    /** Returns who has the current turn. */
+    virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
+
+    /** Sets who has the current turn. */
+    virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
+
 
     /** Returns the castle information, which is represented as the files of the rooks'
      *  initial positions.  If So in standard chess this is (0,7), but is flexible enough
@@ -68,6 +71,9 @@ public:
      *  bits as the second rook position.  The position is given as a base-1 index, so you
      *  can compare this char with 0 to see if castling is available at all before testing
      *  further.  This is done for efficiency's sake, so you can quickly query the castle info.
+     *
+     *  \note The order doesn't matter in the return value, you can treat it as an unordered pair
+     *  of values.
     */
     virtual GUINT8 GetCastleInfo(Piece::AllegienceEnum) const = 0;
 
@@ -77,8 +83,34 @@ public:
      *  bits as the second rook position.  The position is given as a base-1 index, so you
      *  can compare this char with 0 to see if castling is available at all before testing
      *  further.  This is done for efficiency's sake, so you can quickly query the castle info.
+     *
+     *  \note The order doesn't matter in the parameter, you can treat it as an unordered pair
+     *  of values.
     */
     virtual void SetCastleInfo(Piece::AllegienceEnum, GUINT8 info) = 0;
+
+
+    /** Returns the en passant square, if there is one. If not then returns null. */
+    virtual ISquare const *GetEnPassantSquare() const = 0;
+
+    /** Sets the en passant square, or clears it if you pass null */
+    virtual void SetEnPassantSquare(ISquare const *) = 0;
+
+
+    /** Returns the current number of half-moves since the last capture or pawn advance.
+     *  This is used for determining a draw from lack of progress.
+    */
+    virtual int GetHalfMoveClock() const = 0;
+
+    /** Sets the current half-move clock. */
+    virtual void SetHalfMoveClock(int) = 0;
+
+
+    /** Returns the current full-move number. */
+    virtual int GetFullMoveNumber() const = 0;
+
+    /** Sets the current full-move number. */
+    virtual void SetFullMoveNumber(int) = 0;
 
 
     /** Returns the number of rows. */

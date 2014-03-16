@@ -28,6 +28,14 @@ Piece::Piece(PieceTypeEnum pt, AllegienceEnum a)
       _p_Allegience(a)
 {}
 
+Piece::Piece(char c)
+    :_p_Allegience(String::IsUpper(c) ? Piece::White : Piece::Black)
+{
+    char tmps[2] = {c, '\0'};
+    String::ToUpper(&c, tmps);
+    _p_Type = GetTypeFromUnicodeValue(c);
+}
+
 Piece::~Piece()
 {}
 

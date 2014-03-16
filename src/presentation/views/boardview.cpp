@@ -138,7 +138,7 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
             // Iterate through the columns and write each cell
             for(int j = 0; j < b.ColumnCount(); ++j)
             {
-                ISquare const &s( b.GetSquare(j, i) );
+                ISquare const &s( b.SquareAt(j, i) );
 
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", __generate_cell_style(s, f));

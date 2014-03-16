@@ -58,7 +58,7 @@ void _parse_pgn(const String &s)
     // Show the tag pairs we read
     Console::WriteLine("\nShowing tag section contents:");
 
-    Map<String, String> const &tags( pgn.GetTags() );
+    Map<String, String> const &tags( pgn.GetData().Tags );
     for(typename Map<String, String>::const_iterator iter(tags.begin());
         iter != tags.end();
         ++iter)
@@ -69,9 +69,9 @@ void _parse_pgn(const String &s)
     // Show the moves we read:
     Console::WriteLine("\nShowing move text:");
 
-    Vector<MoveData> const &moves( pgn.GetMoves() );
+    Vector<PGN_MoveData> const &moves( pgn.GetData().Moves );
     int cnt = 0;
-    for(typename Vector<MoveData>::const_iterator iter(moves.begin());
+    for(typename Vector<PGN_MoveData>::const_iterator iter(moves.begin());
         iter != moves.end();
         ++iter, ++cnt)
     {
@@ -81,10 +81,10 @@ void _parse_pgn(const String &s)
             Console::WriteLine(String::Format("  ...%s %s", iter->Text.ConstData(), iter->ToString().ConstData()));
     }
 
-    if(1 == pgn.GetResult())
+    if(1 == pgn.GetData().Result)
         Console::WriteLine("White Wins!");
-    else if(-1 == pgn.GetResult())
+    else if(-1 == pgn.GetData().Result)
         Console::WriteLine("Black Wins!");
-    else if(0 == pgn.GetResult())
+    else if(0 == pgn.GetData().Result)
         Console::WriteLine("The game ended in a draw");
 }

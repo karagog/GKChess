@@ -45,9 +45,17 @@ public:
         /** All the move data. */
         GUtil::DataObjects::Vector<PGN_MoveData> Moves;
         
-        /** The result is 1 if White won, -1 if Black won and 0 if it was a draw. */
-        int Result;    
+        /** The result is 1 if White won, -1 if Black won and 0 if it was a draw.
+         *  It is MAX_INT if the result was not given.
+        */
+        int Result;
+
+        Data();
+        Data(const Data &);
     };
+    
+    /** Returns the data that was parsed from the file. */
+    Data const &GetData() const{ return m_data; }
 
     /** Returns a board object with the position given in X-FEN notation.
      *
@@ -55,9 +63,6 @@ public:
      *  can also pass FEN strings to it.
     */
     static Board FromX_FEN(const GUtil::DataObjects::String &);
-    
-    /** Returns the data that was parsed from the file. */
-    Data const &GetData() const{ return m_data; }
 
 private:
 
