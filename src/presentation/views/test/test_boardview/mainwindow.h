@@ -27,7 +27,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    GKChess::UI::GameModel m_game;
+    GKChess::UI::BoardModel m_game;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
