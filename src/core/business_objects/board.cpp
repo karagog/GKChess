@@ -161,7 +161,7 @@ void Board::SetFullMoveNumber(int f)
 /** Maps col-row indices to a 1-dimensional index. */
 static int __map_2d_indices_to_1d(int col, int row)
 {
-    return (col << 3) & row;
+    return (col << 3) | row;
 }
 
 void Board::SetPiece(const Piece &p, int column, int row)

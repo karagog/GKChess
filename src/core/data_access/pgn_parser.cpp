@@ -377,11 +377,12 @@ Board PGN_Parser::FromX_FEN(const String &s)
 
             // For each character in the section...
             for(;
-                iter != sl2[i].end(), col < ret.ColumnCount();
+                iter != sl2[i].end() && col < ret.ColumnCount();
                 ++iter)
             {
                 int num(-1);
-                char c = *iter.Current(), n = next == sl2[i].end() ? 0 : *next.Current();
+                char c = *iter.Current();
+                char n = (next == sl2[i].end() ? 0 : *next.Current());
                 if(String::IsNumber(c))
                 {
                     // Normally numbers are single digit, but we want to support larger boards too
@@ -391,14 +392,15 @@ Board PGN_Parser::FromX_FEN(const String &s)
                         num = String(c).ToInt();
                 }
 
-                if(-1 == num)
+                if(-1 != num)
                 {
                     // Numbers define empty space
                     col += num;
                 }
                 else
                 {
-                    ret.SetPiece(Piece(c), col++, 7 - i);
+                    ret.SetPiece(Piece(c), col, 7 - i);
+                    col++;
                 }
 
                 if(next != sl2[i].end())
@@ -473,7 +475,6 @@ Board PGN_Parser::FromX_FEN(const String &s)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "There was an error with the castle info");
             }
         }
-        THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
     }
 
 

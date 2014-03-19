@@ -17,9 +17,6 @@ limitations under the License.*/
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(DataObjects);
 
-#define STANDARD_CHESS_FEN_STRING "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
-
 NAMESPACE_GKCHESS;
 
 
@@ -55,7 +52,7 @@ void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
     switch(ste)
     {
     case StandardChess:
-        m_board = PGN_Parser::FromX_FEN(STANDARD_CHESS_FEN_STRING);
+        m_board = PGN_Parser::FromX_FEN(FEN_STANDARD_CHESS_STARTING_POSITION);
         break;
     default:
         break;

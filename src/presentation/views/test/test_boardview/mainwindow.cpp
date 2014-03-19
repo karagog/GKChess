@@ -15,6 +15,8 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "gkchess_gamelogic.h"
+#include "gkchess_boardmodel.h"
+#include "gkchess_pgn_parser.h"
 #include <QFile>
 #include <QColorDialog>
 USING_NAMESPACE_GKCHESS;
@@ -22,7 +24,8 @@ USING_NAMESPACE_GKCHESS1(UI);
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    m_board(PGN_Parser::FromX_FEN(FEN_STANDARD_CHESS_STARTING_POSITION))
 {
     ui->setupUi(this);
 
@@ -30,16 +33,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sldr_pieceSize->setValue(GetHtmlFormatOptions().PieceSize);
     ui->sldr_squareSize->setValue(GetHtmlFormatOptions().SquareSize);
 
-    m_game.SetupNewGame();
+    //m_game.SetupNewGame();
 
-    ui->tableView->setModel(&m_game);
+    ui->tableView->setModel(new BoardModel(&m_board, this));
 
     _update();
 }
 
 QString MainWindow::GetBoardHtml() const
 {
-    return BoardView::GenerateHtml(m_game.GetBoard(), GetHtmlFormatOptions());
+    return BoardView::GenerateHtml(m_board, GetHtmlFormatOptions());
 }
 
 void MainWindow::_change_light_color()
@@ -47,7 +50,7 @@ void MainWindow::_change_light_color()
     QColorDialog dlg(GetHtmlFormatOptions().LightSquareColor);
     if(QDialog::Accepted == dlg.exec())
     {
-        m_game.SetLightColor(dlg.selectedColor());
+        //m_game.SetLightColor(dlg.selectedColor());
         _p_HtmlFormatOptions.LightSquareColor = dlg.selectedColor();
         _update();
     }
@@ -58,7 +61,7 @@ void MainWindow::_change_dark_color()
     QColorDialog dlg(GetHtmlFormatOptions().DarkSquareColor);
     if(QDialog::Accepted == dlg.exec())
     {
-        m_game.SetDarkColor(dlg.selectedColor());
+        //m_game.SetDarkColor(dlg.selectedColor());
         _p_HtmlFormatOptions.DarkSquareColor = dlg.selectedColor();
         _update();
     }
@@ -69,7 +72,7 @@ void MainWindow::_change_piece_color()
     QColorDialog dlg(GetHtmlFormatOptions().PieceColor);
     if(QDialog::Accepted == dlg.exec())
     {
-        m_game.SetPieceColor(dlg.selectedColor());
+        //m_game.SetPieceColor(dlg.selectedColor());
         _p_HtmlFormatOptions.PieceColor = dlg.selectedColor();
         _update();
     }
@@ -77,7 +80,7 @@ void MainWindow::_change_piece_color()
 
 void MainWindow::_change_piece_size(int s)
 {
-    m_game.SetPieceSize(s);
+    //m_game.SetPieceSize(s);
     _p_HtmlFormatOptions.PieceSize = s;
     _update();
 }

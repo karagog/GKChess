@@ -182,4 +182,12 @@ private:
 
 }
 
+
+/** Defined for your convenience, a string that represents the initial chess position
+ *  in Forsyth-Edwards notation. You can pass this to the PGN parser to generate a board
+ *  object.
+*/
+#define FEN_STANDARD_CHESS_STARTING_POSITION "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+
 #endif // GKCHESS_GAMELOGIC_H
