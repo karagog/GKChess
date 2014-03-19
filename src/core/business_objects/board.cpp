@@ -49,7 +49,6 @@ void Board::Square::SetPiece(const Piece &p)
 
 Board::Board(QObject *parent)
     :AbstractBoard(parent),
-      m_squares(ColumnCount() * RowCount()),
       m_currentTurn(Piece::White),
       m_halfMoveClock(0),
       m_fullMoveNumber(0),
@@ -57,6 +56,7 @@ Board::Board(QObject *parent)
       m_whiteCastleInfo(0),
       m_blackCastleInfo(0)
 {
+    m_squares.ReserveExactly(64);
     for(int c = 0; c < ColumnCount(); ++c)
         for(int r = 0; r < RowCount(); ++r)
             m_squares.PushBack(Square(c, r));
