@@ -24,8 +24,8 @@ USING_NAMESPACE_GKCHESS1(UI);
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    m_board(PGN_Parser::FromX_FEN(FEN_STANDARD_CHESS_STARTING_POSITION))
+    m_board(PGN_Parser::FromX_FEN(FEN_STANDARD_CHESS_STARTING_POSITION)),
+    ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //m_game.SetupNewGame();
 
-    ui->tableView->setModel(new BoardModel(&m_board, this));
+    ui->tableView->setModel(new BoardModel(&m_board));
 
     _update();
 }

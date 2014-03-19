@@ -34,20 +34,30 @@ class BoardModel :
     Q_OBJECT
 
     AbstractBoard *m_board;
+    AbstractBoard const *m_boardC;
 public:
 
     /** You must give the model a reference to a chessboard
      *  object. It must exist at least for the lifetime of
      *  this object.
+     *
+     *  This version of the constructor makes an editable model,
+     *  which supports moving pieces in a drag-and-drop way.
+     *  That is unless you change the readonly parameter.
     */
-    explicit BoardModel(AbstractBoard *, QObject *parent = 0);
+    explicit BoardModel(AbstractBoard *, bool readonly = false, QObject *parent = 0);
 
-    /** Returns a reference to the board. */
-    AbstractBoard &GetBoard(){ return *m_board; }
+    /** You must give the model a reference to a chessboard
+     *  object. It must exist at least for the lifetime of
+     *  this object.
+     *
+     *  This version of the constructor makes a read-only model for display
+     *  purposes only.  You will not be able to move the pieces.
+    */
+    explicit BoardModel(AbstractBoard const *, QObject *parent = 0);
     
-    /** Returns a reference to the board. */
-    AbstractBoard const &GetBoard() const{ return *m_board; }
-    
+    /** Returns whether this is a read-only model. */
+    bool IsReadOnly() const;
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
@@ -61,10 +71,18 @@ public:
     /** \name QAbstractTableModel interface
      *  \{
     */
-    virtual int rowCount(const QModelIndex &) const;
-    virtual int columnCount(const QModelIndex &) const;
+    virtual int rowCount(const QModelIndex & = QModelIndex()) const;
+    virtual int columnCount(const QModelIndex & = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &, int) const;
+    virtual bool setData(const QModelIndex &, const QVariant &, int = Qt::EditRole);
     virtual QVariant headerData(int, Qt::Orientation, int) const;
+    virtual Qt::ItemFlags flags(const QModelIndex &) const;
+    virtual Qt::DropActions supportedDragActions() const;
+    virtual Qt::DropActions supportedDropActions() const;
+
+    virtual QMimeData *mimeData(const QModelIndexList &) const;
+    virtual QStringList mimeTypes() const;
+    virtual bool dropMimeData(const QMimeData *, Qt::DropAction, int, int, const QModelIndex &);
     /** \} */
 
 
@@ -73,9 +91,26 @@ private slots:
     void _square_updated(int, int);
 
 
+private:
+
+    void _init(AbstractBoard const *);
+    AbstractBoard const *_get_readonly_board() const;
+
 };
 
 
 }}
+
+
+/** Defines the mimetype used for dragging and dropping pieces. You can use this
+ *  to drop pieces onto the board.
+ *
+ *  The data is an ascii string with the following format:   <piece>:<column>,<row>
+ *  Where the piece is a single char used in FEN notation and the column and row are
+ *  0-based indices describing the source of the piece. Leave the source info blank
+ *  if it describes a new piece.
+*/
+#define MIMETYPE_GKCHESS_PIECE "gkchess/piece"
+
 
 #endif // GKCHESS_BOARDMODEL_H

@@ -62,6 +62,15 @@ public:
 
     /** Returns a piece initialized with a FEN notation character. */
     Piece(char);
+
+    bool operator == (const Piece &o) const{
+        return GetAllegience() == o.GetAllegience() &&
+                GetType() == o.GetType();
+    }
+    bool operator != (const Piece &o) const{
+        return GetAllegience() != o.GetAllegience() ||
+                GetType() != o.GetType();
+    }
     
     virtual ~Piece();
 

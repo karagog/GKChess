@@ -103,7 +103,7 @@ char Piece::GetAsciiChar() const
     switch(GetType())
     {
     case Pawn:
-        ret = '\0';
+        ret = 'P';
         break;
     case Knight:
         ret = 'N';
@@ -122,6 +122,13 @@ char Piece::GetAsciiChar() const
         break;
     default:
         break;
+    }
+
+    // Black pieces are lower case
+    if(Black == GetAllegience())
+    {
+        char tmp[2] = {ret, '\0'};
+        String::ToLower(&ret, tmp);
     }
     return ret;
 }
