@@ -17,26 +17,59 @@ limitations under the License.*/
 
 #include "gkchess_board.h"
 #include "gutil_smartpointer.h"
-#include <QTableView>
+#include <QAbstractItemView>
 
 namespace GKChess{ namespace UI{
 
+class BoardModel;
 
 /** A viewer you can use with the chess board model to display
  *  a chess position in a Qt application.
 */
 class BoardView :
-        public QTableView
+        public QAbstractItemView
 {
     Q_OBJECT
 
+    QRectF m_boardRect;
+    QColor m_darkSquareColor;
+    QColor m_lightSquareColor;
+    QColor m_pieceColor;
 public:
 
     /** Constructs a board view with default options. */
     explicit BoardView(QWidget *parent = 0);
-
     ~BoardView();
 
+    BoardModel *GetBoardModel() const;
+
+
+    QColor GetDarkSquareColor() const{ return m_darkSquareColor; }
+    void SetDarkSquareColor(const QColor &);
+    QColor GetLightSquareColor() const{ return m_lightSquareColor; }
+    void SetLightSquareColor(const QColor &);
+    QColor GetPieceColor() const{ return m_pieceColor; }
+    void SetPieceColor(const QColor &);
+
+
+    /** \name QAbstractItemView interface
+     *  \{
+    */
+    virtual QRect visualRect(const QModelIndex &index) const;
+    virtual void scrollTo(const QModelIndex &, ScrollHint);
+    virtual QModelIndex indexAt(const QPoint &point) const;
+    virtual QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers);
+    virtual int horizontalOffset() const;
+    virtual int verticalOffset() const;
+    virtual bool isIndexHidden(const QModelIndex &index) const;
+    virtual void setSelection(const QRect &, QItemSelectionModel::SelectionFlags);
+    virtual QRegion visualRegionForSelection(const QItemSelection &selection) const;
+    virtual void paintEvent(QPaintEvent *);
+    virtual void resizeEvent(QResizeEvent *);
+
+    /** You are only allowed to pass board models */
+    virtual void setModel(QAbstractItemModel *);
+    /** /} */
 
 
 
@@ -80,7 +113,10 @@ public:
 
 private:
 
-    void _init();
+    // Paints the board within the rect
+    void _paint_board(const QRectF &);
+
+    QRectF _get_rect_for_index(const QModelIndex &) const;
 
 };
 

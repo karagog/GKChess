@@ -14,8 +14,12 @@ limitations under the License.*/
 
 #include "boardview.h"
 #include "gkchess_piece.h"
+#include "gkchess_boardmodel.h"
 #include <QXmlStreamWriter>
 #include <QVBoxLayout>
+#include <QPaintEvent>
+#include <QResizeEvent>
+#include <QPainter>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
@@ -23,20 +27,251 @@ NAMESPACE_GKCHESS1(UI);
 
 
 BoardView::BoardView(QWidget *parent)
-    :QTableView(parent)
-{
-    _init();
-}
+    :QAbstractItemView(parent),
+      m_darkSquareColor(Qt::gray),
+      m_lightSquareColor(Qt::white),
+      m_pieceColor(Qt::black)
+{}
 
 BoardView::~BoardView()
 {}
 
-void BoardView::_init()
+
+BoardModel *BoardView::GetBoardModel() const
+{
+    // We use static cast because we already validated that it's a BoardModel
+    //  when they set the model.
+    return static_cast<BoardModel *>(model());
+}
+
+
+QRect BoardView::visualRect(const QModelIndex &index) const
+{
+    QRect ret;
+    if(index.isValid())
+        ret = _get_rect_for_index(index).toAlignedRect();
+    return ret;
+}
+
+void BoardView::scrollTo(const QModelIndex &, ScrollHint)
+{
+
+}
+
+QModelIndex BoardView::indexAt(const QPoint &point) const
+{
+    QModelIndex ret;
+    return ret;
+}
+
+QModelIndex BoardView::moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers)
+{
+    QModelIndex ret;
+    return ret;
+}
+
+int BoardView::horizontalOffset() const
+{
+    int ret = 0;
+    return ret;
+}
+
+int BoardView::verticalOffset() const
+{
+    int ret = 0;
+    return ret;
+}
+
+bool BoardView::isIndexHidden(const QModelIndex &index) const
+{
+    return false;
+}
+
+void BoardView::setSelection(const QRect &, QItemSelectionModel::SelectionFlags)
+{
+
+}
+
+QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) const
+{
+    QRegion ret;
+    return ret;
+}
+
+void BoardView::paintEvent(QPaintEvent *ev)
+{
+    QRect r = viewport()->rect();
+    int size = Min(r.width(), r.height());
+    r = QRect(r.x(), r.y(), size, size);
+    _paint_board(r);
+}
+
+void BoardView::resizeEvent(QResizeEvent *)
 {
 
 }
 
 
+
+#define MARGIN_OUTER   12
+#define MARGIN_INDICES 28
+#define SIZE_INDICES  13
+#define BOARD_OUTLINE_THICKNESS 3
+
+void BoardView::_paint_board(const QRectF &r)
+{
+    if(!model())
+        return;
+
+    QStyleOptionViewItem option = viewOptions();
+    QStyle::State state = option.state;
+
+    QBrush background = option.palette.base();
+    QPen piece_pen(m_pieceColor);
+    QPen outline_pen(Qt::black);
+    outline_pen.setWidth(BOARD_OUTLINE_THICKNESS);
+
+    QPen foreground(option.palette.color(QPalette::WindowText));
+    QPen textPen(option.palette.color(QPalette::Text));
+    QPen highlightedPen(option.palette.color(QPalette::HighlightedText));
+
+    m_boardRect = QRectF(QPoint(r.x() + MARGIN_OUTER + MARGIN_INDICES, r.y() + MARGIN_OUTER),
+                         QPoint(r.x() + r.width() - MARGIN_OUTER, r.y() + r.height() - MARGIN_OUTER - MARGIN_INDICES));
+
+    QPainter painter(viewport());
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.fillRect(r, background);
+
+    // Set up the painter's font for text
+    {
+        QFont f = painter.font();
+        f.setPointSize(SIZE_INDICES);
+        painter.setFont(f);
+    }
+
+    // Shade the squares and paint the pieces
+    painter.setPen(piece_pen);
+    for(int c = 0; c < model()->columnCount(); ++c)
+    {
+        for(int r = 0; r < model()->rowCount(); ++r)
+        {
+            QModelIndex ind = model()->index(r, c);
+            QRectF tmp = _get_rect_for_index(ind);
+
+            if((c & 0x1) == (r & 0x1))
+            {
+                // Color the dark squares
+                painter.fillRect(tmp, m_darkSquareColor);
+            }
+            else
+            {
+                // Color the light squares
+                painter.fillRect(tmp, m_lightSquareColor);
+            }
+
+            // Paint the pieces
+            QVariant data = model()->data(ind, Qt::DisplayRole);
+            if(!data.isNull())
+            {
+                if(QVariant::String == data.type()){
+                    painter.drawText(tmp, Qt::AlignCenter, data.toString());
+                }
+            }
+        }
+    }
+
+    // paint the vertical borders and indices
+    {
+        float file_width = m_boardRect.width() / GetBoardModel()->columnCount();
+        QPointF p1(m_boardRect.topLeft());
+        QPointF p2(p1.x(), p1.y() + m_boardRect.height());
+        for(int i = 0; i < GetBoardModel()->columnCount(); ++i)
+        {
+            // Draw the line
+            if(0 != i){
+                painter.setPen(outline_pen);
+                painter.drawLine(p1, p2);
+            }
+
+            // Draw the index
+            QRectF text_rect(p2, QPointF(p2.x() + file_width, p2.y() + MARGIN_INDICES));
+            painter.setPen(textPen);
+            painter.drawText(text_rect, Qt::AlignCenter,  QString('a' + i));
+
+            p1.setX(p1.x() + file_width);
+            p2.setX(p2.x() + file_width);
+        }
+    }
+
+    // paint the horizontal borders and indices
+    {
+        float rank_height = m_boardRect.height() / GetBoardModel()->rowCount();
+        QPointF p1(m_boardRect.topLeft());
+        QPointF p2(QPoint(p1.x() + m_boardRect.width(), p1.y()));
+        for(int i = 0; i < GetBoardModel()->rowCount(); ++i)
+        {
+            // Draw the line
+            if(0 != i){
+                painter.setPen(outline_pen);
+                painter.drawLine(p1, p2);
+            }
+
+            // Draw the index
+            QRectF text_rect(QPointF(p1.x() - MARGIN_INDICES, p1.y()),
+                             QPointF(p1.x(), p1.y() + rank_height));
+            painter.setPen(textPen);
+            painter.drawText(text_rect, Qt::AlignCenter,  QString('8' - i));
+
+            p1.setY(p1.y() + rank_height);
+            p2.setY(p2.y() + rank_height);
+        }
+    }
+
+    // Draw the board outline (after shading the squares)
+    painter.setPen(outline_pen);
+    painter.drawRect(m_boardRect);
+}
+
+QRectF BoardView::_get_rect_for_index(const QModelIndex &ind) const
+{
+    QRectF ret;
+    if(ind.isValid())
+    {
+        int cols = GetBoardModel()->columnCount();
+        int rows = GetBoardModel()->rowCount();
+        float inc_w = m_boardRect.width() / cols;
+        float inc_h = m_boardRect.height() / rows;
+
+        ret = QRectF(m_boardRect.x() + ind.column() * inc_w,
+                     m_boardRect.y() + m_boardRect.height() - (inc_h * (1 + ind.row())), inc_w, inc_h);
+    }
+    return ret;
+}
+
+void BoardView::setModel(QAbstractItemModel *m)
+{
+    if(NULL == dynamic_cast<BoardModel *>(m))
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "The BoardView was designed for BoardModels only");
+    QAbstractItemView::setModel(m);
+}
+
+void BoardView::SetDarkSquareColor(const QColor &c)
+{
+    m_darkSquareColor = c;
+    viewport()->update();
+}
+
+void BoardView::SetLightSquareColor(const QColor &c)
+{
+    m_lightSquareColor = c;
+    viewport()->update();
+}
+
+void BoardView::SetPieceColor(const QColor &c)
+{
+    m_pieceColor = c;
+    viewport()->update();
+}
 
 
 

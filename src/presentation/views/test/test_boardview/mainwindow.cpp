@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //m_game.SetupNewGame();
 
-    ui->tableView->setModel(new EditableBoardModel(&m_board));
+    ui->boardView->setModel(new EditableBoardModel(&m_board));
 
     connect(&m_board, SIGNAL(NotifySquareUpdated(int,int)),
             this, SLOT(_update()));
@@ -52,7 +52,7 @@ void MainWindow::_change_light_color()
     QColorDialog dlg(GetHtmlFormatOptions().LightSquareColor);
     if(QDialog::Accepted == dlg.exec())
     {
-        //m_game.SetLightColor(dlg.selectedColor());
+        ui->boardView->SetLightSquareColor(dlg.selectedColor());
         _p_HtmlFormatOptions.LightSquareColor = dlg.selectedColor();
         _update();
     }
@@ -63,7 +63,7 @@ void MainWindow::_change_dark_color()
     QColorDialog dlg(GetHtmlFormatOptions().DarkSquareColor);
     if(QDialog::Accepted == dlg.exec())
     {
-        //m_game.SetDarkColor(dlg.selectedColor());
+        ui->boardView->SetDarkSquareColor(dlg.selectedColor());
         _p_HtmlFormatOptions.DarkSquareColor = dlg.selectedColor();
         _update();
     }
@@ -74,7 +74,7 @@ void MainWindow::_change_piece_color()
     QColorDialog dlg(GetHtmlFormatOptions().PieceColor);
     if(QDialog::Accepted == dlg.exec())
     {
-        //m_game.SetPieceColor(dlg.selectedColor());
+        ui->boardView->SetPieceColor(dlg.selectedColor());
         _p_HtmlFormatOptions.PieceColor = dlg.selectedColor();
         _update();
     }

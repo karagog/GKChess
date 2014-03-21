@@ -574,5 +574,10 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
     return ret;
 }
 
+AbstractBoard const &GameLogic::GetBoard() const
+{
+    return m_board;
+}
+
 
 END_NAMESPACE_GKCHESS;
