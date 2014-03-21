@@ -30,18 +30,11 @@ GameLogic::MoveData::MoveData()
 {}
 
 GameLogic::GameLogic(QObject *p)
-    :QObject(p),
-      m_currentTurn(Piece::White),
-      m_moveHistoryIndex(-1)
+    :QObject(p)
 {}
 
 GameLogic::~GameLogic()
 {}
-
-Piece::AllegienceEnum GameLogic::WhoseTurn() const
-{
-    return (0x1 & m_moveHistoryIndex) ? Piece::White : Piece::Black;
-}
 
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
 {
@@ -69,73 +62,19 @@ void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
             }
         }
     }
-
-    emit NotifyNewGame((int)ste);
 }
 
-Vector<ISquare const *> GameLogic::FindPieces(Piece::AllegienceEnum a, Piece::PieceTypeEnum t) const
+Vector<ISquare const *> GameLogic::FindPieces(const Piece &pc) const
 {
-    Vector<ISquare const *> ret( (Piece::White == a ? &m_whitePieceIndex : &m_blackPieceIndex)->Values(t) );
+    Vector<ISquare const *> ret( (Piece::White == pc.GetAllegience() ?
+                                      &m_whitePieceIndex : &m_blackPieceIndex)->Values(pc.GetType()) );
 
     // To help debug, make sure all the returned pieces are the correct type
     for(GINT32 i = 0; i < ret.Length(); ++i){
         Piece const *p = ret[i]->GetPiece();
         GUTIL_UNUSED(p);
-        GASSERT(p && t == p->GetType() && a == p->GetAllegience());
+        GASSERT(p && pc.GetType() == p->GetType() && pc.GetAllegience() == p->GetAllegience());
     }
-
-    return ret;
-}
-
-Vector<ISquare const *> GameLogic::GetPossibleMoves(const ISquare &s, const Piece &p) const
-{
-    Vector<ISquare const *> ret;
-
-    switch(p.GetType())
-    {
-    case Piece::Pawn:
-    {
-        // The pawn can always move one or two steps forward if not capturing
-        ISquare *temp1(NULL), *temp2(NULL);
-        switch(p.GetAllegience())
-        {
-        case Piece::White:
-            break;
-        case Piece::Black:
-            break;
-        default:
-            break;
-        }
-
-        // Test to see if it's unoccupied
-        if(temp1 && !temp1->GetPiece())
-        {
-            ret.PushBack(temp1);
-
-            if(temp2 && !temp2->GetPiece())
-                ret.PushBack(temp1);
-        }
-
-
-        // If the pawn is capturing then it moves diagonally forwards and sideways
-    }
-        break;
-    case Piece::Knight:
-        break;
-    case Piece::Bishop:
-        break;
-    case Piece::Rook:
-        break;
-    case Piece::Queen:
-        break;
-    case Piece::King:
-        break;
-    default:
-        break;
-    }
-
-
-    // Now we must prune the possible moves depending if they would put the moving side in Check
 
     return ret;
 }
@@ -183,8 +122,12 @@ static bool __is_path_blocked(Board const &b, ISquare const &s, ISquare const &d
     return ret;
 }
 
-GameLogic::MoveValidationEnum GameLogic::ValidateMove(const ISquare &s, const ISquare &d) const
+GameLogic::MoveValidationEnum GameLogic::ValidateMove(const MoveData &md) const
 {
+    if(NULL == md.Source || NULL == md.Destination)
+        return InvalidInputError;
+
+    ISquare const &s = *md.Source, &d = *md.Destination;
     Piece const *p( s.GetPiece() );
     if(!p)
         return InvalidEmptySquare;
@@ -355,7 +298,7 @@ static bool __is_move_valid_for_king(Board const *b,
 GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 {
     MoveData ret;
-    Piece::AllegienceEnum turn = WhoseTurn();
+    Piece::AllegienceEnum turn = m_board.GetWhoseTurn();
 
     if(m.Flags.TestFlag(PGN_MoveData::CastleNormal))
         ret.CastleType = MoveData::CastleNormal;
@@ -422,7 +365,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                             1 != Abs(tmp_source_column - ret.Destination->GetColumn()))
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file for pawn capture");
 
-                    Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                    Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                     if(0 == possible_sources.Length())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "There are no pieces of that type to move");
 
@@ -489,7 +432,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
             {
                 // Knights are easy, because they cannot be blocked. If they are in range of
                 //  the square then it is a valid move.
-                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
@@ -516,7 +459,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::Bishop:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
@@ -543,7 +486,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::Rook:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
@@ -570,7 +513,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::Queen:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     ISquare const *s = possible_sources[i];
@@ -597,7 +540,7 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
                 break;
             case Piece::King:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(turn, m.PieceMoved) );
+                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
 
                 // There can only be one king
                 GASSERT(1 == possible_sources.Length());
@@ -629,24 +572,6 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
     }
 
     return ret;
-}
-
-void GameLogic::Undo()
-{
-    if(0 <= m_moveHistoryIndex)
-    {
-        _move(m_moveHistory[m_moveHistoryIndex], true);
-        --m_moveHistoryIndex;
-    }
-}
-
-void GameLogic::Redo()
-{
-    if((GINT32)m_moveHistory.Length() > m_moveHistoryIndex + 1)
-    {
-        _move(m_moveHistory[m_moveHistoryIndex + 1]);
-        ++m_moveHistoryIndex;
-    }
 }
 
 
