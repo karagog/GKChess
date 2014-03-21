@@ -60,9 +60,6 @@ public:
     /** Constructs a piece with the given allegience and type. */
     Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
 
-    /** Returns a piece initialized with a FEN notation character. */
-    Piece(char);
-
     bool operator == (const Piece &o) const{
         return GetAllegience() == o.GetAllegience() &&
                 GetType() == o.GetType();
@@ -94,8 +91,20 @@ public:
     /** Returns the UTF-8 multi-byte representation of the piece. */
     GUtil::DataObjects::String GetUtf8Char() const;
     
-    /** Returns the ascii representation of the piece. */
-    char GetAsciiChar() const;
+    /** Returns the PGN representation of the piece, which does not have allegience information,
+     *  and pawns are an empty string. */
+    char const *ToPGN() const;
+
+    /** Returns the piece type from the PGN string. */
+    static PieceTypeEnum GetTypeFromPGN(char const *);
+
+    /** Returns the ascii FEN representation of the piece, which encodes allegience information
+     *  in the case of the char, so white is in capital letters and black is lower case.
+    */
+    char ToFEN() const;
+
+    /** Returns a piece initialized with a FEN notation character. */
+    static Piece FromFEN(char);
 
     /** This translates a unicode point to a chess piece. The code point
      *  can either be the ascii characters or the unicode chess pieces.

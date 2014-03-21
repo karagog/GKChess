@@ -47,12 +47,10 @@ private slots:
     void _change_square_size(int);
     void _change_border_thickness(int);
     void _dump_to_file();
-
+    void _update();
 
 private:
     Ui::MainWindow *ui;
-
-    void _update();
 };
 
 #endif // MAINWINDOW_H

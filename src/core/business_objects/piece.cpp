@@ -28,12 +28,12 @@ Piece::Piece(PieceTypeEnum pt, AllegienceEnum a)
       _p_Allegience(a)
 {}
 
-Piece::Piece(char c)
-    :_p_Allegience(String::IsUpper(c) ? Piece::White : Piece::Black)
+Piece Piece::FromFEN(char c)
 {
+    Piece::AllegienceEnum a = String::IsUpper(c) ? Piece::White : Piece::Black;
     char tmps[2] = {c, '\0'};
     String::ToUpper(&c, tmps);
-    _p_Type = GetTypeFromUnicodeValue(c);
+    return Piece(GetTypeFromUnicodeValue(c), a);
 }
 
 Piece::~Piece()
@@ -97,51 +97,75 @@ String Piece::GetUtf8Char() const
     return String().AppendUnicode(UnicodeValue());
 }
 
-char Piece::GetAsciiChar() const
+char Piece::ToFEN() const
 {
-    char ret(-1);
+    char ret(0);
     switch(GetType())
     {
     case Pawn:
-        ret = 'P';
+        ret = White == GetAllegience() ? 'P' : 'p';
         break;
     case Knight:
-        ret = 'N';
+        ret = White == GetAllegience() ? 'N' : 'n';
         break;
     case Bishop:
-        ret = 'B';
+        ret = White == GetAllegience() ? 'B' : 'b';
         break;
     case Rook:
-        ret = 'R';
+        ret = White == GetAllegience() ? 'R' : 'r';
         break;
     case Queen:
-        ret = 'Q';
+        ret = White == GetAllegience() ? 'Q' : 'q';
         break;
     case King:
-        ret = 'K';
+        ret = White == GetAllegience() ? 'K' : 'k';
         break;
     default:
         break;
     }
+    return ret;
+}
 
-    // Black pieces are lower case
-    if(Black == GetAllegience())
+char const *Piece::ToPGN() const
+{
+    char const *ret(0);
+    switch(GetType())
     {
-        char tmp[2] = {ret, '\0'};
-        String::ToLower(&ret, tmp);
+    case Pawn:
+        ret = "";
+        break;
+    case Knight:
+        ret = "N";
+        break;
+    case Bishop:
+        ret = "B";
+        break;
+    case Rook:
+        ret = "R";
+        break;
+    case Queen:
+        ret = "Q";
+        break;
+    case King:
+        ret = "K";
+        break;
+    default:
+        break;
     }
     return ret;
 }
 
-Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
+Piece::PieceTypeEnum Piece::GetTypeFromPGN(const char *c)
 {
-    String s(3);
-    PieceTypeEnum ret = Piece::NoPiece;
-    s.AppendUnicode(uc);
-    if(1 == s.Length())
+    PieceTypeEnum ret = NoPiece;
+    if(0 == strlen(c))
     {
-        // The unicode point is an ascii character
-        switch(s[0])
+        // An empty string is a pawn
+        ret = Pawn;
+    }
+    else
+    {
+        switch(c[0])
         {
         case 'K':
             ret = Piece::King;
@@ -165,7 +189,15 @@ Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
             break;
         }
     }
-    else
+    return ret;
+}
+
+Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
+{
+    String s(3);
+    PieceTypeEnum ret = Piece::NoPiece;
+    s.AppendUnicode(uc);
+    if(1 < s.Length())
     {
         // The unicode point is a chess piece
         int tmp = uc - (int)Black;
@@ -175,7 +207,10 @@ Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
         if(0 <= tmp && tmp < 6)
             ret = (PieceTypeEnum)tmp;
     }
-
+    else
+    {
+        ret = GetTypeFromPGN(s);
+    }
     return ret;
 }
 

@@ -77,6 +77,29 @@ bool EditableBoardModel::dropMimeData(const QMimeData *data,
     return ret;
 }
 
+QVariant EditableBoardModel::data(const QModelIndex &i, int r) const
+{
+    QVariant ret;
+    ISquare const *s = ConvertIndexToSquare(i);
+    if(s)
+    {
+        Piece const *p = s->GetPiece();
+        if(p)
+        {
+            switch((Qt::ItemDataRole)r)
+            {
+            case Qt::EditRole:
+                ret = QString(QChar(p->ToFEN()));
+                break;
+            default:
+                ret = BoardModel::data(i, r);
+                break;
+            }
+        }
+    }
+    return ret;
+}
+
 bool EditableBoardModel::setData(const QModelIndex &ind, const QVariant &v, int r)
 {
     bool ret = false;
@@ -101,7 +124,7 @@ bool EditableBoardModel::setData(const QModelIndex &ind, const QVariant &v, int 
             else if(1 == s.length())
             {
                 // Set a piece if it's valid and different
-                Piece p(s[0].toAscii());
+                Piece p = Piece::FromFEN(s[0].toAscii());
                 if(!p.IsNull() && (NULL == cur_piece || p != *cur_piece))
                 {
                     m_board->SetPiece(p, sqr->GetColumn(), sqr->GetRow());

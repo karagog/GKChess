@@ -399,7 +399,7 @@ Board PGN_Parser::FromX_FEN(const String &s)
                 }
                 else
                 {
-                    ret.SetPiece(Piece(c), col, 7 - i);
+                    ret.SetPiece(Piece::FromFEN(c), col, 7 - i);
                     col++;
                 }
 

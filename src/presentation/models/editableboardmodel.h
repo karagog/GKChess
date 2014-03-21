@@ -38,6 +38,7 @@ public:
     /** \name QAbstractTableModel interface
      *  \{
     */
+    virtual QVariant data(const QModelIndex &, int) const;
     virtual bool setData(const QModelIndex &, const QVariant &, int = Qt::EditRole);
     virtual bool dropMimeData(const QMimeData *, Qt::DropAction, int, int, const QModelIndex &);
     virtual Qt::ItemFlags flags(const QModelIndex &) const;

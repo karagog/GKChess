@@ -37,6 +37,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->tableView->setModel(new EditableBoardModel(&m_board));
 
+    connect(&m_board, SIGNAL(NotifySquareUpdated(int,int)),
+            this, SLOT(_update()));
     _update();
 }
 

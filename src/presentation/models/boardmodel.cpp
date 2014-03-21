@@ -78,9 +78,6 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
             case Qt::DisplayRole:
                 ret = QString(QChar(p->UnicodeValue()));
                 break;
-            case Qt::EditRole:
-                ret = QString(QChar(p->GetAsciiChar()));
-                break;
             case Qt::ToolTipRole:
                 ret = p->ToString(true).ToQString();
                 break;
@@ -164,7 +161,7 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
                 ret = new QMimeData;
                 ret->setData(MIMETYPE_GKCHESS_PIECE,
                              QString("%1:%2,%3")
-                             .arg(p->GetAsciiChar())
+                             .arg(p->ToFEN())
                              .arg(s->GetColumn())
                              .arg(s->GetRow())
                              .toAscii());
