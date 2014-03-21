@@ -1,5 +1,7 @@
 HEADERS += \
-    models/boardmodel.h
+    models/boardmodel.h \
+    models/editableboardmodel.h
 
 SOURCES += \
-    models/boardmodel.cpp
+    models/boardmodel.cpp \
+    models/editableboardmodel.cpp

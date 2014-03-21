@@ -24,7 +24,8 @@ namespace GKChess{
 namespace UI{
 
 
-/** Describes a data model for a chess board.
+/** Describes a data model for a chess board. This is a readonly model, so you can
+ *  only display boards with it.
  *
  *  This can be used with Qt's model-view framework.
 */
@@ -33,31 +34,14 @@ class BoardModel :
 {
     Q_OBJECT
 
-    AbstractBoard *m_board;
-    AbstractBoard const *m_boardC;
+    AbstractBoard const *m_board;
 public:
 
     /** You must give the model a reference to a chessboard
      *  object. It must exist at least for the lifetime of
      *  this object.
-     *
-     *  This version of the constructor makes an editable model,
-     *  which supports moving pieces in a drag-and-drop way.
-     *  That is unless you change the readonly parameter.
-    */
-    explicit BoardModel(AbstractBoard *, bool readonly = false, QObject *parent = 0);
-
-    /** You must give the model a reference to a chessboard
-     *  object. It must exist at least for the lifetime of
-     *  this object.
-     *
-     *  This version of the constructor makes a read-only model for display
-     *  purposes only.  You will not be able to move the pieces.
     */
     explicit BoardModel(AbstractBoard const *, QObject *parent = 0);
-    
-    /** Returns whether this is a read-only model. */
-    bool IsReadOnly() const;
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
@@ -74,27 +58,17 @@ public:
     virtual int rowCount(const QModelIndex & = QModelIndex()) const;
     virtual int columnCount(const QModelIndex & = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &, int) const;
-    virtual bool setData(const QModelIndex &, const QVariant &, int = Qt::EditRole);
     virtual QVariant headerData(int, Qt::Orientation, int) const;
     virtual Qt::ItemFlags flags(const QModelIndex &) const;
-    virtual Qt::DropActions supportedDragActions() const;
-    virtual Qt::DropActions supportedDropActions() const;
 
     virtual QMimeData *mimeData(const QModelIndexList &) const;
     virtual QStringList mimeTypes() const;
-    virtual bool dropMimeData(const QMimeData *, Qt::DropAction, int, int, const QModelIndex &);
     /** \} */
 
 
 private slots:
 
     void _square_updated(int, int);
-
-
-private:
-
-    void _init(AbstractBoard const *);
-    AbstractBoard const *_get_readonly_board() const;
 
 };
 

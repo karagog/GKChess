@@ -15,7 +15,7 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "gkchess_gamelogic.h"
-#include "gkchess_boardmodel.h"
+#include "gkchess_editableboardmodel.h"
 #include "gkchess_pgn_parser.h"
 #include <QFile>
 #include <QColorDialog>
@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //m_game.SetupNewGame();
 
-    ui->tableView->setModel(new BoardModel(&m_board));
+    ui->tableView->setModel(new EditableBoardModel(&m_board));
 
     _update();
 }
