@@ -31,7 +31,7 @@ class BoardView :
 {
     Q_OBJECT
 
-    int m_squareSize;
+    float m_squareSize;
     QRectF m_boardRect;
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
@@ -44,8 +44,8 @@ public:
 
     BoardModel *GetBoardModel() const;
 
-    int GetSquareSize() const{ return m_squareSize; }
-    void SetSquareSize(int);
+    float GetSquareSize() const{ return m_squareSize; }
+    void SetSquareSize(float);
 
     QColor GetDarkSquareColor() const{ return m_darkSquareColor; }
     void SetDarkSquareColor(const QColor &);
@@ -69,6 +69,7 @@ public:
     virtual bool isIndexHidden(const QModelIndex &index) const;
     virtual void setSelection(const QRect &, QItemSelectionModel::SelectionFlags);
     virtual QRegion visualRegionForSelection(const QItemSelection &selection) const;
+
     virtual void paintEvent(QPaintEvent *);
     virtual void resizeEvent(QResizeEvent *);
 
@@ -121,6 +122,7 @@ private:
     // paints the board
     void _paint_board();
 
+    void _update_board_rect();
     QRectF _get_rect_for_index(const QModelIndex &) const;
 
 };

@@ -20,7 +20,6 @@ limitations under the License.*/
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QPainter>
-#include <QFontMetrics>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
@@ -28,6 +27,12 @@ NAMESPACE_GKCHESS1(UI);
 
 
 #define DEFAULT_SQUARE_SIZE 75
+
+#define MARGIN_OUTER   12
+#define MARGIN_INDICES 28
+#define FONT_SIZE_INDICES  13
+#define BOARD_OUTLINE_THICKNESS 3
+
 
 BoardView::BoardView(QWidget *parent)
     :QAbstractItemView(parent),
@@ -65,6 +70,16 @@ void BoardView::scrollTo(const QModelIndex &, ScrollHint)
 QModelIndex BoardView::indexAt(const QPoint &point) const
 {
     QModelIndex ret;
+    if(m_boardRect.contains(point))
+    {
+        float x = point.x() - m_boardRect.x();
+        float y = m_boardRect.y() + m_boardRect.height() - point.y();
+
+        GASSERT(model());
+        GASSERT(0 < x && 0 < y);
+
+        ret = model()->index(y / m_squareSize, x / m_squareSize);
+    }
     return ret;
 }
 
@@ -76,14 +91,14 @@ QModelIndex BoardView::moveCursor(CursorAction cursorAction, Qt::KeyboardModifie
 
 int BoardView::horizontalOffset() const
 {
-    int ret = 0;
-    return ret;
+    //return MARGIN_OUTER + MARGIN_INDICES;
+    return 0;
 }
 
 int BoardView::verticalOffset() const
 {
-    int ret = 0;
-    return ret;
+    //return MARGIN_OUTER;
+    return 0;
 }
 
 bool BoardView::isIndexHidden(const QModelIndex &index) const
@@ -112,21 +127,10 @@ void BoardView::resizeEvent(QResizeEvent *)
 
 }
 
-
-
-#define MARGIN_OUTER   12
-#define MARGIN_INDICES 28
-#define FONT_SIZE_INDICES  13
-#define BOARD_OUTLINE_THICKNESS 3
-
 void BoardView::_paint_board()
 {
     if(!model())
         return;
-
-    m_boardRect = QRectF(QPoint(MARGIN_OUTER + MARGIN_INDICES, MARGIN_OUTER),
-                         QPoint(m_squareSize * model()->columnCount() - MARGIN_OUTER,
-                                m_squareSize * model()->rowCount() - MARGIN_OUTER - MARGIN_INDICES));
 
     QStyleOptionViewItem option = viewOptions();
     QStyle::State state = option.state;
@@ -246,7 +250,8 @@ QRectF BoardView::_get_rect_for_index(const QModelIndex &ind) const
         float inc_h = m_boardRect.height() / rows;
 
         ret = QRectF(m_boardRect.x() + ind.column() * inc_w,
-                     m_boardRect.y() + m_boardRect.height() - (inc_h * (1 + ind.row())), inc_w, inc_h);
+                     m_boardRect.y() + m_boardRect.height() - (inc_h * (1 + ind.row())),
+                     inc_w, inc_h);
     }
     return ret;
 }
@@ -256,6 +261,7 @@ void BoardView::setModel(QAbstractItemModel *m)
     if(NULL == dynamic_cast<BoardModel *>(m))
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The BoardView was designed for BoardModels only");
     QAbstractItemView::setModel(m);
+    _update_board_rect();
 }
 
 void BoardView::SetDarkSquareColor(const QColor &c)
@@ -276,16 +282,24 @@ void BoardView::SetPieceColor(const QColor &c)
     viewport()->update();
 }
 
-void BoardView::SetSquareSize(int s)
+void BoardView::_update_board_rect()
+{
+    if(model())
+    {
+        m_boardRect = QRect(QPoint(MARGIN_OUTER + MARGIN_INDICES, MARGIN_OUTER),
+                            QPoint(m_squareSize * model()->columnCount() - MARGIN_OUTER,
+                                   m_squareSize * model()->rowCount() - MARGIN_OUTER - MARGIN_INDICES));
+    }
+    else
+    {
+        m_boardRect = QRect();
+    }
+}
+
+void BoardView::SetSquareSize(float s)
 {
     m_squareSize = s;
-
-    // Determine what font to use for pieces so they fill a square
-//    QString tmps(QChar(Piece(Piece::Rook, Piece::White).UnicodeValue()));
-//    int pts(12);
-//    QFont f;
-//    f.setPixelSize(m_squareSize);
-
+    _update_board_rect();
     viewport()->update();
 }
 
