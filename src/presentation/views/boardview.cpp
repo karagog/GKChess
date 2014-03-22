@@ -20,14 +20,18 @@ limitations under the License.*/
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QPainter>
+#include <QFontMetrics>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
 NAMESPACE_GKCHESS1(UI);
 
 
+#define DEFAULT_SQUARE_SIZE 75
+
 BoardView::BoardView(QWidget *parent)
     :QAbstractItemView(parent),
+      m_squareSize(DEFAULT_SQUARE_SIZE),
       m_darkSquareColor(Qt::gray),
       m_lightSquareColor(Qt::white),
       m_pieceColor(Qt::black)
@@ -100,10 +104,7 @@ QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) con
 
 void BoardView::paintEvent(QPaintEvent *ev)
 {
-    QRect r = viewport()->rect();
-    int size = Min(r.width(), r.height());
-    r = QRect(r.x(), r.y(), size, size);
-    _paint_board(r);
+    _paint_board();
 }
 
 void BoardView::resizeEvent(QResizeEvent *)
@@ -115,42 +116,42 @@ void BoardView::resizeEvent(QResizeEvent *)
 
 #define MARGIN_OUTER   12
 #define MARGIN_INDICES 28
-#define SIZE_INDICES  13
+#define FONT_SIZE_INDICES  13
 #define BOARD_OUTLINE_THICKNESS 3
 
-void BoardView::_paint_board(const QRectF &r)
+void BoardView::_paint_board()
 {
     if(!model())
         return;
+
+    m_boardRect = QRectF(QPoint(MARGIN_OUTER + MARGIN_INDICES, MARGIN_OUTER),
+                         QPoint(m_squareSize * model()->columnCount() - MARGIN_OUTER,
+                                m_squareSize * model()->rowCount() - MARGIN_OUTER - MARGIN_INDICES));
 
     QStyleOptionViewItem option = viewOptions();
     QStyle::State state = option.state;
 
     QBrush background = option.palette.base();
-    QPen piece_pen(m_pieceColor);
+    QPen textPen(option.palette.color(QPalette::Text));
     QPen outline_pen(Qt::black);
     outline_pen.setWidth(BOARD_OUTLINE_THICKNESS);
 
-    QPen foreground(option.palette.color(QPalette::WindowText));
-    QPen textPen(option.palette.color(QPalette::Text));
-    QPen highlightedPen(option.palette.color(QPalette::HighlightedText));
-
-    m_boardRect = QRectF(QPoint(r.x() + MARGIN_OUTER + MARGIN_INDICES, r.y() + MARGIN_OUTER),
-                         QPoint(r.x() + r.width() - MARGIN_OUTER, r.y() + r.height() - MARGIN_OUTER - MARGIN_INDICES));
+    QPen piece_pen(m_pieceColor);
 
     QPainter painter(viewport());
     painter.setRenderHint(QPainter::Antialiasing);
-    painter.fillRect(r, background);
+    painter.fillRect(viewport()->rect(), background);
 
-    // Set up the painter's font for text
-    {
-        QFont f = painter.font();
-        f.setPointSize(SIZE_INDICES);
-        painter.setFont(f);
-    }
 
     // Shade the squares and paint the pieces
+    QFont font_indices = painter.font();
+    font_indices.setPointSize(FONT_SIZE_INDICES);
+
+    QFont font_pieces = painter.font();
+    font_pieces.setPixelSize(0.825 * m_squareSize);
+
     painter.setPen(piece_pen);
+    painter.setFont(font_indices);
     for(int c = 0; c < model()->columnCount(); ++c)
     {
         for(int r = 0; r < model()->rowCount(); ++r)
@@ -174,7 +175,9 @@ void BoardView::_paint_board(const QRectF &r)
             if(!data.isNull())
             {
                 if(QVariant::String == data.type()){
+                    painter.setFont(font_pieces);
                     painter.drawText(tmp, Qt::AlignCenter, data.toString());
+                    painter.setFont(font_indices);
                 }
             }
         }
@@ -270,6 +273,19 @@ void BoardView::SetLightSquareColor(const QColor &c)
 void BoardView::SetPieceColor(const QColor &c)
 {
     m_pieceColor = c;
+    viewport()->update();
+}
+
+void BoardView::SetSquareSize(int s)
+{
+    m_squareSize = s;
+
+    // Determine what font to use for pieces so they fill a square
+//    QString tmps(QChar(Piece(Piece::Rook, Piece::White).UnicodeValue()));
+//    int pts(12);
+//    QFont f;
+//    f.setPixelSize(m_squareSize);
+
     viewport()->update();
 }
 

@@ -89,6 +89,7 @@ void MainWindow::_change_piece_size(int s)
 
 void MainWindow::_change_square_size(int s)
 {
+    ui->boardView->SetSquareSize(s);
     _p_HtmlFormatOptions.SquareSize = s;
     _update();
 }

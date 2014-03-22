@@ -31,6 +31,7 @@ class BoardView :
 {
     Q_OBJECT
 
+    int m_squareSize;
     QRectF m_boardRect;
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
@@ -43,11 +44,15 @@ public:
 
     BoardModel *GetBoardModel() const;
 
+    int GetSquareSize() const{ return m_squareSize; }
+    void SetSquareSize(int);
 
     QColor GetDarkSquareColor() const{ return m_darkSquareColor; }
     void SetDarkSquareColor(const QColor &);
+
     QColor GetLightSquareColor() const{ return m_lightSquareColor; }
     void SetLightSquareColor(const QColor &);
+
     QColor GetPieceColor() const{ return m_pieceColor; }
     void SetPieceColor(const QColor &);
 
@@ -113,8 +118,8 @@ public:
 
 private:
 
-    // Paints the board within the rect
-    void _paint_board(const QRectF &);
+    // paints the board
+    void _paint_board();
 
     QRectF _get_rect_for_index(const QModelIndex &) const;
 
