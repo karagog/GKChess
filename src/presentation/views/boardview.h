@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_board.h"
 #include "gutil_smartpointer.h"
 #include <QAbstractItemView>
+#include <QRubberBand>
 
 namespace GKChess{ namespace UI{
 
@@ -36,6 +37,8 @@ class BoardView :
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
     QColor m_pieceColor;
+
+    QRubberBand m_selectionBand;
 public:
 
     /** Constructs a board view with default options. */
@@ -69,9 +72,6 @@ public:
     virtual bool isIndexHidden(const QModelIndex &index) const;
     virtual void setSelection(const QRect &, QItemSelectionModel::SelectionFlags);
     virtual QRegion visualRegionForSelection(const QItemSelection &selection) const;
-
-    virtual void paintEvent(QPaintEvent *);
-    virtual void resizeEvent(QResizeEvent *);
 
     /** You are only allowed to pass board models */
     virtual void setModel(QAbstractItemModel *);
@@ -115,6 +115,25 @@ public:
     */
     static QString GenerateHtml(const Board &,
                                 const HtmlFormattingOptions & = HtmlFormattingOptions());
+
+
+protected:
+
+    /** \name QAbstractItemView interface
+     *  \{
+    */
+    virtual void paintEvent(QPaintEvent *);
+    virtual void resizeEvent(QResizeEvent *);
+    /** \} */
+
+
+protected slots:
+
+    /** \name QAbstractItemView interface
+     *  \{
+    */
+    virtual void updateGeometries();
+    /** \} */
 
 
 private:

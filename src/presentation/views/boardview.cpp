@@ -20,6 +20,8 @@ limitations under the License.*/
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QPainter>
+#include <QRubberBand>
+#include <QScrollBar>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
@@ -39,8 +41,11 @@ BoardView::BoardView(QWidget *parent)
       m_squareSize(DEFAULT_SQUARE_SIZE),
       m_darkSquareColor(Qt::gray),
       m_lightSquareColor(Qt::white),
-      m_pieceColor(Qt::black)
-{}
+      m_pieceColor(Qt::black),
+      m_selectionBand(QRubberBand::Rectangle, this)
+{
+
+}
 
 BoardView::~BoardView()
 {}
@@ -67,6 +72,13 @@ void BoardView::scrollTo(const QModelIndex &, ScrollHint)
 
 }
 
+void BoardView::updateGeometries()
+{
+    QAbstractItemView::updateGeometries();
+    horizontalScrollBar()->setRange(0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES);
+    verticalScrollBar()->setRange(0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES);
+}
+
 QModelIndex BoardView::indexAt(const QPoint &point) const
 {
     QModelIndex ret;
@@ -83,9 +95,38 @@ QModelIndex BoardView::indexAt(const QPoint &point) const
     return ret;
 }
 
-QModelIndex BoardView::moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers)
+QModelIndex BoardView::moveCursor(CursorAction ca, Qt::KeyboardModifiers modifiers)
 {
+    GUTIL_UNUSED(modifiers);
     QModelIndex ret;
+    if(model())
+    {
+        QModelIndex cur = selectionModel()->currentIndex();
+        if(cur.isValid())
+        {
+            switch(ca)
+            {
+            case MoveLeft:
+                if(0 <= cur.column() - 1)
+                    ret = model()->index(cur.row(), cur.column() - 1);
+                break;
+            case MoveUp:
+                if(model()->rowCount() > cur.row() + 1)
+                    ret = model()->index(cur.row() + 1, cur.column());
+                break;
+            case MoveRight:
+                if(model()->columnCount() > cur.column() + 1)
+                    ret = model()->index(cur.row(), cur.column() + 1);
+                break;
+            case MoveDown:
+                if(0 <= cur.row() - 1)
+                    ret = model()->index(cur.row() - 1, cur.column());
+                break;
+            default:
+                break;
+            }
+        }
+    }
     return ret;
 }
 
@@ -103,17 +144,30 @@ int BoardView::verticalOffset() const
 
 bool BoardView::isIndexHidden(const QModelIndex &index) const
 {
+    // There are no hidden indices on a chess board
     return false;
 }
 
-void BoardView::setSelection(const QRect &, QItemSelectionModel::SelectionFlags)
+void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
 {
-
+    QModelIndex ind;
+    if(m_boardRect.contains(r.topLeft())){
+        ind = indexAt(r.topLeft());
+    }
+    selectionModel()->select(ind, cmd);
+    m_selectionBand.setVisible(ind.isValid());
+    if(ind.isValid()){
+        m_selectionBand.setGeometry(_get_rect_for_index(ind).toAlignedRect());
+    }
 }
 
 QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) const
 {
     QRegion ret;
+    QModelIndexList il = selection.indexes();
+    if(1 == il.length()){
+        ret = QRegion(_get_rect_for_index(il[0]).toAlignedRect());
+    }
     return ret;
 }
 
