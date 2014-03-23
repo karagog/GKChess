@@ -75,17 +75,19 @@ void BoardView::scrollTo(const QModelIndex &, ScrollHint)
 void BoardView::updateGeometries()
 {
     QAbstractItemView::updateGeometries();
-    horizontalScrollBar()->setRange(0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES);
-    verticalScrollBar()->setRange(0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES);
+    horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->width()));
+    verticalScrollBar()->setRange(0, Max(0.0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
 }
 
-QModelIndex BoardView::indexAt(const QPoint &point) const
+QModelIndex BoardView::indexAt(const QPoint &p) const
 {
     QModelIndex ret;
-    if(m_boardRect.contains(point))
+    QPoint p_t(p.x() + (MARGIN_OUTER + MARGIN_INDICES) + horizontalScrollBar()->value(),
+               p.y() + (MARGIN_OUTER) + verticalScrollBar()->value());
+    if(m_boardRect.contains(p_t))
     {
-        float x = point.x() - m_boardRect.x();
-        float y = m_boardRect.y() + m_boardRect.height() - point.y();
+        float x = p_t.x() - m_boardRect.x();
+        float y = m_boardRect.y() + m_boardRect.height() - p_t.y();
 
         GASSERT(model());
         GASSERT(0 < x && 0 < y);
@@ -178,7 +180,7 @@ void BoardView::paintEvent(QPaintEvent *ev)
 
 void BoardView::resizeEvent(QResizeEvent *)
 {
-
+    updateGeometries();
 }
 
 void BoardView::_paint_board()
@@ -197,6 +199,7 @@ void BoardView::_paint_board()
     QPen piece_pen(m_pieceColor);
 
     QPainter painter(viewport());
+    painter.translate(-horizontalScrollBar()->value(), -verticalScrollBar()->value());
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(viewport()->rect(), background);
 
@@ -348,6 +351,8 @@ void BoardView::_update_board_rect()
     {
         m_boardRect = QRect();
     }
+
+    updateGeometries();
 }
 
 void BoardView::SetSquareSize(float s)
