@@ -17,6 +17,7 @@ limitations under the License.*/
 #include <QFont>
 #include <QMimeData>
 #include <QStringList>
+USING_NAMESPACE_GUTIL1(DataObjects);
 
 NAMESPACE_GKCHESS1(UI);
 
@@ -71,21 +72,43 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
     if(s)
     {
         Piece const *p = s->GetPiece();
-        if(p)
+        switch((Qt::ItemDataRole)role)
         {
-            switch((Qt::ItemDataRole)role)
-            {
-            case Qt::DisplayRole:
+        case Qt::DisplayRole:
+            if(p)
                 ret = QString(QChar(p->UnicodeValue()));
-                break;
-            case Qt::ToolTipRole:
+            break;
+        case Qt::ToolTipRole:
+            if(p)
                 ret = p->ToString(true).ToQString();
-                break;
-            case Qt::DecorationRole:
-                break;
-            default:
-                break;
-            }
+            break;
+        case Qt::DecorationRole:
+            break;
+        case Qt::BackgroundColorRole:
+            if(m_formattingOptions.Contains(s))
+                ret = m_formattingOptions.At(s).BackgroundColor;
+            break;
+        default:
+            break;
+        }
+    }
+    return ret;
+}
+
+bool BoardModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    bool ret = false;
+    ISquare const *s = ConvertIndexToSquare(index);
+    if(s)
+    {
+        switch((Qt::ItemDataRole)role)
+        {
+        case Qt::BackgroundColorRole:
+            HighlightSquare(s, value.value<QColor>());
+            ret = true;
+            break;
+        default:
+            break;
         }
     }
     return ret;
@@ -169,6 +192,21 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
         }
     }
     return ret;
+}
+
+void BoardModel::HighlightSquare(ISquare const *s, const QColor &c)
+{
+    m_formattingOptions[s].BackgroundColor = c;
+    _square_updated(s->GetColumn(), s->GetRow());
+}
+
+void BoardModel::ClearSquareHighlighting()
+{
+    Vector<ISquare const *> squares = m_formattingOptions.Keys();
+    m_formattingOptions.Clear();
+    G_FOREACH_CONST(ISquare const *s, squares){
+        _square_updated(s->GetColumn(), s->GetRow());
+    }
 }
 
 

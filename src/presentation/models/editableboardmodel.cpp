@@ -84,17 +84,15 @@ QVariant EditableBoardModel::data(const QModelIndex &i, int r) const
     if(s)
     {
         Piece const *p = s->GetPiece();
-        if(p)
+        switch((Qt::ItemDataRole)r)
         {
-            switch((Qt::ItemDataRole)r)
-            {
-            case Qt::EditRole:
+        case Qt::EditRole:
+            if(p)
                 ret = QString(QChar(p->ToFEN()));
-                break;
-            default:
-                ret = BoardModel::data(i, r);
-                break;
-            }
+            break;
+        default:
+            ret = BoardModel::data(i, r);
+            break;
         }
     }
     return ret;
@@ -133,7 +131,9 @@ bool EditableBoardModel::setData(const QModelIndex &ind, const QVariant &v, int 
             }
         }
             break;
-        default: break;
+        default:
+            ret = BoardModel::setData(ind, v, r);
+            break;
         }
     }
     return ret;

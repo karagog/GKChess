@@ -22,8 +22,8 @@ limitations under the License.*/
 #include <QPainter>
 #include <QRubberBand>
 #include <QScrollBar>
-#include <math.h>
 USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GUTIL1(DataObjects);
 USING_NAMESPACE_GKCHESS;
 
 NAMESPACE_GKCHESS1(UI);
@@ -35,6 +35,8 @@ NAMESPACE_GKCHESS1(UI);
 #define MARGIN_INDICES 28
 #define FONT_SIZE_INDICES  13
 #define BOARD_OUTLINE_THICKNESS 3
+
+#define HIGHLIGHT_THICKNESS 10
 
 
 BoardView::BoardView(QWidget *parent)
@@ -63,8 +65,11 @@ BoardModel *BoardView::GetBoardModel() const
 QRect BoardView::visualRect(const QModelIndex &index) const
 {
     QRect ret;
-    if(index.isValid())
+    if(index.isValid()){
         ret = _get_rect_for_index(index).toAlignedRect();
+        ret.translate(-horizontalScrollBar()->value(),
+                      -verticalScrollBar()->value());
+    }
     return ret;
 }
 
@@ -95,10 +100,9 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
         GASSERT(model());
         GASSERT(0 < x && 0 < y);
 
-        ret = model()->index(floor(y / m_squareSize), floor(x / m_squareSize));
+        ret = model()->index(y / m_squareSize, x / m_squareSize);
     }
 
-    // This is for debugging only, to see where this point is
     viewport()->update();
 
     return ret;
@@ -160,13 +164,14 @@ bool BoardView::isIndexHidden(const QModelIndex &index) const
 void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
 {
     GUTIL_UNUSED(cmd);
-    QModelIndex ind;
     QPoint p(r.x() + r.width() + horizontalScrollBar()->value(),
              r.y() + r.height() + verticalScrollBar()->value());
-    if(m_boardRect.contains(p)){
-        ind = indexAt(p);
-    }
+    QModelIndex ind = indexAt(p);
     selectionModel()->select(ind, QItemSelectionModel::ClearAndSelect);
+    GetBoardModel()->ClearSquareHighlighting();
+    if(ind.isValid()){
+        GetBoardModel()->HighlightSquare(GetBoardModel()->ConvertIndexToSquare(ind), Qt::green);
+    }
     viewport()->update();
 }
 
@@ -175,7 +180,7 @@ QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) con
     QRegion ret;
     QModelIndexList il = selection.indexes();
     if(1 == il.length()){
-        ret = QRegion(_get_rect_for_index(il[0]).toAlignedRect());
+        ret = QRegion(visualRect(il[0]));
     }
     return ret;
 }
@@ -203,6 +208,9 @@ void BoardView::_paint_board()
     QPen textPen(option.palette.color(QPalette::Text));
     QPen outline_pen(Qt::black);
     outline_pen.setWidth(BOARD_OUTLINE_THICKNESS);
+
+    QPen highlight_pen;
+    highlight_pen.setWidth(HIGHLIGHT_THICKNESS);
 
     QPen piece_pen(m_pieceColor);
 
@@ -243,6 +251,7 @@ void BoardView::_paint_board()
             if(!data.isNull())
             {
                 if(QVariant::String == data.type()){
+                    painter.setPen(piece_pen);
                     painter.setFont(font_pieces);
                     painter.drawText(tmp, Qt::AlignCenter, data.toString());
                     painter.setFont(font_indices);
@@ -301,6 +310,24 @@ void BoardView::_paint_board()
     // Draw the board outline (after shading the squares)
     painter.setPen(outline_pen);
     painter.drawRect(m_boardRect);
+
+    // Apply any square highlighting
+    for(int c = 0; c < model()->columnCount(); ++c)
+    {
+        for(int r = 0; r < model()->rowCount(); ++r)
+        {
+            QModelIndex ind = model()->index(r, c);
+            QRectF tmp = _get_rect_for_index(ind);
+            QColor highlight_color = model()->data(ind, Qt::BackgroundColorRole).value<QColor>();
+
+            if(highlight_color.isValid())
+            {
+                highlight_pen.setColor(highlight_color);
+                painter.setPen(highlight_pen);
+                painter.drawRect(tmp);
+            }
+        }
+    }
 
     // Update the rubber band
     m_selectionBand.setVisible(cur_indx.isValid());
