@@ -22,6 +22,7 @@ limitations under the License.*/
 #include <QPainter>
 #include <QRubberBand>
 #include <QScrollBar>
+#include <math.h>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
@@ -75,6 +76,8 @@ void BoardView::scrollTo(const QModelIndex &, ScrollHint)
 void BoardView::updateGeometries()
 {
     QAbstractItemView::updateGeometries();
+
+    // Update the scrollbars whenever our geometry changes
     horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->width()));
     verticalScrollBar()->setRange(0, Max(0.0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
 }
@@ -82,8 +85,8 @@ void BoardView::updateGeometries()
 QModelIndex BoardView::indexAt(const QPoint &p) const
 {
     QModelIndex ret;
-    QPoint p_t(p.x() + (MARGIN_OUTER + MARGIN_INDICES) + horizontalScrollBar()->value(),
-               p.y() + (MARGIN_OUTER) + verticalScrollBar()->value());
+    QPointF p_t(p.x() + horizontalScrollBar()->value(),
+                p.y() + verticalScrollBar()->value());
     if(m_boardRect.contains(p_t))
     {
         float x = p_t.x() - m_boardRect.x();
@@ -92,8 +95,12 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
         GASSERT(model());
         GASSERT(0 < x && 0 < y);
 
-        ret = model()->index(y / m_squareSize, x / m_squareSize);
+        ret = model()->index(floor(y / m_squareSize), floor(x / m_squareSize));
     }
+
+    // This is for debugging only, to see where this point is
+    viewport()->update();
+
     return ret;
 }
 
@@ -152,15 +159,15 @@ bool BoardView::isIndexHidden(const QModelIndex &index) const
 
 void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
 {
+    GUTIL_UNUSED(cmd);
     QModelIndex ind;
-    if(m_boardRect.contains(r.topLeft())){
-        ind = indexAt(r.topLeft());
+    QPoint p(r.x() + r.width() + horizontalScrollBar()->value(),
+             r.y() + r.height() + verticalScrollBar()->value());
+    if(m_boardRect.contains(p)){
+        ind = indexAt(p);
     }
-    selectionModel()->select(ind, cmd);
-    m_selectionBand.setVisible(ind.isValid());
-    if(ind.isValid()){
-        m_selectionBand.setGeometry(_get_rect_for_index(ind).toAlignedRect());
-    }
+    selectionModel()->select(ind, QItemSelectionModel::ClearAndSelect);
+    viewport()->update();
 }
 
 QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) const
@@ -188,6 +195,7 @@ void BoardView::_paint_board()
     if(!model())
         return;
 
+    QModelIndex cur_indx = currentIndex();
     QStyleOptionViewItem option = viewOptions();
     QStyle::State state = option.state;
 
@@ -202,7 +210,6 @@ void BoardView::_paint_board()
     painter.translate(-horizontalScrollBar()->value(), -verticalScrollBar()->value());
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(viewport()->rect(), background);
-
 
     // Shade the squares and paint the pieces
     QFont font_indices = painter.font();
@@ -294,6 +301,20 @@ void BoardView::_paint_board()
     // Draw the board outline (after shading the squares)
     painter.setPen(outline_pen);
     painter.drawRect(m_boardRect);
+
+    // Update the rubber band
+    m_selectionBand.setVisible(cur_indx.isValid());
+    if(cur_indx.isValid()){
+        QRectF tmp = _get_rect_for_index(cur_indx);
+        tmp.translate(-horizontalScrollBar()->value(),
+                      -verticalScrollBar()->value());
+        m_selectionBand.setGeometry(tmp.toAlignedRect());
+    }
+
+    // Any debug drawing?
+//    painter.drawPoint(temp_point);
+//    painter.setPen(Qt::red);
+//    painter.drawRect(temp_rect);
 }
 
 QRectF BoardView::_get_rect_for_index(const QModelIndex &ind) const
@@ -343,13 +364,14 @@ void BoardView::_update_board_rect()
 {
     if(model())
     {
-        m_boardRect = QRect(QPoint(MARGIN_OUTER + MARGIN_INDICES, MARGIN_OUTER),
-                            QPoint(m_squareSize * model()->columnCount() - MARGIN_OUTER,
-                                   m_squareSize * model()->rowCount() - MARGIN_OUTER - MARGIN_INDICES));
+        QPointF tl(MARGIN_OUTER + MARGIN_INDICES, MARGIN_OUTER);
+        QPointF br(tl.x() + m_squareSize * model()->columnCount(),
+                   tl.y() + m_squareSize * model()->rowCount());
+        m_boardRect = QRectF(tl, br);
     }
     else
     {
-        m_boardRect = QRect();
+        m_boardRect = QRectF();
     }
 
     updateGeometries();
