@@ -133,6 +133,7 @@ protected slots:
      *  \{
     */
     virtual void updateGeometries();
+    virtual void currentChanged(const QModelIndex &, const QModelIndex &);
     /** \} */
 
 

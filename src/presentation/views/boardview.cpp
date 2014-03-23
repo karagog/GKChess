@@ -67,15 +67,32 @@ QRect BoardView::visualRect(const QModelIndex &index) const
     QRect ret;
     if(index.isValid()){
         ret = _get_rect_for_index(index).toAlignedRect();
-        ret.translate(-horizontalScrollBar()->value(),
-                      -verticalScrollBar()->value());
+        ret.translate(-horizontalOffset(),
+                      -verticalOffset());
     }
     return ret;
 }
 
-void BoardView::scrollTo(const QModelIndex &, ScrollHint)
+void BoardView::scrollTo(const QModelIndex &index, ScrollHint)
 {
+    QRect area = viewport()->rect();
+    QRect rect = visualRect(index);
 
+    if (rect.left() < area.left())
+        horizontalScrollBar()->setValue(
+            horizontalOffset() + rect.left() - area.left());
+    else if (rect.right() > area.right())
+        horizontalScrollBar()->setValue(
+            horizontalOffset() + qMin(
+                rect.right() - area.right(), rect.left() - area.left()));
+
+    if (rect.top() < area.top())
+        verticalScrollBar()->setValue(
+            verticalOffset() + rect.top() - area.top());
+    else if (rect.bottom() > area.bottom())
+        verticalScrollBar()->setValue(
+            verticalOffset() + qMin(
+                rect.bottom() - area.bottom(), rect.top() - area.top()));
 }
 
 void BoardView::updateGeometries()
@@ -90,8 +107,8 @@ void BoardView::updateGeometries()
 QModelIndex BoardView::indexAt(const QPoint &p) const
 {
     QModelIndex ret;
-    QPointF p_t(p.x() + horizontalScrollBar()->value(),
-                p.y() + verticalScrollBar()->value());
+    QPointF p_t(p.x() + horizontalOffset(),
+                p.y() + verticalOffset());
     if(m_boardRect.contains(p_t))
     {
         float x = p_t.x() - m_boardRect.x();
@@ -145,14 +162,12 @@ QModelIndex BoardView::moveCursor(CursorAction ca, Qt::KeyboardModifiers modifie
 
 int BoardView::horizontalOffset() const
 {
-    //return MARGIN_OUTER + MARGIN_INDICES;
-    return 0;
+    return horizontalScrollBar()->value();
 }
 
 int BoardView::verticalOffset() const
 {
-    //return MARGIN_OUTER;
-    return 0;
+    return verticalScrollBar()->value();
 }
 
 bool BoardView::isIndexHidden(const QModelIndex &index) const
@@ -164,13 +179,18 @@ bool BoardView::isIndexHidden(const QModelIndex &index) const
 void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
 {
     GUTIL_UNUSED(cmd);
-    QPoint p(r.x() + r.width() + horizontalScrollBar()->value(),
-             r.y() + r.height() + verticalScrollBar()->value());
-    QModelIndex ind = indexAt(p);
-    selectionModel()->select(ind, QItemSelectionModel::ClearAndSelect);
+    selectionModel()->select(indexAt(QPoint(r.center().x() + horizontalOffset(),
+                                            r.center().y() + verticalOffset())),
+                             QItemSelectionModel::ClearAndSelect);
+}
+
+void BoardView::currentChanged(const QModelIndex &cur, const QModelIndex & prev)
+{
+    QAbstractItemView::currentChanged(cur, prev);
+
     GetBoardModel()->ClearSquareHighlighting();
-    if(ind.isValid()){
-        GetBoardModel()->HighlightSquare(GetBoardModel()->ConvertIndexToSquare(ind), Qt::green);
+    if(cur.isValid()){
+        GetBoardModel()->HighlightSquare(GetBoardModel()->ConvertIndexToSquare(cur), Qt::green);
     }
     viewport()->update();
 }
@@ -215,7 +235,7 @@ void BoardView::_paint_board()
     QPen piece_pen(m_pieceColor);
 
     QPainter painter(viewport());
-    painter.translate(-horizontalScrollBar()->value(), -verticalScrollBar()->value());
+    painter.translate(-horizontalOffset(), -verticalOffset());
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(viewport()->rect(), background);
 
@@ -333,14 +353,14 @@ void BoardView::_paint_board()
     m_selectionBand.setVisible(cur_indx.isValid());
     if(cur_indx.isValid()){
         QRectF tmp = _get_rect_for_index(cur_indx);
-        tmp.translate(-horizontalScrollBar()->value(),
-                      -verticalScrollBar()->value());
+        tmp.translate(-horizontalOffset(),
+                      -verticalOffset());
         m_selectionBand.setGeometry(tmp.toAlignedRect());
     }
 
     // Any debug drawing?
-//    painter.drawPoint(temp_point);
 //    painter.setPen(Qt::red);
+//    painter.drawPoint(temp_point);
 //    painter.drawRect(temp_rect);
 }
 
