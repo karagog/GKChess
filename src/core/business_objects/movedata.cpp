@@ -12,30 +12,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "movedata.h"
 
-#include "gkchess_gamemodel.h"
-#include "gkchess_gamelogic.h"
-#include <QMainWindow>
+NAMESPACE_GKCHESS;
 
-namespace Ui {
-class MainWindow;
-}
 
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
+MoveData::MoveData()
+    :Source(0),
+      Destination(0),
+      CastleType(NoCastle),
+      PieceMoved(),
+      PieceCaptured(),
+      PiecePromoted()
+{}
 
-    GKChess::GameLogic m_game;
-    GKChess::UI::GameModel m_gameModel;
 
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-
-private:
-    Ui::MainWindow *ui;
-};
-
-#endif // MAINWINDOW_H
+END_NAMESPACE_GKCHESS;

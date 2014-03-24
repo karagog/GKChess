@@ -14,12 +14,19 @@ limitations under the License.*/
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "gkchess_pgn_parser.h"
+USING_NAMESPACE_GKCHESS;
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent)
+    :QMainWindow(parent),
+      ui(new Ui::MainWindow),
+      m_gameModel(&m_game)
 {
     ui->setupUi(this);
+
+    m_game.SetupNewGame();
+
+    ui->boardView->setModel(&m_gameModel);
 }
 
 MainWindow::~MainWindow()

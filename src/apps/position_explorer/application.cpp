@@ -12,30 +12,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "application.h"
+USING_NAMESPACE_GUTIL2(QT, Custom);
 
-#include "gkchess_gamemodel.h"
-#include "gkchess_gamelogic.h"
-#include <QMainWindow>
-
-namespace Ui {
-class MainWindow;
+PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
+    :Application(argc, argv, "Position Explorer")
+{
+    m_mainWindow.show();
 }
 
-class MainWindow : public QMainWindow
+
+void PositionExplorerApplication::about_to_quit()
 {
-    Q_OBJECT
-
-    GKChess::GameLogic m_game;
-    GKChess::UI::GameModel m_gameModel;
-
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-
-private:
-    Ui::MainWindow *ui;
-};
-
-#endif // MAINWINDOW_H
+    m_mainWindow.hide();
+}

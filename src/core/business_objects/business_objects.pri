@@ -6,7 +6,8 @@ HEADERS += \
     business_objects/clock.h \
     business_objects/pgn_move_data.h \
     business_objects/abstractboard.h \
-    business_objects/board.h
+    business_objects/board.h \
+    business_objects/movedata.h
 
 SOURCES += \
     business_objects/piece.cpp \
@@ -14,4 +15,5 @@ SOURCES += \
     business_objects/clock.cpp \
     business_objects/pgn_move_data.cpp \
     business_objects/abstractboard.cpp \
-    business_objects/board.cpp
+    business_objects/board.cpp \
+    business_objects/movedata.cpp

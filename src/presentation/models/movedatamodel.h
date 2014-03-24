@@ -12,30 +12,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef GKCHESS_MOVEDATAMODEL_H
+#define GKCHESS_MOVEDATAMODEL_H
 
-#include "gkchess_gamemodel.h"
-#include "gkchess_gamelogic.h"
-#include <QMainWindow>
+#include "gkchess_movedata.h"
+#include <QAbstractItemModel>
 
-namespace Ui {
-class MainWindow;
-}
+namespace GKChess{ namespace UI{
 
-class MainWindow : public QMainWindow
+
+/** A model to display move data in its normally list form, but also tree form if necessary. */
+class MoveDataModel :
+        public QAbstractItemModel
 {
     Q_OBJECT
-
-    GKChess::GameLogic m_game;
-    GKChess::UI::GameModel m_gameModel;
-
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    explicit MoveDataModel(QObject *parent = 0);
 
-private:
-    Ui::MainWindow *ui;
 };
 
-#endif // MAINWINDOW_H
+
+}}
+
+#endif // GKCHESS_MOVEDATAMODEL_H

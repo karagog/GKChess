@@ -31,18 +31,12 @@
      </widget>
     </item>
     <item>
-     <widget class="GKChess::UI::BoardView" name="boardView">
+     <widget class="GKChess::UI::BoardView" name="boardView" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>1</verstretch>
        </sizepolicy>
-      </property>
-      <property name="dragDropMode">
-       <enum>QAbstractItemView::DragDrop</enum>
-      </property>
-      <property name="defaultDropAction">
-       <enum>Qt::MoveAction</enum>
       </property>
      </widget>
     </item>
@@ -208,8 +202,9 @@
   </customwidget>
   <customwidget>
    <class>GKChess::UI::BoardView</class>
-   <extends>QTableView</extends>
+   <extends>QWidget</extends>
    <header>gkchess_boardview.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

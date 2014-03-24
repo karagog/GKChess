@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_igamelogic.h"
 #include "gkchess_board.h"
 #include "gkchess_pgn_move_data.h"
+#include "gkchess_movedata.h"
 #include "gutil_map.h"
 #include <QObject>
 
@@ -58,7 +59,7 @@ public:
      *  \{
     */
     virtual AbstractBoard const &GetBoard() const;
-    virtual void SetupNewGame(SetupTypeEnum);
+    virtual void SetupNewGame(SetupTypeEnum = StandardChess);
     virtual void Move(const PGN_MoveData &);
     virtual void Move(const MoveData &);
     /** \} */

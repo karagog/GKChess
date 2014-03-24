@@ -23,6 +23,7 @@ NAMESPACE_GKCHESS;
 class AbstractBoard;
 class ISquare;
 class PGN_MoveData;
+class MoveData;
 
 
 /** Defines the game logic interface.
@@ -72,39 +73,6 @@ public:
          *  your validation types with this value.
         */
         CustomInvalidMoveOffset = 100
-    };
-
-    /** Holds all the information we need to do and undo a move. */
-    struct MoveData
-    {
-        /** The starting square.  If the move was a castle this will be null. */
-        ISquare const *Source;
-
-        /** The ending square.  If the move was a castle this will be null. */
-        ISquare const *Destination;
-
-        /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
-        enum CastleTypeEnum
-        {
-            NoCastle = 0,
-            CastleNormal = 1,
-            CastleQueenside = -1
-        }
-        CastleType;
-
-        /** The piece being moved. */
-        Piece PieceMoved;
-
-        /** The captured piece, if any. If this is type NoPiece then the
-         *  move did not involve a capture.
-        */
-        Piece PieceCaptured;
-
-        /** The piece that was promoted, if any. If this is type NoPiece then the
-         *  move did not involve a promotion. */
-        Piece PiecePromoted;
-
-        MoveData();
     };
 
 

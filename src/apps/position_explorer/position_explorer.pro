@@ -18,13 +18,19 @@ DEFINES +=
 
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \
+    -L$$TOP_DIR/lib \
     -L$$TOP_DIR/gutil/lib \
-    -lGUtil
+    -lGUtil \
+    -lGUtilQt \
+    -lGKChess_core \
+    -lGKChess_presentation
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    application.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    application.h
 
 FORMS    += mainwindow.ui

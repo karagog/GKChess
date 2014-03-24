@@ -20,15 +20,6 @@ USING_NAMESPACE_GUTIL1(DataObjects);
 NAMESPACE_GKCHESS;
 
 
-GameLogic::MoveData::MoveData()
-    :Source(0),
-      Destination(0),
-      CastleType(NoCastle),
-      PieceMoved(),
-      PieceCaptured(),
-      PiecePromoted()
-{}
-
 GameLogic::GameLogic(QObject *p)
     :QObject(p)
 {}
@@ -295,7 +286,7 @@ static bool __is_move_valid_for_king(Board const *b,
     return 1 >= col_diff_abs && 1 >= row_diff_abs;
 }
 
-GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
+MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 {
     MoveData ret;
     Piece::AllegienceEnum turn = m_board.GetWhoseTurn();
