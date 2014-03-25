@@ -184,8 +184,7 @@ bool BoardView::isIndexHidden(const QModelIndex &index) const
 void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
 {
     GUTIL_UNUSED(cmd);
-    selectionModel()->select(indexAt(QPoint(r.center().x() + horizontalOffset(),
-                                            r.center().y() + verticalOffset())),
+    selectionModel()->select(indexAt(QPoint(r.center().x(), r.center().y())),
                              QItemSelectionModel::ClearAndSelect);
 }
 
