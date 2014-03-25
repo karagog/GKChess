@@ -53,7 +53,9 @@ BoardView::BoardView(QWidget *parent)
       m_pieceColor(Qt::black),
       m_selectionBand(QRubberBand::Rectangle, this)
 {
-
+    setDragEnabled(true);
+    setAcceptDrops(true);
+    //setDropIndicatorShown(true);
 }
 
 BoardView::~BoardView()
@@ -125,9 +127,6 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
 
         ret = model()->index(y / m_squareSize, x / m_squareSize);
     }
-
-    viewport()->update();
-
     return ret;
 }
 
