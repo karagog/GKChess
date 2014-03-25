@@ -25,6 +25,7 @@ USING_NAMESPACE_GKCHESS1(UI);
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     m_board(PGN_Parser::FromX_FEN(FEN_STANDARD_CHESS_STARTING_POSITION)),
+    //m_board(PGN_Parser::FromX_FEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);

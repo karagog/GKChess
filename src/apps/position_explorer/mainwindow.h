@@ -27,15 +27,13 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    Ui::MainWindow *ui;
     GKChess::GameLogic m_game;
     GKChess::UI::GameModel m_gameModel;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
-private:
-    Ui::MainWindow *ui;
 };
 
 #endif // MAINWINDOW_H

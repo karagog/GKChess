@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_BOARDMODEL_H
 
 #include "gutil_map.h"
+#include "gkchess_piece.h"
 #include <QColor>
 #include <QAbstractTableModel>
 
@@ -49,6 +50,9 @@ public:
      *  this object.
     */
     explicit BoardModel(AbstractBoard const *, QObject *parent = 0);
+
+    /** Returns who has the current turn. */
+    Piece::AllegienceEnum GetWhoseTurn() const;
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.

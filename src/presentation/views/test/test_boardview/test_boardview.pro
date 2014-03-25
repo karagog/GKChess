@@ -11,8 +11,9 @@ LIBS += \
     -L$$TOP_DIR/gutil/lib \
     -L$$TOP_DIR/lib \
     -lGUtil \
-    -lGKChess_presentation \
-    -lGKChess_core
+    -lGUtilQt \
+    -lGKChess_core \
+    -lGKChess_presentation
 
 QT       += core gui webkit
 

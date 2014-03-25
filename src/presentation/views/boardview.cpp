@@ -15,6 +15,7 @@ limitations under the License.*/
 #include "boardview.h"
 #include "gkchess_piece.h"
 #include "gkchess_boardmodel.h"
+#include "gutil_paintutils.h"
 #include <QXmlStreamWriter>
 #include <QVBoxLayout>
 #include <QPaintEvent>
@@ -24,6 +25,7 @@ limitations under the License.*/
 #include <QScrollBar>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(DataObjects);
+USING_NAMESPACE_GUTIL2(QT, Utils);
 USING_NAMESPACE_GKCHESS;
 
 NAMESPACE_GKCHESS1(UI);
@@ -37,6 +39,11 @@ NAMESPACE_GKCHESS1(UI);
 #define BOARD_OUTLINE_THICKNESS 3
 
 #define HIGHLIGHT_THICKNESS 10
+
+/** Defines the distance the "current turn" arrow is from the board, as a
+ *  factor of the square size.
+*/
+#define CURRENT_TURN_ARROW_OFFSET   0.4
 
 
 BoardView::BoardView(QWidget *parent)
@@ -100,7 +107,7 @@ void BoardView::updateGeometries()
     QAbstractItemView::updateGeometries();
 
     // Update the scrollbars whenever our geometry changes
-    horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->width()));
+    horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES + m_squareSize - viewport()->width()));
     verticalScrollBar()->setRange(0, Max(0.0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
 }
 
@@ -238,6 +245,16 @@ void BoardView::_paint_board()
     painter.translate(-horizontalOffset(), -verticalOffset());
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(viewport()->rect(), background);
+
+    // Draw the "current turn" arrow
+    {
+        QPointF pt1(m_boardRect.topRight().x() + m_squareSize*CURRENT_TURN_ARROW_OFFSET,
+                    m_boardRect.topRight().y() + m_boardRect.height()/2 - (m_squareSize/2));
+        QPointF pt2(pt1.x(), pt1.y() + m_squareSize);
+        if(Piece::Black == GetBoardModel()->GetWhoseTurn())
+            gSwap(&pt1, &pt2);
+        PaintUtils::DrawArrow(painter, pt1, pt2, m_squareSize*0.35);
+    }
 
     // Shade the squares and paint the pieces
     QFont font_indices = painter.font();

@@ -15,6 +15,7 @@ LIBS += \
     -L$$TOP_DIR/gutil/lib \
     -L$$TOP_DIR/lib \
     -lGUtil \
+    -lGUtilQt \
     -lGKChess_core
 
 unix {

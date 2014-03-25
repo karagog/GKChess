@@ -209,5 +209,10 @@ void BoardModel::ClearSquareHighlighting()
     }
 }
 
+Piece::AllegienceEnum BoardModel::GetWhoseTurn() const
+{
+    return m_board->GetWhoseTurn();
+}
+
 
 END_NAMESPACE_GKCHESS1;
