@@ -57,7 +57,7 @@ struct MoveData
     /** Stores a list of moves that could have been done instead of this.
      *  This will help support deep position exploration.
     */
-    GUtil::DataObjects::Vector<MoveData> AlternateMoves;
+    GUtil::Vector<MoveData> AlternateMoves;
 
     MoveData();
 

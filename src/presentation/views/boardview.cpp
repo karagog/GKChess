@@ -24,8 +24,7 @@ limitations under the License.*/
 #include <QRubberBand>
 #include <QScrollBar>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(DataObjects);
-USING_NAMESPACE_GUTIL2(QT, Utils);
+USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
 
 NAMESPACE_GKCHESS1(UI);

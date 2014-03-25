@@ -42,7 +42,7 @@ class BoardModel :
     };
 
     AbstractBoard const *m_board;
-    GUtil::DataObjects::Map<ISquare const *, formatting_options_t> m_formattingOptions;
+    GUtil::Map<ISquare const *, formatting_options_t> m_formattingOptions;
 public:
 
     /** You must give the model a reference to a chessboard

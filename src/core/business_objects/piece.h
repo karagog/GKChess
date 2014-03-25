@@ -81,7 +81,7 @@ public:
     bool IsNull() const{ return NoPiece == GetType(); }
 
     /** Returns a human-readable string to describe the piece. */
-    virtual ::GUtil::DataObjects::String ToString(bool with_allegience = false) const;
+    virtual GUtil::String ToString(bool with_allegience = false) const;
 
     /** Returns the unicode point of the piece. You can display this in any text viewer
      *  that supports unicode characters.
@@ -89,7 +89,7 @@ public:
     int UnicodeValue() const;
     
     /** Returns the UTF-8 multi-byte representation of the piece. */
-    GUtil::DataObjects::String GetUtf8Char() const;
+    GUtil::String GetUtf8Char() const;
     
     /** Returns the PGN representation of the piece, which does not have allegience information,
      *  and pawns are an empty string. */

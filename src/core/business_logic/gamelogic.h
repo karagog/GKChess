@@ -35,8 +35,8 @@ class GameLogic :
     Board m_board;
 
     // These facilitate fast piece lookups
-    GUtil::DataObjects::Map<Piece::PieceTypeEnum, ISquare const *> m_whitePieceIndex;
-    GUtil::DataObjects::Map<Piece::PieceTypeEnum, ISquare const *> m_blackPieceIndex;
+    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_whitePieceIndex;
+    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_blackPieceIndex;
 
 public:
 
@@ -48,7 +48,7 @@ public:
      *
      *  This lookup is done in O(log(N)) time, where N is the number of different types of pieces.
     */
-    GUtil::DataObjects::Vector<ISquare const *> FindPieces(const Piece &) const;
+    GUtil::Vector<ISquare const *> FindPieces(const Piece &) const;
 
     /** Determines if the move is valid, according to the rules of standard chess.
      *  This is virtual to allow you to customize your own move validation if you like.

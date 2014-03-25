@@ -17,9 +17,6 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gutil_file.h"
 #include "gkchess_pgn_parser.h"
-USING_NAMESPACE_GUTIL1(DataAccess);
-USING_NAMESPACE_GUTIL1(DataObjects);
-USING_NAMESPACE_GUTIL1(Logging);
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 

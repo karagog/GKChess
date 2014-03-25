@@ -14,9 +14,6 @@ limitations under the License.*/
 
 #include "pgn_player.h"
 #include "gutil_file.h"
-
-USING_NAMESPACE_GUTIL1(DataAccess);
-USING_NAMESPACE_GUTIL1(DataObjects);
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;

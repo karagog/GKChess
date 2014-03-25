@@ -15,7 +15,6 @@ limitations under the License.*/
 #include "gamelogic.h"
 #include "gkchess_pgn_parser.h"
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(DataObjects);
 
 NAMESPACE_GKCHESS;
 

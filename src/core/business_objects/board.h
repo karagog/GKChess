@@ -49,7 +49,7 @@ class Board :
         void SetPiece(const Piece &p);
     };
     
-    GUtil::DataObjects::Vector<Square> m_squares;
+    GUtil::Vector<Square> m_squares;
     Piece::AllegienceEnum m_currentTurn;
     int m_halfMoveClock;
     int m_fullMoveNumber;

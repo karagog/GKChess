@@ -17,7 +17,7 @@ limitations under the License.*/
 #include <QFont>
 #include <QMimeData>
 #include <QStringList>
-USING_NAMESPACE_GUTIL1(DataObjects);
+USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS1(UI);
 

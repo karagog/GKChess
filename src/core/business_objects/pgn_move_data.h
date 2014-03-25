@@ -90,15 +90,15 @@ struct PGN_MoveData
     MoveTypeFlags Flags;
 
     /** Holds the move text directly from the PGN file. */
-    GUtil::DataObjects::String Text;
+    GUtil::String Text;
 
     /** If there is a comment for the move it is stored here. */
-    GUtil::DataObjects::String Comment;
+    GUtil::String Comment;
 
     /** Returns a human-readable description of the move.
      *  For example: "Pawn takes e5"
     */
-    GUtil::DataObjects::String ToString() const;
+    GUtil::String ToString() const;
 
     PGN_MoveData();
 };

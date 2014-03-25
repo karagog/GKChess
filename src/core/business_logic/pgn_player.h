@@ -34,10 +34,10 @@ public:
     PGN_Player();
 
     /** Parses the PGN data from the given string. */
-    void LoadFromString(const GUtil::DataObjects::String &);
+    void LoadFromString(const GUtil::String &);
     
     /** Parses the PGN data from the given file. */
-    void LoadFromFile(const GUtil::DataObjects::String &);
+    void LoadFromFile(const GUtil::String &);
 
     /** Returns true if PGN data has been successfully loaded. */
     bool IsLoaded() const{ return m_pgnData; }
@@ -61,7 +61,7 @@ public:
 private:
 
     GameLogic m_game;
-    GUtil::Utils::SmartPointer<PGN_Parser::Data> m_pgnData;
+    GUtil::SmartPointer<PGN_Parser::Data> m_pgnData;
 
 };
 

@@ -29,21 +29,21 @@ class PGN_Parser
 public:
 
     /** Parses the UTF-8 string. Throws an exception on error. */
-    PGN_Parser(const GUtil::DataObjects::String &utf8);
+    PGN_Parser(const GUtil::String &utf8);
 
     /** Holds all data parsed by the PGN_Parser. */
     struct Data
     {
         /** The string tags that precede the moves. */
-        GUtil::DataObjects::Map<GUtil::DataObjects::String, GUtil::DataObjects::String> Tags;
+        GUtil::Map<GUtil::String, GUtil::String> Tags;
 
         /** Stores the initial position given in the PGN file, in the SetUp tag in X-FEN notation.
          *  If the board is null, then you can assume the standard chess starting position.
         */
-        GUtil::Utils::SmartPointer<Board> InitialPosition;
+        GUtil::SmartPointer<Board> InitialPosition;
         
         /** All the move data. */
-        GUtil::DataObjects::Vector<PGN_MoveData> Moves;
+        GUtil::Vector<PGN_MoveData> Moves;
         
         /** The result is 1 if White won, -1 if Black won and 0 if it was a draw.
          *  It is MAX_INT if the result was not given.
@@ -62,19 +62,19 @@ public:
      *  Since X-FEN is backwards compatible with FEN (Forsyth-Edwards Notation) you
      *  can also pass FEN strings to it.
     */
-    static Board FromX_FEN(const GUtil::DataObjects::String &);
+    static Board FromX_FEN(const GUtil::String &);
 
 private:
 
     Data m_data;
 
     /** Populates the heading tags and returns an iterator to the start of the move data section. */
-    typename GUtil::DataObjects::String::UTF8ConstIterator
-        _parse_heading(const GUtil::DataObjects::String &);
+    typename GUtil::String::UTF8ConstIterator
+        _parse_heading(const GUtil::String &);
 
-    void _parse_moves(const GUtil::DataObjects::String &);
+    void _parse_moves(const GUtil::String &);
 
-    bool _new_movedata_from_string(PGN_MoveData &, const GUtil::DataObjects::String &);
+    bool _new_movedata_from_string(PGN_MoveData &, const GUtil::String &);
 
 };
 

@@ -22,7 +22,7 @@ limitations under the License.*/
 class MainWindow;
 
 class PositionExplorerApplication :
-        public GUtil::QT::Custom::Application
+        public GUtil::QT::Application
 {
     Q_OBJECT
     MainWindow m_mainWindow;

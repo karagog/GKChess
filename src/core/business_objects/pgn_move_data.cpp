@@ -14,7 +14,6 @@ limitations under the License.*/
 
 #include "pgn_move_data.h"
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(DataObjects);
 
 NAMESPACE_GKCHESS;
 

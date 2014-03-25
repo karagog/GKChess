@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "piece.h"
-USING_NAMESPACE_GUTIL1(DataObjects);
+USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 

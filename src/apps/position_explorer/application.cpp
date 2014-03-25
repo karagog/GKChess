@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "application.h"
-USING_NAMESPACE_GUTIL2(QT, Custom);
+USING_NAMESPACE_GUTIL1(QT);
 
 PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
     :Application(argc, argv, "Position Explorer")
