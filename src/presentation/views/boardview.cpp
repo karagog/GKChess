@@ -108,7 +108,7 @@ void BoardView::updateGeometries()
     QAbstractItemView::updateGeometries();
 
     // Update the scrollbars whenever our geometry changes
-    horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES + m_squareSize - viewport()->width()));
+    horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES + (CURRENT_TURN_ARROW_OFFSET + 1)*m_squareSize - viewport()->width()));
     verticalScrollBar()->setRange(0, Max(0.0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
 }
 
@@ -243,14 +243,17 @@ void BoardView::_paint_board()
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(viewport()->rect(), background);
 
-    // Draw the "current turn" arrow
+    // Draw the "current turn" indicator
     {
-        QPointF pt1(m_boardRect.topRight().x() + m_squareSize*CURRENT_TURN_ARROW_OFFSET,
-                    m_boardRect.topRight().y() + m_boardRect.height()/2 - (m_squareSize/2));
-        QPointF pt2(pt1.x(), pt1.y() + m_squareSize);
-        if(Piece::Black == GetBoardModel()->GetWhoseTurn())
-            gSwap(&pt1, &pt2);
-        PaintUtils::DrawArrow(painter, pt1, pt2, m_squareSize*0.35);
+        QRectF indicator_rect(m_boardRect.topRight().x() + m_squareSize*CURRENT_TURN_ARROW_OFFSET,
+                              m_boardRect.topRight().y() + m_boardRect.height()/2 - (m_squareSize/2),
+                              m_squareSize,
+                              m_squareSize);
+        painter.fillRect(indicator_rect, 
+                         Piece::White == GetBoardModel()->GetWhoseTurn() ? 
+                         m_lightSquareColor : m_darkSquareColor);
+        painter.setPen(outline_pen);
+        painter.drawRect(indicator_rect);
     }
 
     // Shade the squares and paint the pieces
