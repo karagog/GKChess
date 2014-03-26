@@ -28,14 +28,13 @@ GameLogic::~GameLogic()
 
 void GameLogic::SetupNewGame(GameLogic::SetupTypeEnum ste)
 {
-    m_board.Clear();
     m_whitePieceIndex.Clear();
     m_blackPieceIndex.Clear();
 
     switch(ste)
     {
     case StandardChess:
-        m_board = PGN_Parser::FromX_FEN(FEN_STANDARD_CHESS_STARTING_POSITION);
+        m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
         break;
     default:
         break;

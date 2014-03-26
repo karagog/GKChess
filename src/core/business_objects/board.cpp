@@ -61,26 +61,30 @@ Board::Board(QObject *parent)
             m_squares.PushBack(Square(c, r));
 }
 
-Board::Board(const Board &o)
+Board::Board(const AbstractBoard &o)
     :AbstractBoard(o.parent()),
-      m_squares(o.m_squares),
-      m_currentTurn(o.m_currentTurn),
-      m_halfMoveClock(o.m_halfMoveClock),
-      m_fullMoveNumber(o.m_fullMoveNumber),
-      m_enPassantSquare(o.m_enPassantSquare),
-      m_whiteCastleInfo(o.m_whiteCastleInfo),
-      m_blackCastleInfo(o.m_blackCastleInfo)
-{}
-
-Board &Board::operator = (const Board &o)
+      m_currentTurn(o.GetWhoseTurn()),
+      m_halfMoveClock(o.GetHalfMoveClock()),
+      m_fullMoveNumber(o.GetFullMoveNumber()),
+      m_enPassantSquare(o.GetEnPassantSquare()),
+      m_whiteCastleInfo(o.GetCastleInfo(Piece::White)),
+      m_blackCastleInfo(o.GetCastleInfo(Piece::Black))
 {
-    m_squares = o.m_squares;
-    m_currentTurn = o.m_currentTurn;
-    m_halfMoveClock = o.m_halfMoveClock;
-    m_fullMoveNumber = o.m_fullMoveNumber;
-    m_enPassantSquare = o.m_enPassantSquare;
-    m_whiteCastleInfo = o.m_whiteCastleInfo;
-    m_blackCastleInfo = o.m_blackCastleInfo;
+    if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot copy from different sized board");
+    for(int c = 0; c < ColumnCount(); ++c){
+        for(int r = 0; r < RowCount(); ++r){
+            Piece const *p = o.GetPiece(c, r);
+            if(p)
+                SetPiece(*p, c, r);
+        }
+    }
+}
+
+Board &Board::operator = (const AbstractBoard &o)
+{
+    this->~Board();
+    new(this) Board(o);
     return *this;
 }
 

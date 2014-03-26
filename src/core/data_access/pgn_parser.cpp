@@ -13,16 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "pgn_parser.h"
+#include "gkchess_board.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
 
-PGN_Parser::Data::Data()
+PGN_Parser::Data_t::Data_t()
     :Result(INT_MAX)
 {}
 
-PGN_Parser::Data::Data(const Data &o)
+PGN_Parser::Data_t::Data_t(const Data_t &o)
     :Tags(o.Tags),
       InitialPosition(o.InitialPosition ? new Board(*o.InitialPosition) : 0),
       Moves(o.Moves),
@@ -30,6 +31,7 @@ PGN_Parser::Data::Data(const Data &o)
 {}
 
 #define SETUP_TAG "SetUp"
+#define FEN_TAG "FEN"
 
 PGN_Parser::PGN_Parser(String const &s)
 {
@@ -41,9 +43,12 @@ PGN_Parser::PGN_Parser(String const &s)
     _parse_moves(String(move_section_start, s.endUTF8()).Replace("\n", " "));
 
     // If there was a "SetUp" tag, then parse the initial position
-    if(m_data.Tags.Contains(SETUP_TAG))
+    if(Data.Tags.Contains(SETUP_TAG) && "1" == Data.Tags.Values(SETUP_TAG)[0])
     {
-        m_data.InitialPosition = new Board(FromX_FEN(m_data.Tags.Values(SETUP_TAG)[0]));
+        if(!Data.Tags.Contains(FEN_TAG))
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The SetUp tag was given, but no FEN tag");
+        Data.InitialPosition = new Board;
+        Data.InitialPosition->FromFEN(Data.Tags.Values(FEN_TAG)[0]);
     }
 }
 
@@ -80,7 +85,7 @@ typename String::UTF8ConstIterator PGN_Parser::_parse_heading(const String &pgn_
                                                "Invalid nested brackets");
                     break;
                 case ']':
-                    m_data.Tags.Insert(tmp_key, tmp_value);
+                    Data.Tags.Insert(tmp_key, tmp_value);
                     inside_tag = false;
                     skip_char = true;
                     break;
@@ -192,15 +197,15 @@ bool PGN_Parser::_new_movedata_from_string(PGN_MoveData &m, const String &s)
     else if(INT_MAX != m.Text.ToUpper().IndexOf("O-O"))
         m.Flags.SetFlag(PGN_MoveData::CastleNormal, true);
     else if(INT_MAX != m.Text.IndexOf("1-0")){
-        m_data.Result = 1;
+        Data.Result = 1;
         ret = false;
     }
     else if(INT_MAX != m.Text.IndexOf("0-1")){
-        m_data.Result = -1;
+        Data.Result = -1;
         ret = false;
     }
     else if(INT_MAX != m.Text.IndexOf("1/2-1/2")){
-        m_data.Result = 0;
+        Data.Result = 0;
         ret = false;
     }
     else
@@ -337,13 +342,13 @@ void PGN_Parser::_parse_moves(const String &move_text)
             {
                 PGN_MoveData m;
                 if(_new_movedata_from_string(m, sl2[0]))
-                    m_data.Moves.PushBack(m);
+                    Data.Moves.PushBack(m);
             }
 
             if(1 < sl2.Length()){
                 PGN_MoveData m;
                 if(_new_movedata_from_string(m, sl2[1]))
-                    m_data.Moves.PushBack(m);
+                    Data.Moves.PushBack(m);
             }
         }
 
@@ -351,167 +356,6 @@ void PGN_Parser::_parse_moves(const String &move_text)
             number_text = sl2[2];
         }
     }
-}
-
-Board PGN_Parser::FromX_FEN(const String &s)
-{
-    Board ret;
-    String cpy( s.Trimmed() );
-    StringList sl( cpy.Split(' ', false) );
-    if(6 != sl.Length())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN requires 6 fields separated by spaces");
-
-    // First parse the position text:
-    {
-        StringList sl2( sl[0].Split('/', false) );
-        if(8 != sl2.Length())
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN position text requires 8 fields separated by /");
-
-        // For each section of position text...
-        for(int i = 0; i < sl2.Length(); ++i)
-        {
-            int col = 0;
-            typename String::const_iterator iter(sl2[i].begin());
-            typename String::const_iterator next(iter + 1);
-
-            // For each character in the section...
-            for(;
-                iter != sl2[i].end() && col < ret.ColumnCount();
-                ++iter)
-            {
-                int num(-1);
-                char c = *iter.Current();
-                char n = (next == sl2[i].end() ? 0 : *next.Current());
-                if(String::IsNumber(c))
-                {
-                    // Normally numbers are single digit, but we want to support larger boards too
-                    if(String::IsNumber(n))
-                        num = String(iter, next + 1).ToInt();
-                    else
-                        num = String(c).ToInt();
-                }
-
-                if(-1 != num)
-                {
-                    // Numbers define empty space
-                    col += num;
-                }
-                else
-                {
-                    ret.SetPiece(Piece::FromFEN(c), col, 7 - i);
-                    col++;
-                }
-
-                if(next != sl2[i].end())
-                    ++next;
-            }
-        }
-    }
-
-
-    // Then parse whose turn it is:
-    {
-        Piece::AllegienceEnum a;
-        switch(sl[1][0])
-        {
-        case 'b':
-            a = Piece::Black;
-            break;
-        case 'w':
-            a = Piece::White;
-            break;
-        default:
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The current turn must be either a 'w' or 'b'");
-        }
-        ret.SetWhoseTurn(a);
-    }
-
-
-    // Then parse the castle info:
-    {
-        GASSERT(0 == ret.GetCastleInfo(Piece::White));
-        GASSERT(0 == ret.GetCastleInfo(Piece::Black));
-
-        G_FOREACH_CONST(char c, sl[2])
-        {
-            Piece::AllegienceEnum a = String::IsUpper(c) ? Piece::White : Piece::Black;
-            char tmps[2] = {c, '\0'};
-            String::ToUpper(&c, tmps);
-            switch(c)
-            {
-            case '-':
-                // If a dash is given, then this field is empty (nobody can castle)
-                break;
-            case 'K':
-                // Standard FEN - translate to X-FEN
-                c = 'H';
-                break;
-            case 'Q':
-                // Standard FEN - translate to X-FEN
-                c = 'A';
-                break;
-            default:
-                break;
-            }
-
-            // X-FEN specifies the castle files occupied by the rooks, the char must fall in
-            //  the range from a-h
-            if('A' <= c && c <= 'H')
-            {
-                GUINT8 cur = ret.GetCastleInfo(a);
-
-                if(0 != (0xF0 & cur))
-                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Too many castling parameters");
-
-                GUINT8 tmp = c - 'A' + 1;
-                if(0 != (0x0F & cur))
-                    tmp = tmp << 4;
-
-                ret.SetCastleInfo(a, tmp | cur);
-            }
-            else
-            {
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "There was an error with the castle info");
-            }
-        }
-    }
-
-
-    // Parse the en-passant square:
-    {
-        if(sl[3] != "-")
-        {
-            if(sl[3].Length() != 2)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid En Passant square");
-
-            char f = sl[3][0];
-            char rnk = sl[3][1];
-            if(f < 'a' || 'h' < f || rnk < '1' || '8' < rnk)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid En Passant square");
-
-            ret.SetEnPassantSquare(&ret.SquareAt(f - 'a', rnk - '1'));
-        }
-    }
-
-
-    // Parse the half-move clock:
-    {
-        bool ok(false);
-        ret.SetHalfMoveClock(sl[4].ToInt(&ok));
-        if(!ok)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid half-move clock");
-    }
-
-
-    // Parse the full-move number:
-    {
-        bool ok(false);
-        ret.SetFullMoveNumber(sl[5].ToInt(&ok));
-        if(!ok)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid full-move number");
-    }
-
-    return ret;
 }
 
 

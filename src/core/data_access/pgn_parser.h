@@ -15,15 +15,21 @@ limitations under the License.*/
 #ifndef PGN_PARSER_H
 #define PGN_PARSER_H
 
-#include "gkchess_piece.h"
 #include "gkchess_pgn_move_data.h"
-#include "gkchess_board.h"
 #include "gutil_map.h"
 
 NAMESPACE_GKCHESS;
 
 
-/** Parses a PGN string and gives you the move text and tags. */
+class AbstractBoard;
+
+
+/** Parses a PGN string and gives you the move text and tags.
+    
+    Simply pass a PGN string to the constructor and then access the
+    data directly. An exception will throw from the constructor if there
+    is a problem with parsing.
+*/
 class PGN_Parser
 {
 public:
@@ -32,7 +38,7 @@ public:
     PGN_Parser(const GUtil::String &utf8);
 
     /** Holds all data parsed by the PGN_Parser. */
-    struct Data
+    struct Data_t
     {
         /** The string tags that precede the moves. */
         GUtil::Map<GUtil::String, GUtil::String> Tags;
@@ -40,7 +46,7 @@ public:
         /** Stores the initial position given in the PGN file, in the SetUp tag in X-FEN notation.
          *  If the board is null, then you can assume the standard chess starting position.
         */
-        GUtil::SmartPointer<Board> InitialPosition;
+        GUtil::SmartPointer<AbstractBoard> InitialPosition;
         
         /** All the move data. */
         GUtil::Vector<PGN_MoveData> Moves;
@@ -50,23 +56,12 @@ public:
         */
         int Result;
 
-        Data();
-        Data(const Data &);
-    };
+        Data_t();
+        Data_t(const Data_t &);
+    } Data;
+
     
-    /** Returns the data that was parsed from the file. */
-    Data const &GetData() const{ return m_data; }
-
-    /** Returns a board object with the position given in X-FEN notation.
-     *
-     *  Since X-FEN is backwards compatible with FEN (Forsyth-Edwards Notation) you
-     *  can also pass FEN strings to it.
-    */
-    static Board FromX_FEN(const GUtil::String &);
-
 private:
-
-    Data m_data;
 
     /** Populates the heading tags and returns an iterator to the start of the move data section. */
     typename GUtil::String::UTF8ConstIterator

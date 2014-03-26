@@ -29,7 +29,7 @@ void PGN_Player::Clear()
 
 void PGN_Player::LoadFromString(const String &pgn_text)
 {
-    m_pgnData = new PGN_Parser::Data(PGN_Parser(pgn_text).GetData());
+    m_pgnData = new PGN_Parser::Data_t(PGN_Parser(pgn_text).Data);
 }
 
 void PGN_Player::LoadFromFile(const String &pgn_filename)

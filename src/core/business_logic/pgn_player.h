@@ -55,13 +55,13 @@ public:
     const GameLogic &GetGameLogic() const{ return m_game; }
 
     /** Returns the moves from the file.  This will be null if data has not been loaded. */
-    PGN_Parser::Data const *GetPGNData() const{ return m_pgnData; }
+    PGN_Parser::Data_t const *GetPGNData() const{ return m_pgnData; }
 
 
 private:
 
     GameLogic m_game;
-    GUtil::SmartPointer<PGN_Parser::Data> m_pgnData;
+    GUtil::SmartPointer<PGN_Parser::Data_t> m_pgnData;
 
 };
 

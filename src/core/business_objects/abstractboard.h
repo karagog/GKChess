@@ -123,6 +123,20 @@ public:
      *  iterates through the squares and removes their pieces. Override it if you like.
     */
     virtual void Clear();
+    
+    /** Populates this board with the position given in X-FEN notation.
+        
+        This has a default implementation that should work for all board
+        implementations, but it is left virtual in case you want to optimize it
+        for your board implementation.
+    */
+    virtual void FromFEN(const GUtil::String &);
+    
+    /** Serializes the board object into a FEN string. 
+        \note The default implementation should work for all board implementations,
+        but it is left virtual in case you want to customize/optimize it. 
+    */
+    virtual GUtil::String ToFEN() const;
 
 
 signals:

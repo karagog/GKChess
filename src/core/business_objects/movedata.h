@@ -16,7 +16,6 @@ limitations under the License.*/
 #define GKCHESS_MOVEDATA_H
 
 #include "gkchess_piece.h"
-#include "gutil_vector.h"
 #include <QString>
 
 NAMESPACE_GKCHESS;
@@ -27,6 +26,9 @@ class ISquare;
 /** Holds all the information we need to do and undo a move. */
 struct MoveData
 {
+    /** The half-move number for the move. */
+    int PlyNumber;
+    
     /** The starting square.  If the move was a castle this will be null. */
     ISquare const *Source;
 
@@ -53,11 +55,8 @@ struct MoveData
     /** The piece that was promoted, if any. If this is type NoPiece then the
      *  move did not involve a promotion. */
     Piece PiecePromoted;
-
-    /** Stores a list of moves that could have been done instead of this.
-     *  This will help support deep position exploration.
-    */
-    GUtil::Vector<MoveData> AlternateMoves;
+    
+    QString Text;
 
     MoveData();
 

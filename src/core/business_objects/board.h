@@ -59,8 +59,8 @@ class Board :
 public:
 
     explicit Board(QObject *parent = 0);
-    Board(const Board &);
-    Board &operator = (const Board &);
+    Board(const AbstractBoard &);
+    Board &operator = (const AbstractBoard &);
     virtual ~Board();
 
 

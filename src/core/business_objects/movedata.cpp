@@ -18,7 +18,8 @@ NAMESPACE_GKCHESS;
 
 
 MoveData::MoveData()
-    :Source(0),
+    :PlyNumber(0),
+      Source(0),
       Destination(0),
       CastleType(NoCastle),
       PieceMoved(),
