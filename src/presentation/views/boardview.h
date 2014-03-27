@@ -32,13 +32,19 @@ class BoardView :
 {
     Q_OBJECT
 
+    // Dimensional parameters
     float m_squareSize;
     QRectF m_boardRect;
+
+    // for painting
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
-    QColor m_pieceColor;
+    QColor m_activeSquareHighlightColor;
 
+    QModelIndex m_activeSquare;
     QRubberBand m_selectionBand;
+    QPoint m_dragOffset;
+
 public:
 
     /** Constructs a board view with default options. */
@@ -56,8 +62,8 @@ public:
     QColor GetLightSquareColor() const{ return m_lightSquareColor; }
     void SetLightSquareColor(const QColor &);
 
-    QColor GetPieceColor() const{ return m_pieceColor; }
-    void SetPieceColor(const QColor &);
+    QColor GetActiveSquareHighlightColor() const{ return m_activeSquareHighlightColor; }
+    void SetActiveSquareHighlightColor(const QColor &);
 
 
     /** \name QAbstractItemView interface
@@ -124,6 +130,10 @@ protected:
     */
     virtual void paintEvent(QPaintEvent *);
     virtual void resizeEvent(QResizeEvent *);
+    virtual void mousePressEvent(QMouseEvent *);
+    virtual void mouseReleaseEvent(QMouseEvent *);
+    virtual void mouseMoveEvent(QMouseEvent *);
+    virtual void mouseDoubleClickEvent(QMouseEvent *);
     /** \} */
 
 
@@ -141,9 +151,12 @@ private:
 
     // paints the board
     void _paint_board();
+    void _paint_piece_at(const QModelIndex &, const QRectF &, QPainter &);
 
     void _update_board_rect();
     QRectF _get_rect_for_index(const QModelIndex &) const;
+
+    void _attempt_move(const QModelIndex &source, const QModelIndex &dest);
 
 };
 

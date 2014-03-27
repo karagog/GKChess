@@ -28,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->boardView->setModel(&m_gameModel);
     
-    ui->boardView->hide();
+    //ui->boardView->hide();
 }
 
 MainWindow::~MainWindow()

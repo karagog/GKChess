@@ -50,13 +50,9 @@ BoardView::BoardView(QWidget *parent)
       m_squareSize(DEFAULT_SQUARE_SIZE),
       m_darkSquareColor(Qt::gray),
       m_lightSquareColor(Qt::white),
-      m_pieceColor(Qt::black),
+      m_activeSquareHighlightColor(Qt::yellow),
       m_selectionBand(QRubberBand::Rectangle, this)
-{
-    setDragEnabled(true);
-    setAcceptDrops(true);
-    //setDropIndicatorShown(true);
-}
+{}
 
 BoardView::~BoardView()
 {}
@@ -211,12 +207,48 @@ QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) con
 
 void BoardView::paintEvent(QPaintEvent *ev)
 {
+    ev->accept();
     _paint_board();
 }
 
 void BoardView::resizeEvent(QResizeEvent *)
 {
     updateGeometries();
+}
+
+void BoardView::_paint_piece_at(const QModelIndex &ind, const QRectF &r, QPainter &p)
+{
+    bool has_icon = false;
+    QVariant data = model()->data(ind, Qt::DecorationRole);
+    if(!data.isNull())
+    {
+        QIcon ico = data.value<QIcon>();
+        if(!ico.isNull()){
+            ico.paint(&p, r.toAlignedRect());
+            has_icon = true;
+        }
+    }
+
+
+    if(!has_icon)
+    {
+        // If there is no icon for the piece, then draw the text
+        data = model()->data(ind, Qt::DisplayRole);
+        if(!data.isNull())
+        {
+            if(QVariant::String == data.type())
+            {
+                QFont font_pieces = p.font();
+                font_pieces.setPixelSize(0.825 * m_squareSize);
+                p.save();
+                p.setFont(font_pieces);
+
+                p.drawText(r, Qt::AlignCenter, data.toString());
+
+                p.restore();
+            }
+        }
+    }
 }
 
 void BoardView::_paint_board()
@@ -233,10 +265,8 @@ void BoardView::_paint_board()
     QPen outline_pen(Qt::black);
     outline_pen.setWidth(BOARD_OUTLINE_THICKNESS);
 
-    QPen highlight_pen;
+    QPen highlight_pen(m_activeSquareHighlightColor);
     highlight_pen.setWidth(HIGHLIGHT_THICKNESS);
-
-    QPen piece_pen(m_pieceColor);
 
     QPainter painter(viewport());
     painter.translate(-horizontalOffset(), -verticalOffset());
@@ -260,10 +290,6 @@ void BoardView::_paint_board()
     QFont font_indices = painter.font();
     font_indices.setPointSize(FONT_SIZE_INDICES);
 
-    QFont font_pieces = painter.font();
-    font_pieces.setPixelSize(0.825 * m_squareSize);
-
-    painter.setPen(piece_pen);
     painter.setFont(font_indices);
     for(int c = 0; c < model()->columnCount(); ++c)
     {
@@ -284,16 +310,8 @@ void BoardView::_paint_board()
             }
 
             // Paint the pieces
-            QVariant data = model()->data(ind, Qt::DisplayRole);
-            if(!data.isNull())
-            {
-                if(QVariant::String == data.type()){
-                    painter.setPen(piece_pen);
-                    painter.setFont(font_pieces);
-                    painter.drawText(tmp, Qt::AlignCenter, data.toString());
-                    painter.setFont(font_indices);
-                }
-            }
+            if(m_dragOffset.isNull() || m_activeSquare != ind)
+                _paint_piece_at(ind, tmp, painter);
         }
     }
 
@@ -349,21 +367,23 @@ void BoardView::_paint_board()
     painter.drawRect(m_boardRect);
 
     // Apply any square highlighting
-    for(int c = 0; c < model()->columnCount(); ++c)
+    if(m_activeSquare.isValid())
     {
-        for(int r = 0; r < model()->rowCount(); ++r)
-        {
-            QModelIndex ind = model()->index(r, c);
-            QRectF tmp = _get_rect_for_index(ind);
-            QColor highlight_color = model()->data(ind, Qt::BackgroundColorRole).value<QColor>();
+        painter.save();
+        painter.setPen(highlight_pen);
+        painter.drawRect(_get_rect_for_index(m_activeSquare));
+        painter.restore();
+    }
 
-            if(highlight_color.isValid())
-            {
-                highlight_pen.setColor(highlight_color);
-                painter.setPen(highlight_pen);
-                painter.drawRect(tmp);
-            }
-        }
+    // If we're dragging then paint the piece being dragged
+    if(!m_dragOffset.isNull() && m_activeSquare.isValid())
+    {
+        QPoint cur_pos = mapFromGlobal(QCursor::pos());
+        _paint_piece_at(m_activeSquare,
+                        QRectF(cur_pos.x() - m_squareSize/2,
+                               cur_pos.y() - m_squareSize/2,
+                               m_squareSize, m_squareSize).translated(m_dragOffset),
+                        painter);
     }
 
     // Update the rubber band
@@ -418,9 +438,9 @@ void BoardView::SetLightSquareColor(const QColor &c)
     viewport()->update();
 }
 
-void BoardView::SetPieceColor(const QColor &c)
+void BoardView::SetActiveSquareHighlightColor(const QColor &c)
 {
-    m_pieceColor = c;
+    m_activeSquareHighlightColor = c;
     viewport()->update();
 }
 
@@ -598,6 +618,60 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
         sw.writeEndElement(); //html
     }
     return html;
+}
+
+void BoardView::mousePressEvent(QMouseEvent *ev)
+{
+    GASSERT(m_dragging == false);
+
+    ev->accept();
+
+    if(!m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
+    {
+        QPoint p(ev->pos());
+        m_activeSquare = indexAt(QPoint(ev->pos().x()-horizontalOffset(), ev->pos().y()-verticalOffset()));
+
+        QPoint center = visualRect(m_activeSquare).center();
+        m_dragOffset = QPoint(center.x()-p.x(), center.y()-p.y());
+
+        viewport()->update();
+
+        GASSERT(m_activeSquare.isValid());
+    }
+}
+
+void BoardView::mouseReleaseEvent(QMouseEvent *ev)
+{
+    ev->accept();
+
+    if(m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
+    {
+        _attempt_move(m_activeSquare, indexAt(ev->pos()));
+    }
+
+    m_activeSquare = QModelIndex();
+    m_dragOffset = QPoint();
+
+    viewport()->update();
+}
+
+void BoardView::mouseMoveEvent(QMouseEvent *ev)
+{
+    ev->accept();
+
+    if(!m_dragOffset.isNull()){
+        viewport()->update();
+    }
+}
+
+void BoardView::mouseDoubleClickEvent(QMouseEvent *ev)
+{
+    ev->accept();
+}
+
+void BoardView::_attempt_move(const QModelIndex &s, const QModelIndex &d)
+{
+
 }
 
 
