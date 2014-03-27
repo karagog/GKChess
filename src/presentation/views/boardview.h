@@ -15,17 +15,29 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_H
 #define GKCHESS_BOARDVIEW_H
 
-#include "gkchess_board.h"
-#include "gutil_smartpointer.h"
 #include <QAbstractItemView>
 #include <QRubberBand>
+#include <QIcon>
 
-namespace GKChess{ namespace UI{
+namespace GKChess{
+    class AbstractBoard;
+namespace UI{
+
 
 class BoardModel;
+class IPieceIconFactory;
+
 
 /** A viewer you can use with the chess board model to display
  *  a chess position in a Qt application.
+ * 
+ *  The base boardview class takes care of all the basic functions of displaying
+ *  a board, but does not allow you to edit it or move pieces (if you want editing then you
+ *  need the BoardEdit, and if you want to play a game you need the GameView).
+ * 
+ *  By default the view first tries to paint the pieces using the icon factory, if given.
+ *  If no factory was given then it tries to paint icons provided by the model in the "Qt::DecorationRole".
+ *  If there are no icons produced by the model then the view simply paints the unicode chess characters.
 */
 class BoardView :
         public QAbstractItemView
@@ -40,6 +52,7 @@ class BoardView :
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
     QColor m_activeSquareHighlightColor;
+    IPieceIconFactory *i_factory;
 
     QModelIndex m_activeSquare;
     QRubberBand m_selectionBand;
@@ -52,6 +65,12 @@ public:
     ~BoardView();
 
     BoardModel *GetBoardModel() const;
+    
+    /** Tells the view to use the given icon factory, which overrides
+        icons returned by the model.  Pass NULL to clear the icon factory.
+    */
+    void SetIconFactory(IPieceIconFactory *);
+    IPieceIconFactory *SetIconFactory(IPieceIconFactory *) const{ return i_factory; }
 
     float GetSquareSize() const{ return m_squareSize; }
     void SetSquareSize(float);
@@ -119,12 +138,18 @@ public:
     /** Returns an HTML table of the chess board with the given formatting options.
      *  You can then display this in a web browser.
     */
-    static QString GenerateHtml(const Board &,
+    static QString GenerateHtml(const AbstractBoard &,
                                 const HtmlFormattingOptions & = HtmlFormattingOptions());
-
 
 protected:
 
+    /** This function is called whenever the user attempts to move a piece
+        from one index to another.  In the base view this function does nothing,
+        but you can override it to do something interesting (like moving a piece!)
+    */
+    virtual void attempt_move(const QModelIndex &source, const QModelIndex &dest);
+
+    
     /** \name QAbstractItemView interface
      *  \{
     */
@@ -155,8 +180,6 @@ private:
 
     void _update_board_rect();
     QRectF _get_rect_for_index(const QModelIndex &) const;
-
-    void _attempt_move(const QModelIndex &source, const QModelIndex &dest);
 
 };
 

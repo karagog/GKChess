@@ -15,6 +15,9 @@ limitations under the License.*/
 #include "boardview.h"
 #include "gkchess_piece.h"
 #include "gkchess_boardmodel.h"
+#include "gkchess_abstractboard.h"
+#include "gkchess_ipieceiconfactory.h"
+#include "gkchess_isquare.h"
 #include "gutil_paintutils.h"
 #include <QXmlStreamWriter>
 #include <QVBoxLayout>
@@ -51,6 +54,7 @@ BoardView::BoardView(QWidget *parent)
       m_darkSquareColor(Qt::gray),
       m_lightSquareColor(Qt::white),
       m_activeSquareHighlightColor(Qt::yellow),
+      i_factory(0),
       m_selectionBand(QRubberBand::Rectangle, this)
 {}
 
@@ -63,6 +67,12 @@ BoardModel *BoardView::GetBoardModel() const
     // We use static cast because we already validated that it's a BoardModel
     //  when they set the model.
     return static_cast<BoardModel *>(model());
+}
+
+void BoardView::SetIconFactory(IPieceIconFactory *i)
+{
+    i_factory = i;
+    viewport()->update();
 }
 
 
@@ -218,36 +228,41 @@ void BoardView::resizeEvent(QResizeEvent *)
 
 void BoardView::_paint_piece_at(const QModelIndex &ind, const QRectF &r, QPainter &p)
 {
-    bool has_icon = false;
-    QVariant data = model()->data(ind, Qt::DecorationRole);
-    if(!data.isNull())
+    GASSERT(ind.isValid());
+
+    QRect dest_rect(r.toAlignedRect());
+    QIcon ico;
+    Piece const *piece( GetBoardModel()->ConvertIndexToSquare(ind)->GetPiece() );
+    if(NULL == piece)
+        return;
+    
+    // First see if we have an icon factory
+    if(i_factory)
     {
-        QIcon ico = data.value<QIcon>();
-        if(!ico.isNull()){
-            ico.paint(&p, r.toAlignedRect());
-            has_icon = true;
-        }
+        ico = i_factory->GetIcon(*piece);
+    }
+    
+    // If there is no factory, then get icons from the model
+    else
+    {
+        ico = model()->data(ind, Qt::DecorationRole).value<QIcon>();
     }
 
 
-    if(!has_icon)
+    // If we still didn't find an icon for the piece, default to the unicode characters
+    if(ico.isNull())
     {
-        // If there is no icon for the piece, then draw the text
-        data = model()->data(ind, Qt::DisplayRole);
-        if(!data.isNull())
-        {
-            if(QVariant::String == data.type())
-            {
-                QFont font_pieces = p.font();
-                font_pieces.setPixelSize(0.825 * m_squareSize);
-                p.save();
-                p.setFont(font_pieces);
-
-                p.drawText(r, Qt::AlignCenter, data.toString());
-
-                p.restore();
-            }
-        }
+        QFont font_pieces = p.font();
+        font_pieces.setPixelSize(0.825 * m_squareSize);
+        p.save();
+        p.setFont(font_pieces);
+        p.drawText(dest_rect, Qt::AlignCenter, QChar(piece->UnicodeValue()));
+        p.restore();
+    }
+    else
+    {
+        // Paint the icon
+        ico.paint(&p, dest_rect);
     }
 }
 
@@ -540,7 +555,7 @@ BoardView::HtmlFormattingOptions::HtmlFormattingOptions()
 {}
 
 
-QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
+QString BoardView::GenerateHtml(const AbstractBoard &b, const HtmlFormattingOptions &f)
 {
     QString html;
     if(b.ColumnCount() > 0 && b.RowCount() > 0)
@@ -622,7 +637,7 @@ QString BoardView::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
 
 void BoardView::mousePressEvent(QMouseEvent *ev)
 {
-    GASSERT(m_dragging == false);
+    GASSERT(m_dragOffset.isNull());
 
     ev->accept();
 
@@ -646,7 +661,7 @@ void BoardView::mouseReleaseEvent(QMouseEvent *ev)
 
     if(m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
     {
-        _attempt_move(m_activeSquare, indexAt(ev->pos()));
+        attempt_move(m_activeSquare, indexAt(ev->pos()));
     }
 
     m_activeSquare = QModelIndex();
@@ -669,9 +684,10 @@ void BoardView::mouseDoubleClickEvent(QMouseEvent *ev)
     ev->accept();
 }
 
-void BoardView::_attempt_move(const QModelIndex &s, const QModelIndex &d)
+void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
-
+    GUTIL_UNUSED(s);
+    GUTIL_UNUSED(d);
 }
 
 

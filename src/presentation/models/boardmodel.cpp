@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "boardmodel.h"
-#include "gkchess_board.h"
+#include "gkchess_abstractboard.h"
 #include <QFont>
 #include <QMimeData>
 #include <QStringList>
