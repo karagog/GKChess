@@ -27,20 +27,28 @@ limitations under the License.*/
 #include <QRubberBand>
 #include <QScrollBar>
 #include <QApplication>
+#include <QVariantAnimation>
+#include <QRubberBand>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
 
-NAMESPACE_GKCHESS1(UI);
 
+// The following defines are used to parameterize the look and behavior
+//  of the board view
 
 #define DEFAULT_SQUARE_SIZE 75
 
+/** The margin of empty space to leave around all sides of the board. */
 #define MARGIN_OUTER   12
+
+/** The size of the region used to draw the board indices. */
 #define MARGIN_INDICES 28
-#define FONT_SIZE_INDICES  13
+
+/** The drawing thickness of the board outline. */
 #define BOARD_OUTLINE_THICKNESS 3
 
+/** The drawing thickness of the highlighted square indicator. */
 #define HIGHLIGHT_THICKNESS 10
 
 /** Defines the distance the "current turn" arrow is from the board, as a
@@ -52,6 +60,17 @@ NAMESPACE_GKCHESS1(UI);
 /** Defines the duration of move animation, in seconds */
 #define ANIM_MOVEDURATION 0.75
 
+/** The number of refreshes per second while animating. */
+#define ANIM_REFRESH_FREQUENCY 30
+
+
+NAMESPACE_GKCHESS1(UI);
+
+
+/** A dummy class we need for Qt4 animations, but should go away in Qt5. */
+class piece_animation_t : public QVariantAnimation
+{ void updateCurrentValue(const QVariant &){} };
+
 
 BoardView::BoardView(QWidget *parent)
     :QAbstractItemView(parent),
@@ -60,13 +79,14 @@ BoardView::BoardView(QWidget *parent)
       m_lightSquareColor(Qt::white),
       m_activeSquareHighlightColor(Qt::yellow),
       i_factory(0),
-      m_selectionBand(QRubberBand::Rectangle, this)
+      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this)),
+      a_movingPiece(new piece_animation_t)
 {
     setMouseTracking(true);
 
-    connect(&a_movingPiece, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
-    connect(&a_movingPiece, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
-            this, SLOT(_animation_state_changed(QAbstractAnimation::State,QAbstractAnimation::State)));
+    connect(a_movingPiece, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
+    connect(a_movingPiece, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
+            this, SLOT(_animation_state_changed(int,int)));
 }
 
 BoardView::~BoardView()
@@ -134,7 +154,7 @@ void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
     _update_rubber_band();
 }
 
-void BoardView::_animation_state_changed(QAbstractAnimation::State new_state, QAbstractAnimation::State)
+void BoardView::_animation_state_changed(int new_state, int)
 {
     if(QAbstractAnimation::Stopped == new_state)
     {
@@ -147,9 +167,9 @@ void BoardView::_update_rubber_band()
 {
     // Update the rubber band
     QModelIndex cur = currentIndex();
-    m_selectionBand.setVisible(cur.isValid());
+    m_selectionBand->setVisible(cur.isValid());
     if(cur.isValid()){
-        m_selectionBand.setGeometry(visualRect(cur));
+        m_selectionBand->setGeometry(visualRect(cur));
     }
 }
 
@@ -327,7 +347,7 @@ void BoardView::_paint_board()
 
     // Shade the squares and paint the pieces
     QFont font_indices = painter.font();
-    font_indices.setPointSize(FONT_SIZE_INDICES);
+    font_indices.setPixelSize(m_squareSize * 0.25);
 
     painter.setFont(font_indices);
     for(int c = 0; c < model()->columnCount(); ++c)
@@ -429,7 +449,7 @@ void BoardView::_paint_board()
     // If we're animating a move, paint that now
     if(m_animatingIndex.isValid())
     {
-        QPointF v = a_movingPiece.currentValue().value<QPointF>();
+        QPointF v = a_movingPiece->currentValue().value<QPointF>();
         if(!v.isNull()){
             _paint_piece_at(m_animatingIndex, QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize), painter);
         }
@@ -757,25 +777,20 @@ void BoardView::wheelEvent(QWheelEvent *ev)
     _update_rubber_band();
 }
 
-void BoardView::timerEvent(QTimerEvent *ev)
-{
-    ev->accept();
-}
-
 void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
     GUTIL_UNUSED(s);
     GUTIL_UNUSED(d);
 
-    if(QVariantAnimation::Running != a_movingPiece.state())
+    if(QVariantAnimation::Running != a_movingPiece->state())
     {
         m_animatingIndex = s;
-        a_movingPiece.setStartValue(_get_rect_for_index(s).center());
-        a_movingPiece.setEndValue(_get_rect_for_index(d).center());
-        a_movingPiece.setEasingCurve(QEasingCurve::InOutQuad);
-        //a_movingPiece.setEasingCurve(QEasingCurve::OutInBounce);
-        a_movingPiece.setDuration(ANIM_MOVEDURATION * 1000);
-        a_movingPiece.start();
+        a_movingPiece->setStartValue(_get_rect_for_index(s).center());
+        a_movingPiece->setEndValue(_get_rect_for_index(d).center());
+        a_movingPiece->setEasingCurve(QEasingCurve::InOutQuad);
+        //a_movingPiece->setEasingCurve(QEasingCurve::OutInBounce);
+        a_movingPiece->setDuration(ANIM_MOVEDURATION * 1000);
+        a_movingPiece->start();
     }
 }
 

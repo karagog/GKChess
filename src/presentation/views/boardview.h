@@ -16,10 +16,11 @@ limitations under the License.*/
 #define GKCHESS_BOARDVIEW_H
 
 #include "gutil_map.h"
+#include "gutil_smartpointer.h"
 #include <QAbstractItemView>
-#include <QRubberBand>
-#include <QIcon>
-#include <QVariantAnimation>
+
+class QVariantAnimation;
+class QRubberBand;
 
 namespace GKChess{
     class ISquare;
@@ -63,14 +64,12 @@ class BoardView :
     IFactory_PieceIcon *i_factory;
 
     QModelIndex m_activeSquare;
-    QRubberBand m_selectionBand;
+    GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
     QPoint m_dragOffset;
 
     QModelIndex m_animatingIndex;
-
-    class piece_animation_t : public QVariantAnimation { void updateCurrentValue(const QVariant &){} }
-    a_movingPiece;
+    GUtil::SmartPointer<QVariantAnimation> a_movingPiece;
 
     GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
 
@@ -185,7 +184,6 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent *);
     virtual void mouseDoubleClickEvent(QMouseEvent *);
     virtual void wheelEvent(QWheelEvent *);
-    virtual void timerEvent(QTimerEvent *);
     /** \} */
 
 
@@ -201,7 +199,7 @@ protected slots:
 
 private slots:
 
-    void _animation_state_changed(QAbstractAnimation::State, QAbstractAnimation::State);
+    void _animation_state_changed(int, int);
 
 
 private:
