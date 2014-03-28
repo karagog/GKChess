@@ -171,10 +171,5 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
     return ret;
 }
 
-Piece::AllegienceEnum BoardModel::GetWhoseTurn() const
-{
-    return m_board->GetWhoseTurn();
-}
-
 
 END_NAMESPACE_GKCHESS1;

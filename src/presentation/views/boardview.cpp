@@ -111,7 +111,7 @@ QRect BoardView::visualRect(const QModelIndex &index) const
 {
     QRect ret;
     if(index.isValid()){
-        ret = _get_rect_for_index(index).toAlignedRect();
+        ret = _get_rect_for_index(index.column(), index.row()).toAlignedRect();
         ret.translate(-horizontalOffset(),
                       -verticalOffset());
     }
@@ -339,7 +339,7 @@ void BoardView::_paint_board()
                               m_squareSize,
                               m_squareSize);
         painter.fillRect(indicator_rect, 
-                         Piece::White == GetBoardModel()->GetWhoseTurn() ? 
+                         Piece::White == GetBoardModel()->GetBoard()->GetWhoseTurn() ? 
                          m_lightSquareColor : m_darkSquareColor);
         painter.setPen(outline_pen);
         painter.drawRect(indicator_rect);
@@ -355,7 +355,7 @@ void BoardView::_paint_board()
         for(int r = 0; r < model()->rowCount(); ++r)
         {
             QModelIndex ind = model()->index(r, c);
-            QRectF tmp = _get_rect_for_index(ind);
+            QRectF tmp = _get_rect_for_index(c, r);
 
             if((c & 0x1) == (r & 0x1))
             {
@@ -427,11 +427,14 @@ void BoardView::_paint_board()
 
     // Apply any square highlighting
     painter.save();
-    G_FOREACH_CONST(ISquare const *sqr, m_formatOpts.Keys())
+    for(typename Map<ISquare const *, SquareFormatOptions>::const_iterator iter = m_formatOpts.begin();
+        iter != m_formatOpts.end();
+        ++iter)
     {
+        ISquare const *sqr = iter->Key();
         highlight_pen.setColor(m_formatOpts[sqr].HighlightColor);
         painter.setPen(highlight_pen);
-        painter.drawRect(_get_rect_for_index(m_activeSquare));
+        painter.drawRect(_get_rect_for_index(sqr->GetColumn(), sqr->GetRow()));
     }
     painter.restore();
 
@@ -461,21 +464,15 @@ void BoardView::_paint_board()
 //    painter.drawRect(temp_rect);
 }
 
-QRectF BoardView::_get_rect_for_index(const QModelIndex &ind) const
+QRectF BoardView::_get_rect_for_index(int col, int row) const
 {
-    QRectF ret;
-    if(ind.isValid())
-    {
-        int cols = GetBoardModel()->columnCount();
-        int rows = GetBoardModel()->rowCount();
-        float inc_w = m_boardRect.width() / cols;
-        float inc_h = m_boardRect.height() / rows;
-
-        ret = QRectF(m_boardRect.x() + ind.column() * inc_w,
-                     m_boardRect.y() + m_boardRect.height() - (inc_h * (1 + ind.row())),
-                     inc_w, inc_h);
-    }
-    return ret;
+    int cols = GetBoardModel()->columnCount();
+    int rows = GetBoardModel()->rowCount();
+    float inc_w = m_boardRect.width() / cols;
+    float inc_h = m_boardRect.height() / rows;
+    return QRectF(m_boardRect.x() + col * inc_w,
+                  m_boardRect.y() + m_boardRect.height() - (inc_h * (1 + row)),
+                  inc_w, inc_h);
 }
 
 void BoardView::setModel(QAbstractItemModel *m)
@@ -696,7 +693,7 @@ void BoardView::mousePressEvent(QMouseEvent *ev)
         QPoint p(ev->pos());
         m_activeSquare = indexAt(ev->pos());
 
-        QPointF center = _get_rect_for_index(m_activeSquare).center();
+        QPointF center = _get_rect_for_index(m_activeSquare.column(), m_activeSquare.row()).center();
         m_dragOffset = QPoint(center.x()-p.x(), center.y()-p.y());
 
         // Add highlighting to the active square
@@ -785,8 +782,8 @@ void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
     if(QVariantAnimation::Running != a_movingPiece->state())
     {
         m_animatingIndex = s;
-        a_movingPiece->setStartValue(_get_rect_for_index(s).center());
-        a_movingPiece->setEndValue(_get_rect_for_index(d).center());
+        a_movingPiece->setStartValue(_get_rect_for_index(s.column(), s.row()).center());
+        a_movingPiece->setEndValue(_get_rect_for_index(d.column(), d.row()).center());
         a_movingPiece->setEasingCurve(QEasingCurve::InOutQuad);
         //a_movingPiece->setEasingCurve(QEasingCurve::OutInBounce);
         a_movingPiece->setDuration(ANIM_MOVEDURATION * 1000);

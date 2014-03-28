@@ -50,8 +50,10 @@ public:
     */
     explicit BoardModel(AbstractBoard const *, QObject *parent = 0);
 
-    /** Returns who has the current turn. */
-    Piece::AllegienceEnum GetWhoseTurn() const;
+    /** Returns a const reference to the board object, so you can
+        access the other meta-data not held in the indices.
+    */
+    AbstractBoard const *GetBoard() const{ return m_board; }
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.

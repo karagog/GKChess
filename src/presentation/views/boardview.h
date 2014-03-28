@@ -211,7 +211,7 @@ private:
     void _update_rubber_band();
 
     void _update_board_rect();
-    QRectF _get_rect_for_index(const QModelIndex &) const;
+    QRectF _get_rect_for_index(int col, int row) const;
 
 };
 
