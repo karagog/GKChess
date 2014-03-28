@@ -42,7 +42,6 @@ class BoardModel :
     };
 
     AbstractBoard const *m_board;
-    GUtil::Map<ISquare const *, formatting_options_t> m_formattingOptions;
 public:
 
     /** You must give the model a reference to a chessboard
@@ -62,18 +61,6 @@ public:
     /** Returns the model index corresponding to the given square. */
     QModelIndex ConvertSquareToIndex(const ISquare &) const;
 
-    /** Causes the square to be highlighted in the view (via the
-     *  BackgroundColor data role).
-     *
-     *  You can highlight any number of squares in any color.
-     *
-     *  \note You can also call setData() on the index with the BackgroundColorRole
-    */
-    void HighlightSquare(ISquare const *, const QColor &);
-
-    /** Removes all highlighting from the squares. */
-    void ClearSquareHighlighting();
-
 
     /** \name QAbstractTableModel interface
      *  \{
@@ -81,7 +68,6 @@ public:
     virtual int rowCount(const QModelIndex & = QModelIndex()) const;
     virtual int columnCount(const QModelIndex & = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &, int) const;
-    virtual bool setData(const QModelIndex &index, const QVariant &value, int role);
     virtual QVariant headerData(int, Qt::Orientation, int) const;
     virtual Qt::ItemFlags flags(const QModelIndex &) const;
 

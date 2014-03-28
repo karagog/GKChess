@@ -26,6 +26,7 @@ limitations under the License.*/
 #include <QPainter>
 #include <QRubberBand>
 #include <QScrollBar>
+#include <QApplication>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
@@ -47,6 +48,15 @@ NAMESPACE_GKCHESS1(UI);
 */
 #define CURRENT_TURN_ARROW_OFFSET   0.4
 
+/** The number of frames per second to use when animating. */
+#define ANIMATION_FPS 30.0
+
+/** Defines the speed that pieces move when animated.
+ *  This is defined in squares per second, since the size of the board
+ *  is defined by the square size.
+*/
+#define ANIMATION_SPEED 0.5
+
 
 BoardView::BoardView(QWidget *parent)
     :QAbstractItemView(parent),
@@ -56,7 +66,9 @@ BoardView::BoardView(QWidget *parent)
       m_activeSquareHighlightColor(Qt::yellow),
       i_factory(0),
       m_selectionBand(QRubberBand::Rectangle, this)
-{}
+{
+    setMouseTracking(true);
+}
 
 BoardView::~BoardView()
 {}
@@ -69,7 +81,7 @@ BoardModel *BoardView::GetBoardModel() const
     return static_cast<BoardModel *>(model());
 }
 
-void BoardView::SetIconFactory(IPieceIconFactory *i)
+void BoardView::SetIconFactory(IFactory_PieceIcon *i)
 {
     i_factory = i;
     viewport()->update();
@@ -116,6 +128,21 @@ void BoardView::updateGeometries()
     // Update the scrollbars whenever our geometry changes
     horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES + (CURRENT_TURN_ARROW_OFFSET + 1)*m_squareSize - viewport()->width()));
     verticalScrollBar()->setRange(0, Max(0.0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
+}
+
+void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
+{
+    _update_rubber_band();
+}
+
+void BoardView::_update_rubber_band()
+{
+    // Update the rubber band
+    QModelIndex cur = currentIndex();
+    m_selectionBand.setVisible(cur.isValid());
+    if(cur.isValid()){
+        m_selectionBand.setGeometry(visualRect(cur));
+    }
 }
 
 QModelIndex BoardView::indexAt(const QPoint &p) const
@@ -192,17 +219,6 @@ void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags
     GUTIL_UNUSED(cmd);
     selectionModel()->select(indexAt(QPoint(r.center().x(), r.center().y())),
                              QItemSelectionModel::ClearAndSelect);
-}
-
-void BoardView::currentChanged(const QModelIndex &cur, const QModelIndex & prev)
-{
-    QAbstractItemView::currentChanged(cur, prev);
-
-    GetBoardModel()->ClearSquareHighlighting();
-    if(cur.isValid()){
-        GetBoardModel()->HighlightSquare(GetBoardModel()->ConvertIndexToSquare(cur), Qt::green);
-    }
-    viewport()->update();
 }
 
 QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) const
@@ -382,13 +398,14 @@ void BoardView::_paint_board()
     painter.drawRect(m_boardRect);
 
     // Apply any square highlighting
-    if(m_activeSquare.isValid())
+    painter.save();
+    G_FOREACH_CONST(ISquare const *sqr, m_formatOpts.Keys())
     {
-        painter.save();
+        highlight_pen.setColor(m_formatOpts[sqr].HighlightColor);
         painter.setPen(highlight_pen);
         painter.drawRect(_get_rect_for_index(m_activeSquare));
-        painter.restore();
     }
+    painter.restore();
 
     // If we're dragging then paint the piece being dragged
     if(!m_dragOffset.isNull() && m_activeSquare.isValid())
@@ -399,15 +416,6 @@ void BoardView::_paint_board()
                                cur_pos.y() - m_squareSize/2,
                                m_squareSize, m_squareSize).translated(m_dragOffset),
                         painter);
-    }
-
-    // Update the rubber band
-    m_selectionBand.setVisible(cur_indx.isValid());
-    if(cur_indx.isValid()){
-        QRectF tmp = _get_rect_for_index(cur_indx);
-        tmp.translate(-horizontalOffset(),
-                      -verticalOffset());
-        m_selectionBand.setGeometry(tmp.toAlignedRect());
     }
 
     // Any debug drawing?
@@ -437,6 +445,10 @@ void BoardView::setModel(QAbstractItemModel *m)
 {
     if(NULL == dynamic_cast<BoardModel *>(m))
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The BoardView was designed for BoardModels only");
+
+    // Reset any old format options
+    m_formatOpts.Clear();
+
     QAbstractItemView::setModel(m);
     _update_board_rect();
 }
@@ -481,6 +493,7 @@ void BoardView::SetSquareSize(float s)
     m_squareSize = s;
     _update_board_rect();
     viewport()->update();
+    _update_rubber_band();
 }
 
 
@@ -649,10 +662,15 @@ void BoardView::mousePressEvent(QMouseEvent *ev)
         QPoint center = visualRect(m_activeSquare).center();
         m_dragOffset = QPoint(center.x()-p.x(), center.y()-p.y());
 
+        // Add highlighting to the active square
+        HighlightSquare(m_activeSquare, GetActiveSquareHighlightColor());
+
         viewport()->update();
 
         GASSERT(m_activeSquare.isValid());
     }
+
+    _update_cursor_at(ev->posF());
 }
 
 void BoardView::mouseReleaseEvent(QMouseEvent *ev)
@@ -664,10 +682,13 @@ void BoardView::mouseReleaseEvent(QMouseEvent *ev)
         attempt_move(m_activeSquare, indexAt(ev->pos()));
     }
 
+    m_formatOpts.Remove(GetBoardModel()->ConvertIndexToSquare(m_activeSquare));
     m_activeSquare = QModelIndex();
     m_dragOffset = QPoint();
 
     viewport()->update();
+
+    _update_cursor_at(ev->posF());
 }
 
 void BoardView::mouseMoveEvent(QMouseEvent *ev)
@@ -677,9 +698,49 @@ void BoardView::mouseMoveEvent(QMouseEvent *ev)
     if(!m_dragOffset.isNull()){
         viewport()->update();
     }
+    else if(m_boardRect.contains(ev->posF()))
+    {
+        setCurrentIndex(indexAt(ev->pos()));
+    }
+
+    _update_cursor_at(ev->posF());
 }
 
 void BoardView::mouseDoubleClickEvent(QMouseEvent *ev)
+{
+    ev->accept();
+}
+
+void BoardView::_update_cursor_at(const QPointF &p)
+{
+    if(!m_dragOffset.isNull())
+        setCursor(Qt::ClosedHandCursor);
+    else if(m_boardRect.contains(p))
+        setCursor(Qt::OpenHandCursor);
+    else
+        setCursor(Qt::ArrowCursor);
+}
+
+#define SCROLL_SPEED_FACTOR 0.05
+
+void BoardView::wheelEvent(QWheelEvent *ev)
+{
+    // Control-scroll changes the board size
+    if(QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
+    {
+        float tmp = m_squareSize + SCROLL_SPEED_FACTOR * ev->delta();
+        if(0.0 < tmp)
+            SetSquareSize(tmp);
+        ev->accept();
+    }
+
+    QAbstractItemView::wheelEvent(ev);
+
+    // update the rubber band in case we scrolled
+    _update_rubber_band();
+}
+
+void BoardView::timerEvent(QTimerEvent *ev)
 {
     ev->accept();
 }
@@ -688,6 +749,37 @@ void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
     GUTIL_UNUSED(s);
     GUTIL_UNUSED(d);
+}
+
+void BoardView::HighlightSquare(const QModelIndex &i, const QColor &c)
+{
+    ISquare const *s = GetBoardModel()->ConvertIndexToSquare(i);
+    if(s)
+    {
+        SquareFormatOptions sfo;
+        sfo.HighlightColor = c;
+        m_formatOpts[s] = sfo;
+        viewport()->update();
+    }
+}
+
+void BoardView::HighlightSquares(const QModelIndexList &il, const QColor &c)
+{
+    SquareFormatOptions sfo;
+    sfo.HighlightColor = c;
+    foreach(const QModelIndex &i, il)
+    {
+        ISquare const *s = GetBoardModel()->ConvertIndexToSquare(i);
+        if(s)
+            m_formatOpts[s] = sfo;
+    }
+    viewport()->update();
+}
+
+void BoardView::ClearSquareHighlighting()
+{
+    m_formatOpts.Clear();
+    viewport()->update();
 }
 
 

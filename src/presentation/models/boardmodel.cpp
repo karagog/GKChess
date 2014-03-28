@@ -84,29 +84,6 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
             break;
         case Qt::DecorationRole:
             break;
-        case Qt::BackgroundColorRole:
-            if(m_formattingOptions.Contains(s))
-                ret = m_formattingOptions.At(s).BackgroundColor;
-            break;
-        default:
-            break;
-        }
-    }
-    return ret;
-}
-
-bool BoardModel::setData(const QModelIndex &index, const QVariant &value, int role)
-{
-    bool ret = false;
-    ISquare const *s = ConvertIndexToSquare(index);
-    if(s)
-    {
-        switch((Qt::ItemDataRole)role)
-        {
-        case Qt::BackgroundColorRole:
-            HighlightSquare(s, value.value<QColor>());
-            ret = true;
-            break;
         default:
             break;
         }
@@ -192,21 +169,6 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
         }
     }
     return ret;
-}
-
-void BoardModel::HighlightSquare(ISquare const *s, const QColor &c)
-{
-    m_formattingOptions[s].BackgroundColor = c;
-    _square_updated(s->GetColumn(), s->GetRow());
-}
-
-void BoardModel::ClearSquareHighlighting()
-{
-    Vector<ISquare const *> squares = m_formattingOptions.Keys();
-    m_formattingOptions.Clear();
-    G_FOREACH_CONST(ISquare const *s, squares){
-        _square_updated(s->GetColumn(), s->GetRow());
-    }
 }
 
 Piece::AllegienceEnum BoardModel::GetWhoseTurn() const

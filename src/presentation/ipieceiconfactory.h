@@ -27,7 +27,7 @@ namespace UI{
     The benefit of this interface is that all the views can use
     the same piece icons and nobody will care where they came from.
 */
-class IPieceIconFactory
+class IFactory_PieceIcon
 {
 public:
 

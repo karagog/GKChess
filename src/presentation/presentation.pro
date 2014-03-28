@@ -25,3 +25,6 @@ unix {
 
 include(views/views.pri)
 include(models/models.pri)
+
+HEADERS += \
+    ipieceiconfactory.h

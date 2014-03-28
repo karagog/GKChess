@@ -15,17 +15,19 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_H
 #define GKCHESS_BOARDVIEW_H
 
+#include "gutil_map.h"
 #include <QAbstractItemView>
 #include <QRubberBand>
 #include <QIcon>
 
 namespace GKChess{
+    class ISquare;
     class AbstractBoard;
 namespace UI{
 
 
 class BoardModel;
-class IPieceIconFactory;
+class IFactory_PieceIcon;
 
 
 /** A viewer you can use with the chess board model to display
@@ -44,6 +46,11 @@ class BoardView :
 {
     Q_OBJECT
 
+    struct SquareFormatOptions
+    {
+        QColor HighlightColor;
+    };
+
     // Dimensional parameters
     float m_squareSize;
     QRectF m_boardRect;
@@ -52,11 +59,15 @@ class BoardView :
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
     QColor m_activeSquareHighlightColor;
-    IPieceIconFactory *i_factory;
+    IFactory_PieceIcon *i_factory;
 
     QModelIndex m_activeSquare;
     QRubberBand m_selectionBand;
+
     QPoint m_dragOffset;
+    QPoint m_animatePos;
+
+    GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
 
 public:
 
@@ -69,8 +80,8 @@ public:
     /** Tells the view to use the given icon factory, which overrides
         icons returned by the model.  Pass NULL to clear the icon factory.
     */
-    void SetIconFactory(IPieceIconFactory *);
-    IPieceIconFactory *SetIconFactory(IPieceIconFactory *) const{ return i_factory; }
+    void SetIconFactory(IFactory_PieceIcon *);
+    IFactory_PieceIcon *SetIconFactory(IFactory_PieceIcon *) const{ return i_factory; }
 
     float GetSquareSize() const{ return m_squareSize; }
     void SetSquareSize(float);
@@ -83,6 +94,15 @@ public:
 
     QColor GetActiveSquareHighlightColor() const{ return m_activeSquareHighlightColor; }
     void SetActiveSquareHighlightColor(const QColor &);
+
+    /** Causes the square to be highlighted. */
+    void HighlightSquare(const QModelIndex &, const QColor &);
+
+    /** Causes all the squares to be highlighted. */
+    void HighlightSquares(const QModelIndexList &, const QColor &);
+
+    /** Removes all highlighting from the board. */
+    void ClearSquareHighlighting();
 
 
     /** \name QAbstractItemView interface
@@ -159,6 +179,8 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *);
     virtual void mouseMoveEvent(QMouseEvent *);
     virtual void mouseDoubleClickEvent(QMouseEvent *);
+    virtual void wheelEvent(QWheelEvent *);
+    virtual void timerEvent(QTimerEvent *);
     /** \} */
 
 
@@ -177,6 +199,8 @@ private:
     // paints the board
     void _paint_board();
     void _paint_piece_at(const QModelIndex &, const QRectF &, QPainter &);
+    void _update_cursor_at(const QPointF &);
+    void _update_rubber_band();
 
     void _update_board_rect();
     QRectF _get_rect_for_index(const QModelIndex &) const;
