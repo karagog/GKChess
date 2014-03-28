@@ -199,7 +199,8 @@ protected slots:
 
 private slots:
 
-    void _animation_state_changed(int, int);
+    void _animation_state_changed();
+    void _update_rubber_band();
 
 
 private:
@@ -208,7 +209,6 @@ private:
     void _paint_board();
     void _paint_piece_at(const QModelIndex &, const QRectF &, QPainter &);
     void _update_cursor_at(const QPointF &);
-    void _update_rubber_band();
 
     void _update_board_rect();
     QRectF _get_rect_for_index(int col, int row) const;

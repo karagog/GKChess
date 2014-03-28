@@ -16,8 +16,9 @@ limitations under the License.*/
 #include "gkchess_piece.h"
 #include "gkchess_boardmodel.h"
 #include "gkchess_abstractboard.h"
-#include "gkchess_ipieceiconfactory.h"
+#include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_isquare.h"
+#include "gkchess_uiglobals.h"
 #include "gutil_paintutils.h"
 #include <QXmlStreamWriter>
 #include <QVBoxLayout>
@@ -86,7 +87,13 @@ BoardView::BoardView(QWidget *parent)
 
     connect(a_movingPiece, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
     connect(a_movingPiece, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
-            this, SLOT(_animation_state_changed(int,int)));
+            this, SLOT(_animation_state_changed()));
+
+    connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
+    connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
+
+    // Make sure the application resources were initialized
+    InitializeApplicationResources();
 }
 
 BoardView::~BoardView()
@@ -154,9 +161,9 @@ void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
     _update_rubber_band();
 }
 
-void BoardView::_animation_state_changed(int new_state, int)
+void BoardView::_animation_state_changed()
 {
-    if(QAbstractAnimation::Stopped == new_state)
+    if(QAbstractAnimation::Stopped == a_movingPiece->state())
     {
         // The animation has finished
         m_animatingIndex = QModelIndex();
@@ -745,8 +752,9 @@ void BoardView::mouseDoubleClickEvent(QMouseEvent *ev)
     ev->accept();
 }
 
-void BoardView::_update_cursor_at(const QPointF &p)
+void BoardView::_update_cursor_at(const QPointF &pt)
 {
+    QPoint p(pt.x()+horizontalOffset(), pt.y()+verticalOffset());
     if(!m_dragOffset.isNull())
         setCursor(Qt::ClosedHandCursor);
     else if(m_boardRect.contains(p))

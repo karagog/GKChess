@@ -12,18 +12,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "application.h"
-USING_NAMESPACE_GUTIL1(QT);
+#ifndef GKCHESS_UIGLOBALS_H
+#define GKCHESS_UIGLOBALS_H
+
+#include "gkchess_globals.h"
+
+NAMESPACE_GKCHESS1(UI);
 
 
-PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
-    :Application(argc, argv, "Position Explorer")
-{
-    m_mainWindow.show();
-}
+/** Your application should call this to initialize the GUI resources
+ *  like fonts and icons.
+*/
+extern void InitializeApplicationResources();
 
 
-void PositionExplorerApplication::about_to_quit()
-{
-    m_mainWindow.hide();
-}
+END_NAMESPACE_GKCHESS1;
+
+#endif // GKCHESS_UIGLOBALS_H
