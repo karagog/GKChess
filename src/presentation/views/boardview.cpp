@@ -48,14 +48,9 @@ NAMESPACE_GKCHESS1(UI);
 */
 #define CURRENT_TURN_ARROW_OFFSET   0.4
 
-/** The number of frames per second to use when animating. */
-#define ANIMATION_FPS 30.0
 
-/** Defines the speed that pieces move when animated.
- *  This is defined in squares per second, since the size of the board
- *  is defined by the square size.
-*/
-#define ANIMATION_SPEED 0.5
+/** Defines the duration of move animation, in seconds */
+#define ANIM_MOVEDURATION 0.75
 
 
 BoardView::BoardView(QWidget *parent)
@@ -68,6 +63,10 @@ BoardView::BoardView(QWidget *parent)
       m_selectionBand(QRubberBand::Rectangle, this)
 {
     setMouseTracking(true);
+
+    connect(&a_movingPiece, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
+    connect(&a_movingPiece, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
+            this, SLOT(_animation_state_changed(QAbstractAnimation::State,QAbstractAnimation::State)));
 }
 
 BoardView::~BoardView()
@@ -133,6 +132,15 @@ void BoardView::updateGeometries()
 void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
 {
     _update_rubber_band();
+}
+
+void BoardView::_animation_state_changed(QAbstractAnimation::State new_state, QAbstractAnimation::State)
+{
+    if(QAbstractAnimation::Stopped == new_state)
+    {
+        // The animation has finished
+        m_animatingIndex = QModelIndex();
+    }
 }
 
 void BoardView::_update_rubber_band()
@@ -341,7 +349,7 @@ void BoardView::_paint_board()
             }
 
             // Paint the pieces
-            if(m_dragOffset.isNull() || m_activeSquare != ind)
+            if(m_animatingIndex != ind && (m_dragOffset.isNull() || m_activeSquare != ind))
                 _paint_piece_at(ind, tmp, painter);
         }
     }
@@ -416,6 +424,15 @@ void BoardView::_paint_board()
                                cur_pos.y() - m_squareSize/2,
                                m_squareSize, m_squareSize).translated(m_dragOffset),
                         painter);
+    }
+
+    // If we're animating a move, paint that now
+    if(m_animatingIndex.isValid())
+    {
+        QPointF v = a_movingPiece.currentValue().value<QPointF>();
+        if(!v.isNull()){
+            _paint_piece_at(m_animatingIndex, QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize), painter);
+        }
     }
 
     // Any debug drawing?
@@ -657,9 +674,9 @@ void BoardView::mousePressEvent(QMouseEvent *ev)
     if(!m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
     {
         QPoint p(ev->pos());
-        m_activeSquare = indexAt(QPoint(ev->pos().x()-horizontalOffset(), ev->pos().y()-verticalOffset()));
+        m_activeSquare = indexAt(ev->pos());
 
-        QPoint center = visualRect(m_activeSquare).center();
+        QPointF center = _get_rect_for_index(m_activeSquare).center();
         m_dragOffset = QPoint(center.x()-p.x(), center.y()-p.y());
 
         // Add highlighting to the active square
@@ -749,6 +766,17 @@ void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
     GUTIL_UNUSED(s);
     GUTIL_UNUSED(d);
+
+    if(QVariantAnimation::Running != a_movingPiece.state())
+    {
+        m_animatingIndex = s;
+        a_movingPiece.setStartValue(_get_rect_for_index(s).center());
+        a_movingPiece.setEndValue(_get_rect_for_index(d).center());
+        a_movingPiece.setEasingCurve(QEasingCurve::InOutQuad);
+        //a_movingPiece.setEasingCurve(QEasingCurve::OutInBounce);
+        a_movingPiece.setDuration(ANIM_MOVEDURATION * 1000);
+        a_movingPiece.start();
+    }
 }
 
 void BoardView::HighlightSquare(const QModelIndex &i, const QColor &c)

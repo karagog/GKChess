@@ -19,6 +19,7 @@ limitations under the License.*/
 #include <QAbstractItemView>
 #include <QRubberBand>
 #include <QIcon>
+#include <QVariantAnimation>
 
 namespace GKChess{
     class ISquare;
@@ -65,7 +66,11 @@ class BoardView :
     QRubberBand m_selectionBand;
 
     QPoint m_dragOffset;
-    QPoint m_animatePos;
+
+    QModelIndex m_animatingIndex;
+
+    class piece_animation_t : public QVariantAnimation { void updateCurrentValue(const QVariant &){} }
+    a_movingPiece;
 
     GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
 
@@ -192,6 +197,11 @@ protected slots:
     virtual void updateGeometries();
     virtual void currentChanged(const QModelIndex &, const QModelIndex &);
     /** \} */
+
+
+private slots:
+
+    void _animation_state_changed(QAbstractAnimation::State, QAbstractAnimation::State);
 
 
 private:
