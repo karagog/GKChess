@@ -15,6 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_H
 #define GKCHESS_BOARDVIEW_H
 
+#include "gkchess_piece.h"
 #include "gutil_map.h"
 #include "gutil_smartpointer.h"
 #include <QAbstractItemView>
@@ -66,10 +67,15 @@ class BoardView :
     QModelIndex m_activeSquare;
     GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
-    QPoint m_dragOffset;
+    bool m_dragging;
+    QModelIndex m_hiddenIndex;
 
-    QModelIndex m_animatingIndex;
-    GUtil::SmartPointer<QVariantAnimation> a_movingPiece;
+    // This is the data we need to remember about our current animation
+    struct animation_info_t{
+        GKChess::Piece Piece;
+        GUtil::SmartPointer<QVariantAnimation> Animation;
+    }
+    m_animationInfo;
 
     GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
 
@@ -173,6 +179,17 @@ protected:
     */
     virtual void attempt_move(const QModelIndex &source, const QModelIndex &dest);
 
+    /** Hides any piece at the given index. It will remain hidden until you call this function
+     *  again with an invalid QModelIndex().  This is useful for animating piece movements.
+    */
+    void hide_piece_at_index(const QModelIndex & = QModelIndex());
+
+    /** Starts an animation of the piece moving from the source point to the dest point
+     *  with the given easing curve.  The easing curve responds to the Type enum of
+     *  the QEasingCurve.
+    */
+    void animate_piece(const Piece &, const QPointF &source, const QPointF &dest, int easing_curve);
+
     
     /** \name QAbstractItemView interface
      *  \{
@@ -207,7 +224,7 @@ private:
 
     // paints the board
     void _paint_board();
-    void _paint_piece_at(const QModelIndex &, const QRectF &, QPainter &);
+    void _paint_piece_at(const Piece &, const QRectF &, QPainter &, float rotate_angle = 0.0);
     void _update_cursor_at(const QPointF &);
 
     void _update_board_rect();

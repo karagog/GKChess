@@ -64,6 +64,14 @@ public:
     QModelIndex ConvertSquareToIndex(const ISquare &) const;
 
 
+    /** Defines the custom data roles implemented by the board model. */
+    enum CustomDataRoleEnum
+    {
+        /** This role returns the Piece on the square, or a null QVariant if the square is empty. */
+        PieceRole = Qt::UserRole
+    };
+
+
     /** \name QAbstractTableModel interface
      *  \{
     */

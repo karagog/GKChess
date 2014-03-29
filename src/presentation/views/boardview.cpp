@@ -64,6 +64,8 @@ USING_NAMESPACE_GKCHESS;
 /** The number of refreshes per second while animating. */
 #define ANIM_REFRESH_FREQUENCY 30
 
+#define SCROLL_SPEED_FACTOR 0.05
+
 
 NAMESPACE_GKCHESS1(UI);
 
@@ -81,12 +83,14 @@ BoardView::BoardView(QWidget *parent)
       m_activeSquareHighlightColor(Qt::yellow),
       i_factory(0),
       m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this)),
-      a_movingPiece(new piece_animation_t)
+      m_dragging(false)
 {
+    m_animationInfo.Animation = new piece_animation_t;
+
     setMouseTracking(true);
 
-    connect(a_movingPiece, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
-    connect(a_movingPiece, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
+    connect(m_animationInfo.Animation, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
+    connect(m_animationInfo.Animation, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
             this, SLOT(_animation_state_changed()));
 
     connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
@@ -163,10 +167,11 @@ void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
 
 void BoardView::_animation_state_changed()
 {
-    if(QAbstractAnimation::Stopped == a_movingPiece->state())
+    if(QAbstractAnimation::Stopped == m_animationInfo.Animation->state())
     {
         // The animation has finished
-        m_animatingIndex = QModelIndex();
+        m_animationInfo.Piece = Piece();
+        hide_piece_at_index();
     }
 }
 
@@ -277,44 +282,39 @@ void BoardView::resizeEvent(QResizeEvent *)
     updateGeometries();
 }
 
-void BoardView::_paint_piece_at(const QModelIndex &ind, const QRectF &r, QPainter &p)
+void BoardView::_paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p, float rotate_angle)
 {
     GASSERT(ind.isValid());
 
+    if(piece.IsNull())
+        return;
+
     QRect dest_rect(r.toAlignedRect());
     QIcon ico;
-    Piece const *piece( GetBoardModel()->ConvertIndexToSquare(ind)->GetPiece() );
-    if(NULL == piece)
-        return;
     
     // First see if we have an icon factory
     if(i_factory)
     {
-        ico = i_factory->GetIcon(*piece);
-    }
-    
-    // If there is no factory, then get icons from the model
-    else
-    {
-        ico = model()->data(ind, Qt::DecorationRole).value<QIcon>();
+        ico = i_factory->GetIcon(piece);
     }
 
+    p.save();
+    p.rotate(rotate_angle);
 
-    // If we still didn't find an icon for the piece, default to the unicode characters
+    // If we didn't find an icon for the piece, default to the unicode characters
     if(ico.isNull())
     {
         QFont font_pieces = p.font();
-        font_pieces.setPixelSize(0.825 * m_squareSize);
-        p.save();
+        font_pieces.setPixelSize(0.825 * dest_rect.width());
         p.setFont(font_pieces);
-        p.drawText(dest_rect, Qt::AlignCenter, QChar(piece->UnicodeValue()));
-        p.restore();
+        p.drawText(dest_rect, Qt::AlignHCenter|Qt::AlignBottom, QChar(piece.UnicodeValue()));
     }
     else
     {
         // Paint the icon
         ico.paint(&p, dest_rect);
     }
+    p.restore();
 }
 
 void BoardView::_paint_board()
@@ -376,8 +376,9 @@ void BoardView::_paint_board()
             }
 
             // Paint the pieces
-            if(m_animatingIndex != ind && (m_dragOffset.isNull() || m_activeSquare != ind))
-                _paint_piece_at(ind, tmp, painter);
+            Piece pc = ind.data(BoardModel::PieceRole).value<Piece>();
+            if(m_hiddenIndex != ind && !pc.IsNull() && (!m_dragging || m_activeSquare != ind))
+                _paint_piece_at(pc, tmp, painter);
         }
     }
 
@@ -446,22 +447,24 @@ void BoardView::_paint_board()
     painter.restore();
 
     // If we're dragging then paint the piece being dragged
-    if(!m_dragOffset.isNull() && m_activeSquare.isValid())
+    if(m_dragging && m_activeSquare.isValid())
     {
         QPoint cur_pos = mapFromGlobal(QCursor::pos());
-        _paint_piece_at(m_activeSquare,
-                        QRectF(cur_pos.x() - m_squareSize/2,
-                               cur_pos.y() - m_squareSize/2,
-                               m_squareSize, m_squareSize).translated(m_dragOffset),
-                        painter);
+        Piece const *active_piece = GetBoardModel()->ConvertIndexToSquare(m_activeSquare)->GetPiece();
+        if(active_piece)
+            _paint_piece_at(*active_piece,
+                            QRectF(cur_pos.x() - m_squareSize/2,
+                                   cur_pos.y() - m_squareSize/2,
+                                   m_squareSize, m_squareSize),
+                            painter);
     }
 
     // If we're animating a move, paint that now
-    if(m_animatingIndex.isValid())
+    if(!m_animationInfo.Piece.IsNull())
     {
-        QPointF v = a_movingPiece->currentValue().value<QPointF>();
+        QPointF v = m_animationInfo.Animation->currentValue().value<QPointF>();
         if(!v.isNull()){
-            _paint_piece_at(m_animatingIndex, QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize), painter);
+            _paint_piece_at(m_animationInfo.Piece, QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize), painter);
         }
     }
 
@@ -701,7 +704,7 @@ void BoardView::mousePressEvent(QMouseEvent *ev)
         m_activeSquare = indexAt(ev->pos());
 
         QPointF center = _get_rect_for_index(m_activeSquare.column(), m_activeSquare.row()).center();
-        m_dragOffset = QPoint(center.x()-p.x(), center.y()-p.y());
+        m_dragging = true;
 
         // Add highlighting to the active square
         HighlightSquare(m_activeSquare, GetActiveSquareHighlightColor());
@@ -725,7 +728,7 @@ void BoardView::mouseReleaseEvent(QMouseEvent *ev)
 
     m_formatOpts.Remove(GetBoardModel()->ConvertIndexToSquare(m_activeSquare));
     m_activeSquare = QModelIndex();
-    m_dragOffset = QPoint();
+    m_dragging = false;
 
     viewport()->update();
 
@@ -736,7 +739,8 @@ void BoardView::mouseMoveEvent(QMouseEvent *ev)
 {
     ev->accept();
 
-    if(!m_dragOffset.isNull()){
+    if(m_dragging)
+    {
         viewport()->update();
     }
     else if(m_boardRect.contains(ev->posF()))
@@ -754,16 +758,13 @@ void BoardView::mouseDoubleClickEvent(QMouseEvent *ev)
 
 void BoardView::_update_cursor_at(const QPointF &pt)
 {
-    QPoint p(pt.x()+horizontalOffset(), pt.y()+verticalOffset());
-    if(!m_dragOffset.isNull())
+    if(m_dragging)
         setCursor(Qt::ClosedHandCursor);
-    else if(m_boardRect.contains(p))
+    else if(m_boardRect.contains(QPoint(pt.x()+horizontalOffset(), pt.y()+verticalOffset())))
         setCursor(Qt::OpenHandCursor);
     else
         setCursor(Qt::ArrowCursor);
 }
-
-#define SCROLL_SPEED_FACTOR 0.05
 
 void BoardView::wheelEvent(QWheelEvent *ev)
 {
@@ -787,15 +788,37 @@ void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
     GUTIL_UNUSED(s);
     GUTIL_UNUSED(d);
 
-    if(QVariantAnimation::Running != a_movingPiece->state())
+    if(s != d && s.data(BoardModel::PieceRole).isValid())
     {
-        m_animatingIndex = s;
-        a_movingPiece->setStartValue(_get_rect_for_index(s.column(), s.row()).center());
-        a_movingPiece->setEndValue(_get_rect_for_index(d.column(), d.row()).center());
-        a_movingPiece->setEasingCurve(QEasingCurve::InOutQuad);
-        //a_movingPiece->setEasingCurve(QEasingCurve::OutInBounce);
-        a_movingPiece->setDuration(ANIM_MOVEDURATION * 1000);
-        a_movingPiece->start();
+        hide_piece_at_index(s);
+        animate_piece(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
+                      _get_rect_for_index(s.column(), s.row()).center(),
+                      _get_rect_for_index(d.column(), d.row()).center(),
+                      //QEasingCurve::InOutQuad
+                      QEasingCurve::InOutCubic
+                      //QEasingCurve::InOutQuart
+                      //QEasingCurve::InOutQuint
+                      //QEasingCurve::InOutCirc
+                      );
+    }
+}
+
+void BoardView::hide_piece_at_index(const QModelIndex &ind)
+{
+    m_hiddenIndex = ind;
+    viewport()->update();
+}
+
+void BoardView::animate_piece(const Piece &p, const QPointF &source, const QPointF &dest, int easing_curve)
+{
+    if(QVariantAnimation::Running != m_animationInfo.Animation->state())
+    {
+        m_animationInfo.Piece = p;
+        m_animationInfo.Animation->setStartValue(source);
+        m_animationInfo.Animation->setEndValue(dest);
+        m_animationInfo.Animation->setEasingCurve((QEasingCurve::Type)easing_curve);
+        m_animationInfo.Animation->setDuration(ANIM_MOVEDURATION * 1000);
+        m_animationInfo.Animation->start();
     }
 }
 

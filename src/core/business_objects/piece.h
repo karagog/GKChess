@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_globals.h"
 #include "gutil_strings.h"
 #include "gutil_smartpointer.h"
+#include <QMetaType>
 
 NAMESPACE_GKCHESS;
 
@@ -115,5 +116,10 @@ public:
 
 
 END_NAMESPACE_GKCHESS;
+
+
+// This is so we can use this class with QVariant
+Q_DECLARE_METATYPE(GKChess::Piece)
+
 
 #endif // GKCHESS_PIECE_H

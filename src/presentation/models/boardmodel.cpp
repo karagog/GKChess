@@ -72,20 +72,33 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
     if(s)
     {
         Piece const *p = s->GetPiece();
-        switch((Qt::ItemDataRole)role)
+        if(Qt::UserRole > role)
         {
-        case Qt::DisplayRole:
-            if(p)
-                ret = QString(QChar(p->UnicodeValue()));
-            break;
-        case Qt::ToolTipRole:
-            if(p)
-                ret = p->ToString(true).ToQString();
-            break;
-        case Qt::DecorationRole:
-            break;
-        default:
-            break;
+            switch((Qt::ItemDataRole)role)
+            {
+            case Qt::DisplayRole:
+                if(p)
+                    ret = QString(QChar(p->UnicodeValue()));
+                break;
+            case Qt::ToolTipRole:
+                if(p)
+                    ret = p->ToString(true).ToQString();
+                break;
+            case Qt::DecorationRole:
+                break;
+            default: break;
+            }
+        }
+        else
+        {
+            switch((CustomDataRoleEnum)role)
+            {
+            case PieceRole:
+                if(p)
+                    ret.setValue(*p);
+                break;
+            default: break;
+            }
         }
     }
     return ret;
