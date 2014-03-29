@@ -188,7 +188,10 @@ protected:
      *  with the given easing curve.  The easing curve responds to the Type enum of
      *  the QEasingCurve.
     */
-    void animate_piece(const Piece &, const QPointF &source, const QPointF &dest, int easing_curve);
+    void animate_piece(const Piece &,
+                       const QPointF &source, const QPointF &dest,
+                       int duration_ms,
+                       int easing_curve);
 
     
     /** \name QAbstractItemView interface
@@ -224,7 +227,7 @@ private:
 
     // paints the board
     void _paint_board();
-    void _paint_piece_at(const Piece &, const QRectF &, QPainter &, float rotate_angle = 0.0);
+    void _paint_piece_at(const Piece &, const QRectF &, QPainter &);
     void _update_cursor_at(const QPointF &);
 
     void _update_board_rect();

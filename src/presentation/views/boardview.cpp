@@ -59,7 +59,7 @@ USING_NAMESPACE_GKCHESS;
 
 
 /** Defines the duration of move animation, in seconds */
-#define ANIM_MOVEDURATION 0.75
+#define ANIM_SNAPBACKDURATION 0.25
 
 /** The number of refreshes per second while animating. */
 #define ANIM_REFRESH_FREQUENCY 30
@@ -282,7 +282,7 @@ void BoardView::resizeEvent(QResizeEvent *)
     updateGeometries();
 }
 
-void BoardView::_paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p, float rotate_angle)
+void BoardView::_paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
 {
     GASSERT(ind.isValid());
 
@@ -299,7 +299,6 @@ void BoardView::_paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p
     }
 
     p.save();
-    p.rotate(rotate_angle);
 
     // If we didn't find an icon for the piece, default to the unicode characters
     if(ico.isNull())
@@ -453,8 +452,8 @@ void BoardView::_paint_board()
         Piece const *active_piece = GetBoardModel()->ConvertIndexToSquare(m_activeSquare)->GetPiece();
         if(active_piece)
             _paint_piece_at(*active_piece,
-                            QRectF(cur_pos.x() - m_squareSize/2,
-                                   cur_pos.y() - m_squareSize/2,
+                            QRectF(cur_pos.x() - m_squareSize/2 + horizontalOffset(),
+                                   cur_pos.y() - m_squareSize/2 + verticalOffset(),
                                    m_squareSize, m_squareSize),
                             painter);
     }
@@ -464,7 +463,9 @@ void BoardView::_paint_board()
     {
         QPointF v = m_animationInfo.Animation->currentValue().value<QPointF>();
         if(!v.isNull()){
-            _paint_piece_at(m_animationInfo.Piece, QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize), painter);
+            _paint_piece_at(m_animationInfo.Piece,
+                            QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize),
+                            painter);
         }
     }
 
@@ -696,6 +697,9 @@ void BoardView::mousePressEvent(QMouseEvent *ev)
 {
     GASSERT(m_dragOffset.isNull());
 
+    if(QAbstractAnimation::Running == m_animationInfo.Animation->state())
+        return;
+
     ev->accept();
 
     if(!m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
@@ -790,15 +794,25 @@ void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
 
     if(s != d && s.data(BoardModel::PieceRole).isValid())
     {
+        // Since this is a readonly model, we dont' actually let them move a piece, so
+        //  we animate the piece snapping back to the original location
         hide_piece_at_index(s);
         animate_piece(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
-                      _get_rect_for_index(s.column(), s.row()).center(),
                       _get_rect_for_index(d.column(), d.row()).center(),
+                      _get_rect_for_index(s.column(), s.row()).center(),
+                      ANIM_SNAPBACKDURATION * 1000,
                       //QEasingCurve::InOutQuad
-                      QEasingCurve::InOutCubic
+                      //QEasingCurve::InOutCubic
                       //QEasingCurve::InOutQuart
                       //QEasingCurve::InOutQuint
                       //QEasingCurve::InOutCirc
+                      //QEasingCurve::InOutSine
+
+                      //QEasingCurve::OutQuad
+                      //QEasingCurve::OutCubic
+                      //QEasingCurve::OutQuart
+                      QEasingCurve::OutQuint
+                      //QEasingCurve::OutExpo
                       );
     }
 }
@@ -809,7 +823,7 @@ void BoardView::hide_piece_at_index(const QModelIndex &ind)
     viewport()->update();
 }
 
-void BoardView::animate_piece(const Piece &p, const QPointF &source, const QPointF &dest, int easing_curve)
+void BoardView::animate_piece(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
 {
     if(QVariantAnimation::Running != m_animationInfo.Animation->state())
     {
@@ -817,7 +831,7 @@ void BoardView::animate_piece(const Piece &p, const QPointF &source, const QPoin
         m_animationInfo.Animation->setStartValue(source);
         m_animationInfo.Animation->setEndValue(dest);
         m_animationInfo.Animation->setEasingCurve((QEasingCurve::Type)easing_curve);
-        m_animationInfo.Animation->setDuration(ANIM_MOVEDURATION * 1000);
+        m_animationInfo.Animation->setDuration(dur);
         m_animationInfo.Animation->start();
     }
 }
