@@ -5,7 +5,7 @@ TEMPLATE    = lib
 TOP_DIR = ../..
 
 DESTDIR = $$TOP_DIR/lib
-TARGET = GKChess_core
+TARGET = GKChess
 
 DEFINES +=
 

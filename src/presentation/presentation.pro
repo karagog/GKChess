@@ -6,7 +6,7 @@ TEMPLATE    = lib
 TOP_DIR = ../..
 
 DESTDIR = $$TOP_DIR/lib
-TARGET = GKChess_presentation
+TARGET = GKChessUI
 
 DEFINES += GUTIL_CORE_QT_ADAPTERS
 
@@ -16,7 +16,7 @@ LIBS += \
     -L$$TOP_DIR/lib \
     -lGUtil \
     -lGUtilQt \
-    -lGKChess_core
+    -lGKChess
 
 unix {
     target.path = /usr/lib

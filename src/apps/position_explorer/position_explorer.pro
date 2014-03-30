@@ -22,8 +22,8 @@ LIBS += \
     -L$$TOP_DIR/gutil/lib \
     -lGUtil \
     -lGUtilQt \
-    -lGKChess_core \
-    -lGKChess_presentation
+    -lGKChess \
+    -lGKChessUI
 
 
 SOURCES += main.cpp\
