@@ -12,8 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_IPIECEICONFACTORY_H
-#define GKCHESS_IPIECEICONFACTORY_H
+#ifndef GKCHESS_IPIECEGKCHESS_ICONFACTORY_H
+#define GKCHESS_IPIECEGKCHESS_ICONFACTORY_H
 
 #include <QIcon>
 
@@ -39,4 +39,4 @@ public:
 
 }}
 
-#endif // GKCHESS_IPIECEICONFACTORY_H
+#endif // GKCHESS_IPIECEGKCHESS_ICONFACTORY_H

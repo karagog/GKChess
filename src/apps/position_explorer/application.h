@@ -16,8 +16,6 @@ limitations under the License.*/
 #define APPLICATION_H
 
 #include "gutil_application.h"
-#include "gutil_smartpointer.h"
-#include "mainwindow.h"
 
 class MainWindow;
 
@@ -25,7 +23,7 @@ class PositionExplorerApplication :
         public GUtil::QT::Application
 {
     Q_OBJECT
-    MainWindow m_mainWindow;
+    MainWindow *m_mainWindow;
 public:
     explicit PositionExplorerApplication(int &argc, char **argv);
 

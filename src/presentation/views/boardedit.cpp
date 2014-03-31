@@ -158,7 +158,8 @@ void BoardEdit::paint_board(QPainter &painter, const QRect &update_rect)
                  cur_pos.y() - GetSquareSize()/2 + verticalOffset(),
                  GetSquareSize(), GetSquareSize());
 
-        if(active_piece && update_rect.intersects(r.toAlignedRect()))
+        //if(active_piece && update_rect.intersects(r.toAlignedRect()))
+        if(active_piece)
             paint_piece_at(*active_piece, r, painter);
     }
 }

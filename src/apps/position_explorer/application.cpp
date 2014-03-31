@@ -13,17 +13,28 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "application.h"
+#include "gkchess_uiglobals.h"
+#include "mainwindow.h"
 USING_NAMESPACE_GUTIL1(QT);
 
 
 PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
-    :Application(argc, argv, "Position Explorer")
+    :Application(argc, argv, "Position Explorer"),
+      m_mainWindow(new MainWindow)
 {
-    m_mainWindow.show();
+    setApplicationName("GKChess Position Explorer");
+    setApplicationVersion("0.0.0");
+
+    // Make sure the GKChess resources are initialized
+    GKChess::UI::InitializeApplicationResources();
+    setWindowIcon(QIcon(":/gkchess/icons/default/wk.png"));
+
+    m_mainWindow->show();
 }
 
 
 void PositionExplorerApplication::about_to_quit()
 {
-    m_mainWindow.hide();
+    m_mainWindow->hide();
+    m_mainWindow->deleteLater();
 }

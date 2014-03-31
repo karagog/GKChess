@@ -1,3 +1,5 @@
 <RCC>
-    <qresource prefix="/gkchess"/>
+    <qresource prefix="/gkchess">
+        <file>icons/default/wk.png</file>
+    </qresource>
 </RCC>

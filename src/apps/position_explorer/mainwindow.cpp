@@ -21,11 +21,15 @@ USING_NAMESPACE_GKCHESS;
 MainWindow::MainWindow(QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),
-      m_boardModel(&m_board)
+      m_boardModel(&m_board),
+      m_iconFactory(":/gkchess/icons/default")
 {
     ui->setupUi(this);
 
     m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
+
+    ui->boardView->SetIconFactory(&m_iconFactory);
+    ui->boardEdit->SetIconFactory(&m_iconFactory);
 
     ui->boardView->setModel(&m_boardModel);
     ui->boardEdit->setModel(&m_boardModel);

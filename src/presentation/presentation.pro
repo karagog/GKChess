@@ -28,10 +28,12 @@ include(models/models.pri)
 
 HEADERS += \
     ifactory_pieceicon.h \
-    uiglobals.h
+    uiglobals.h \
+    iconfactory.h
 
 RESOURCES += \
     resources.qrc
 
 SOURCES += \
-    uiglobals.cpp
+    uiglobals.cpp \
+    iconfactory.cpp
