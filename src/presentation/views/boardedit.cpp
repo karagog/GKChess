@@ -23,13 +23,17 @@ USING_NAMESPACE_GUTIL;
 
 #define ANIM_MOVE_DURATION 0.75
 
+/** The size of a rect that determines when to start dragging a piece (as a factor of square size). */
+#define DRAG_START_RECT_SIZE 0.35
+
 
 NAMESPACE_GKCHESS1(UI);
 
 
 BoardEdit::BoardEdit(QWidget *p)
     :BoardView(p),
-      m_dragging(false)
+      m_dragging(false),
+      m_wasSquareActiveWhenPressed(false)
 {}
 
 void BoardEdit::setModel(QAbstractItemModel *m)
@@ -79,17 +83,30 @@ void BoardEdit::mousePressEvent(QMouseEvent *ev)
     if(QAbstractAnimation::Running == get_animation()->state())
         return;
 
-    if(!m_activeSquare.isValid() && get_board_rect().contains(ev->pos()))
+    QModelIndex ind = indexAt(ev->pos());
+    if(ind.isValid())
     {
         QPoint p(ev->pos());
-        QModelIndex ind = indexAt(ev->pos());
-        if(ind.data(BoardModel::PieceRole).isNull())
+        Piece target_piece = ind.data(BoardModel::PieceRole).value<Piece>();
+        if(target_piece.IsNull())
             return;
 
+        if(m_activeSquare.isValid())
+        {
+            Piece active_piece = m_activeSquare.data(BoardModel::PieceRole).value<Piece>();
+            m_wasSquareActiveWhenPressed = m_activeSquare == ind;
+
+            if(target_piece.GetAllegience() != active_piece.GetAllegience())
+                return;
+        }
+
         m_activeSquare = ind;
-        m_dragging = true;
+
+        // Remember where they clicked, so we can start dragging if they pull away from this spot
+        m_mousePressLoc = ev->pos();
 
         // Add highlighting to the active square
+        ClearSquareHighlighting();
         HighlightSquare(m_activeSquare, GetActiveSquareHighlightColor());
 
         viewport()->update();
@@ -116,7 +133,7 @@ void BoardEdit::mouseReleaseEvent(QMouseEvent *ev)
             {
                 // If they released on the square they started on, then it leaves that square activated
                 //  But if the square was already active, then we make it inactive if they click it.
-                if(m_dragging)
+                if(!m_wasSquareActiveWhenPressed)
                     m_activeSquare = ind_active;
             }
             else
@@ -134,6 +151,8 @@ void BoardEdit::mouseReleaseEvent(QMouseEvent *ev)
     }
 
     m_dragging = false;
+    m_mousePressLoc = QPoint();
+    m_wasSquareActiveWhenPressed = false;
 
     if(!m_activeSquare.isValid())
         ClearSquareHighlighting();
@@ -165,8 +184,14 @@ void BoardEdit::mouseMoveEvent(QMouseEvent *ev)
             HighlightSquare(ind, validate_move(m_activeSquare, ind) ? Qt::green : Qt::red);
     }
 
-    if(m_dragging)
+    if(!m_mousePressLoc.isNull())
     {
+        double side = DRAG_START_RECT_SIZE*GetSquareSize();
+        if(!QRect(m_mousePressLoc.x()-side/2, m_mousePressLoc.y()-side/2, side, side)
+                .contains(ev->pos()))
+        {
+            m_dragging = true;
+        }
         viewport()->update();
     }
 
