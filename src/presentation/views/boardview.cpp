@@ -30,7 +30,6 @@ limitations under the License.*/
 #include <QApplication>
 #include <QVariantAnimation>
 #include <QRubberBand>
-#include <cmath>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
@@ -60,8 +59,8 @@ USING_NAMESPACE_GKCHESS;
 /** The drawing thickness of the board outline. */
 #define BOARD_OUTLINE_THICKNESS 3
 
-/** The drawing thickness of the highlighted square indicator. */
-#define HIGHLIGHT_THICKNESS 10
+/** The thickness of the square highlight, given as a percentage of the square size. */
+#define HIGHLIGHT_THICKNESS 0.12
 
 /** Defines the distance the "current turn" arrow is from the board, as a
  *  factor of the square size.
@@ -84,6 +83,16 @@ USING_NAMESPACE_GKCHESS;
 
 
 NAMESPACE_GKCHESS1(UI);
+
+
+/** Returns a rect with the same center but shrunken by the given factor */
+static QRect __get_shrunken_rect(const QRect &r, double factor)
+{
+    return QRect(r.x() + r.width()*(1.0-factor)/2,
+                 r.y() + r.height()*(1.0-factor)/2,
+                 factor*r.width(),
+                 factor*r.height());
+}
 
 
 /** A dummy class we need for Qt4 animations, but should go away in Qt5. */
@@ -212,15 +221,23 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
         GASSERT(0 < x && 0 < y);
 
         // We want to have a margin within each square that doesn't select it
-        double rem_y = fmod(y, GetSquareSize());
-        double rem_x = fmod(x, GetSquareSize());
-        if(rem_y > MARGIN_SQUARE_SELECTION*GetSquareSize() &&
-                rem_y < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize() &&
-                rem_x > MARGIN_SQUARE_SELECTION*GetSquareSize() &&
-                rem_x < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize())
-        {
-            ret = model()->index(y / GetSquareSize(), x / GetSquareSize());
-        }
+        int row = y/GetSquareSize();
+        int col = x/GetSquareSize();
+        QRectF selection_rect = __get_shrunken_rect(
+                    ind_2_rect(col, row).toAlignedRect(),
+                    1.0-MARGIN_SQUARE_SELECTION);
+        if(selection_rect.contains(p))
+            ret = model()->index(row, col);
+
+//        double rem_y = fmod(y, GetSquareSize());
+//        double rem_x = fmod(x, GetSquareSize());
+//        if(rem_y >= MARGIN_SQUARE_SELECTION*GetSquareSize() &&
+//                rem_y < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize() &&
+//                rem_x >= MARGIN_SQUARE_SELECTION*GetSquareSize() &&
+//                rem_x < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize())
+//        {
+//            ret = model()->index(y / GetSquareSize(), x / GetSquareSize());
+//        }
     }
     return ret;
 }
@@ -335,10 +352,7 @@ void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
     else
     {
         // Modify the dest rect by the piece size factor
-        dest_rect = QRect(dest_rect.x() + dest_rect.width()*(1.0-PIECE_SIZE_FACTOR)/2,
-                          dest_rect.y() + dest_rect.height()*(1.0-PIECE_SIZE_FACTOR)/2,
-                          PIECE_SIZE_FACTOR*dest_rect.width(),
-                          PIECE_SIZE_FACTOR*dest_rect.height());
+        dest_rect = __get_shrunken_rect(dest_rect, PIECE_SIZE_FACTOR);
 
         // Paint the icon
         ico.paint(&p, dest_rect);
@@ -361,9 +375,6 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
     QPen textPen(option.palette.color(QPalette::Text));
     QPen outline_pen(Qt::black);
     outline_pen.setWidth(BOARD_OUTLINE_THICKNESS);
-
-    QPen highlight_pen(m_activeSquareHighlightColor);
-    highlight_pen.setWidth(HIGHLIGHT_THICKNESS);
 
     // Set up the painter
     painter.translate(-horizontalOffset(), -verticalOffset());
@@ -471,9 +482,13 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
         ++iter)
     {
         ISquare const *sqr = iter->Key();
-        highlight_pen.setColor(m_formatOpts[sqr].HighlightColor);
-        painter.setPen(highlight_pen);
-        painter.drawRect(ind_2_rect(sqr->GetColumn(), sqr->GetRow()));
+
+        QRect cur_rect = ind_2_rect(sqr->GetColumn(), sqr->GetRow()).toAlignedRect();
+        QPainterPath path;
+        QPainterPath subtracted;
+        path.addRect(cur_rect);
+        subtracted.addRect(__get_shrunken_rect(cur_rect, 1.0-HIGHLIGHT_THICKNESS));
+        painter.fillPath(path.subtracted(subtracted), m_formatOpts[sqr].HighlightColor);
     }
     painter.restore();
 

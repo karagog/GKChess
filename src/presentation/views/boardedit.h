@@ -46,6 +46,12 @@ protected:
 
     virtual void attempt_move(const QModelIndex &, const QModelIndex &);
 
+    /** This function is called to validate a move from one index to another.
+     *  The default implementation always returns true, but subclasses can
+     *  implement their own validation.
+    */
+    virtual bool validate_move(const QModelIndex &, const QModelIndex &);
+
     virtual void mousePressEvent(QMouseEvent *);
     virtual void mouseReleaseEvent(QMouseEvent *);
     virtual void mouseMoveEvent(QMouseEvent *);

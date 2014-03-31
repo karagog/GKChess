@@ -45,6 +45,11 @@ EditableBoardModel *BoardEdit::GetBoardModel() const
     return static_cast<EditableBoardModel *>(model());
 }
 
+bool BoardEdit::validate_move(const QModelIndex &, const QModelIndex &)
+{
+    return true;
+}
+
 void BoardEdit::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
     // As long as both indices are valid, we will move the piece
@@ -97,24 +102,41 @@ void BoardEdit::mousePressEvent(QMouseEvent *ev)
 
 void BoardEdit::mouseReleaseEvent(QMouseEvent *ev)
 {
-    BoardView::mousePressEvent(ev);
+    BoardView::mouseReleaseEvent(ev);
 
     if(m_activeSquare.isValid())
     {
-        QModelIndex ind = indexAt(ev->pos());
-        if(ind.isValid())
-            attempt_move(m_activeSquare, ind);
+        QModelIndex ind_active = m_activeSquare;
+        QModelIndex ind_released = indexAt(ev->pos());
+        m_activeSquare = QModelIndex();
+
+        if(ind_released.isValid())
+        {
+            if(ind_active == ind_released)
+            {
+                // If they released on the square they started on, then it leaves that square activated
+                //  But if the square was already active, then we make it inactive if they click it.
+                if(m_dragging)
+                    m_activeSquare = ind_active;
+            }
+            else
+            {
+                // If they released on a different square, then execute a move
+                attempt_move(ind_active, ind_released);
+            }
+        }
         else
         {
             // If they dropped the piece off the board, snap it back to the start location
-            animate_snapback(ev->pos(), m_activeSquare);
+            if(m_dragging)
+                animate_snapback(ev->pos(), ind_active);
         }
     }
 
-    m_activeSquare = QModelIndex();
     m_dragging = false;
 
-    ClearSquareHighlighting();
+    if(!m_activeSquare.isValid())
+        ClearSquareHighlighting();
     viewport()->update();
 
     _update_cursor_at_point(ev->posF());
@@ -123,6 +145,25 @@ void BoardEdit::mouseReleaseEvent(QMouseEvent *ev)
 void BoardEdit::mouseMoveEvent(QMouseEvent *ev)
 {
     BoardView::mouseMoveEvent(ev);
+
+    if(m_activeSquare.isValid())
+    {
+        ClearSquareHighlighting();
+
+        // Highlight the valid squares for moving
+        QModelIndexList valid_moves;
+        valid_moves.append(m_activeSquare);
+
+        // Todo:  Generate a list of valid moves for the piece
+
+        HighlightSquares(valid_moves, GetActiveSquareHighlightColor());
+
+
+        // Next we want to highlight the square the user is hovering over
+        QModelIndex ind = indexAt(ev->pos());
+        if(ind.isValid() && ind != m_activeSquare)
+            HighlightSquare(ind, validate_move(m_activeSquare, ind) ? Qt::green : Qt::red);
+    }
 
     if(m_dragging)
     {
