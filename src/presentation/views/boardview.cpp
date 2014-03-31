@@ -30,6 +30,7 @@ limitations under the License.*/
 #include <QApplication>
 #include <QVariantAnimation>
 #include <QRubberBand>
+#include <cmath>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
@@ -39,6 +40,16 @@ USING_NAMESPACE_GKCHESS;
 //  of the board view
 
 #define DEFAULT_SQUARE_SIZE 75
+
+/** The percent margin to use for selecting squares. You need a margin to prevent
+ *  the interface being overly sensitive to misdrops. If the user drops a piece right on
+ *  the edge between squares we'll call it a misdrop.
+ *
+ *  For example, a value of 0 would select a square if you clicked anywhere in it,
+ *  but a value of 1 would not allow you to select a square at all. So this should be
+ *  a small value close to 0 for best results.
+*/
+#define MARGIN_SQUARE_SELECTION 0.07
 
 /** The margin of empty space to leave around all sides of the board. */
 #define MARGIN_OUTER   12
@@ -65,6 +76,11 @@ USING_NAMESPACE_GKCHESS;
 #define ANIM_REFRESH_FREQUENCY 30
 
 #define SCROLL_SPEED_FACTOR 0.05
+
+/** Piece icons will appear with a size of the square multiplied by this factor.
+ *  \note this should be between 0 and 1
+*/
+#define PIECE_SIZE_FACTOR  0.825
 
 
 NAMESPACE_GKCHESS1(UI);
@@ -195,7 +211,16 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
         GASSERT(model());
         GASSERT(0 < x && 0 < y);
 
-        ret = model()->index(y / GetSquareSize(), x / GetSquareSize());
+        // We want to have a margin within each square that doesn't select it
+        double rem_y = fmod(y, GetSquareSize());
+        double rem_x = fmod(x, GetSquareSize());
+        if(rem_y > MARGIN_SQUARE_SELECTION*GetSquareSize() &&
+                rem_y < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize() &&
+                rem_x > MARGIN_SQUARE_SELECTION*GetSquareSize() &&
+                rem_x < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize())
+        {
+            ret = model()->index(y / GetSquareSize(), x / GetSquareSize());
+        }
     }
     return ret;
 }
@@ -303,12 +328,18 @@ void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
     if(ico.isNull())
     {
         QFont font_pieces = p.font();
-        font_pieces.setPixelSize(0.825 * dest_rect.width());
+        font_pieces.setPixelSize(PIECE_SIZE_FACTOR * dest_rect.width());
         p.setFont(font_pieces);
         p.drawText(dest_rect, Qt::AlignHCenter|Qt::AlignBottom, QChar(piece.UnicodeValue()));
     }
     else
     {
+        // Modify the dest rect by the piece size factor
+        dest_rect = QRect(dest_rect.x() + dest_rect.width()*(1.0-PIECE_SIZE_FACTOR)/2,
+                          dest_rect.y() + dest_rect.height()*(1.0-PIECE_SIZE_FACTOR)/2,
+                          PIECE_SIZE_FACTOR*dest_rect.width(),
+                          PIECE_SIZE_FACTOR*dest_rect.height());
+
         // Paint the icon
         ico.paint(&p, dest_rect);
     }
@@ -507,6 +538,7 @@ void BoardView::SetActiveSquareHighlightColor(const QColor &c)
 void BoardView::SetSquareSize(float s)
 {
     m_squareSize = s;
+    updateGeometries();
     viewport()->update();
     _update_rubber_band();
 }

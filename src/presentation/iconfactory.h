@@ -28,7 +28,7 @@ class DirectoryPieceIconFactory :
         public IFactory_PieceIcon
 {
     QDir dir;
-    GUtil::Map<char, QIcon> index;
+    GUtil::Map<int, QIcon> index;
 public:
     /** Constructs an icon factory that searches the directory for icons of a specific file
      *  format.  Each piece has an icon with their allegience and PGN name, so the white king

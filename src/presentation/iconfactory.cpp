@@ -48,7 +48,7 @@ DirectoryPieceIconFactory::DirectoryPieceIconFactory(const QString &dirname)
         if(tmp.IsNull())
             continue;
 
-        index.Insert(tmp.ToFEN(), QIcon(fi.absoluteFilePath()));
+        index.Insert(tmp.UnicodeValue(), QIcon(fi.absoluteFilePath()));
 
         GDEBUG(QString("Importing icon: %1").arg(fi.absoluteFilePath()).toUtf8().constData());
     }
@@ -60,7 +60,7 @@ DirectoryPieceIconFactory::~DirectoryPieceIconFactory()
 QIcon DirectoryPieceIconFactory::GetIcon(const Piece &p) const
 {
     QIcon ret;
-    typename Map<char, QIcon>::const_iterator i(index.Search(p.ToFEN()));
+    typename Map<int, QIcon>::const_iterator i(index.Search(p.UnicodeValue()));
     if(i)
         ret = i->Value();
     return ret;

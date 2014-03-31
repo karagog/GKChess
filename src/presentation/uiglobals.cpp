@@ -28,6 +28,7 @@ static void __init_app_resources()
     {
         // Initialize the resources for icons and fonts
         Q_INIT_RESOURCE(resources);
+        Q_INIT_RESOURCE(icons_default);
 
         // Add the fonts to the application's font database
         QDirIterator iter(":/gkchess/fonts");

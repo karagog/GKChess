@@ -32,7 +32,8 @@ HEADERS += \
     iconfactory.h
 
 RESOURCES += \
-    resources.qrc
+    resources.qrc \
+    icons/default/icons_default.qrc
 
 SOURCES += \
     uiglobals.cpp \

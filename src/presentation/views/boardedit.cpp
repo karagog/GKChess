@@ -77,9 +77,11 @@ void BoardEdit::mousePressEvent(QMouseEvent *ev)
     if(!m_activeSquare.isValid() && get_board_rect().contains(ev->pos()))
     {
         QPoint p(ev->pos());
-        m_activeSquare = indexAt(ev->pos());
+        QModelIndex ind = indexAt(ev->pos());
+        if(ind.data(BoardModel::PieceRole).isNull())
+            return;
 
-        QPointF center = ind_2_rect(m_activeSquare.column(), m_activeSquare.row()).center();
+        m_activeSquare = ind;
         m_dragging = true;
 
         // Add highlighting to the active square
@@ -99,8 +101,9 @@ void BoardEdit::mouseReleaseEvent(QMouseEvent *ev)
 
     if(m_activeSquare.isValid())
     {
-        if(get_board_rect().contains(ev->pos()))
-            attempt_move(m_activeSquare, indexAt(ev->pos()));
+        QModelIndex ind = indexAt(ev->pos());
+        if(ind.isValid())
+            attempt_move(m_activeSquare, ind);
         else
         {
             // If they dropped the piece off the board, snap it back to the start location
@@ -131,15 +134,9 @@ void BoardEdit::mouseMoveEvent(QMouseEvent *ev)
 
 void BoardEdit::mouseDoubleClickEvent(QMouseEvent *ev)
 {
-    BoardView::mouseDoubleClickEvent(ev);
-
-    // Open an editor so they can modify pieces
-    QModelIndex ind = indexAt(ev->pos());
-    if(ind.isValid())
-    {
-        edit(ind);
-        ev->accept();
-    }
+    // We bypass the BoardView implementation, which does nothing, and
+    //  allow the abstract item model class to edit the item, if necessary.
+    QAbstractItemView::mouseDoubleClickEvent(ev);
 }
 
 void BoardEdit::paint_board(QPainter &painter, const QRect &update_rect)
@@ -158,7 +155,6 @@ void BoardEdit::paint_board(QPainter &painter, const QRect &update_rect)
                  cur_pos.y() - GetSquareSize()/2 + verticalOffset(),
                  GetSquareSize(), GetSquareSize());
 
-        //if(active_piece && update_rect.intersects(r.toAlignedRect()))
         if(active_piece)
             paint_piece_at(*active_piece, r, painter);
     }
@@ -169,7 +165,13 @@ void BoardEdit::_update_cursor_at_point(const QPointF &pt)
     if(m_dragging)
         setCursor(Qt::ClosedHandCursor);
     else if(get_board_rect().contains(QPoint(pt.x()+horizontalOffset(), pt.y()+verticalOffset())))
-        setCursor(Qt::OpenHandCursor);
+    {
+        QModelIndex ind = indexAt(pt.toPoint());
+        if(ind.isValid() && !ind.data(BoardModel::PieceRole).isNull())
+            setCursor(Qt::OpenHandCursor);
+        else
+            setCursor(Qt::ArrowCursor);
+    }
     else
         setCursor(Qt::ArrowCursor);
 }
