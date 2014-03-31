@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1011</width>
+    <width>1522</width>
     <height>718</height>
    </rect>
   </property>
@@ -14,7 +14,10 @@
    <string>GKChess Position Explorer</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="GKChess::UI::BoardEdit" name="boardEdit" native="true"/>
+    </item>
     <item>
      <widget class="GKChess::UI::BoardView" name="boardView" native="true"/>
     </item>
@@ -25,7 +28,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1011</width>
+     <width>1522</width>
      <height>20</height>
     </rect>
    </property>
@@ -52,7 +55,7 @@
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="GKChess::UI::PGNView" name="pgnView" native="true"/>
+      <widget class="GKChess::UI::PGNView" name="pgnView"/>
      </item>
     </layout>
    </widget>
@@ -70,7 +73,13 @@
    <class>GKChess::UI::PGNView</class>
    <extends>QPlainTextEdit</extends>
    <header>gkchess_pgnview.h</header>
-   <container>2</container>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GKChess::UI::BoardEdit</class>
+   <extends>QWidget</extends>
+   <header>gkchess_boardedit.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

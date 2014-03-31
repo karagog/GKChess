@@ -56,7 +56,6 @@ class BoardView :
 
     // Dimensional parameters
     float m_squareSize;
-    QRectF m_boardRect;
 
     // for painting
     QColor m_darkSquareColor;
@@ -64,10 +63,8 @@ class BoardView :
     QColor m_activeSquareHighlightColor;
     IFactory_PieceIcon *i_factory;
 
-    QModelIndex m_activeSquare;
     GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
-    bool m_dragging;
     QModelIndex m_hiddenIndex;
 
     // This is the data we need to remember about our current animation
@@ -173,6 +170,14 @@ public:
 
 protected:
 
+    /** Returns the rect for the entire board. */
+    QRectF get_board_rect() const;
+
+    /** This function returns the rect for the given index.
+     *  This will not compensate for the scrollbars.
+    */
+    QRectF ind_2_rect(int col, int row) const;
+
     /** This function is called whenever the user attempts to move a piece
         from one index to another.  In the base view this function does nothing,
         but you can override it to do something interesting (like moving a piece!)
@@ -184,14 +189,33 @@ protected:
     */
     void hide_piece_at_index(const QModelIndex & = QModelIndex());
 
+    /** This is the function you should override when doing your own painting.
+     *  Be sure to call the base implementation!
+     *  \param painter The painter object.
+     *  \param update_rect The rect that needs to be repainted.
+    */
+    virtual void paint_board(QPainter &painter, const QRect &update_rect);
+
+    /** Paints the piece within the rect. */
+    virtual void paint_piece_at(const Piece &, const QRectF &, QPainter &);
+
     /** Starts an animation of the piece moving from the source point to the dest point
      *  with the given easing curve.  The easing curve responds to the Type enum of
      *  the QEasingCurve.
     */
-    void animate_piece(const Piece &,
-                       const QPointF &source, const QPointF &dest,
-                       int duration_ms,
-                       int easing_curve);
+    void animate_move(const Piece &,
+                      const QPointF &source, const QPointF &dest,
+                      int duration_ms,
+                      int easing_curve);
+
+    /** A function that animates a piece snapping back from any point to the source square.
+     *  This is really just a wrapper around animate_move, so it's here for convenience and
+     *  consistency of animations.
+    */
+    void animate_snapback(const QPointF &from, const QModelIndex &back_to);
+
+    /** Returns the animation object for direct use by the subclass. */
+    QVariantAnimation *get_animation() const{ return m_animationInfo.Animation; }
 
     
     /** \name QAbstractItemView interface
@@ -199,11 +223,9 @@ protected:
     */
     virtual void paintEvent(QPaintEvent *);
     virtual void resizeEvent(QResizeEvent *);
-    virtual void mousePressEvent(QMouseEvent *);
-    virtual void mouseReleaseEvent(QMouseEvent *);
+    virtual void wheelEvent(QWheelEvent *);
     virtual void mouseMoveEvent(QMouseEvent *);
     virtual void mouseDoubleClickEvent(QMouseEvent *);
-    virtual void wheelEvent(QWheelEvent *);
     /** \} */
 
 
@@ -219,19 +241,8 @@ protected slots:
 
 private slots:
 
-    void _animation_state_changed();
+    void _animation_finished();
     void _update_rubber_band();
-
-
-private:
-
-    // paints the board
-    void _paint_board();
-    void _paint_piece_at(const Piece &, const QRectF &, QPainter &);
-    void _update_cursor_at(const QPointF &);
-
-    void _update_board_rect();
-    QRectF _get_rect_for_index(int col, int row) const;
 
 };
 

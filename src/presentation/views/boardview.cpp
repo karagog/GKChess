@@ -82,16 +82,14 @@ BoardView::BoardView(QWidget *parent)
       m_lightSquareColor(Qt::white),
       m_activeSquareHighlightColor(Qt::yellow),
       i_factory(0),
-      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this)),
-      m_dragging(false)
+      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this))
 {
     m_animationInfo.Animation = new piece_animation_t;
 
     setMouseTracking(true);
 
     connect(m_animationInfo.Animation, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
-    connect(m_animationInfo.Animation, SIGNAL(stateChanged(QAbstractAnimation::State,QAbstractAnimation::State)),
-            this, SLOT(_animation_state_changed()));
+    connect(m_animationInfo.Animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
 
     connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
     connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
@@ -122,7 +120,7 @@ QRect BoardView::visualRect(const QModelIndex &index) const
 {
     QRect ret;
     if(index.isValid()){
-        ret = _get_rect_for_index(index.column(), index.row()).toAlignedRect();
+        ret = ind_2_rect(index.column(), index.row()).toAlignedRect();
         ret.translate(-horizontalOffset(),
                       -verticalOffset());
     }
@@ -156,8 +154,8 @@ void BoardView::updateGeometries()
     QAbstractItemView::updateGeometries();
 
     // Update the scrollbars whenever our geometry changes
-    horizontalScrollBar()->setRange(0, Max(0.0, m_boardRect.width() + 2*MARGIN_OUTER + MARGIN_INDICES + (CURRENT_TURN_ARROW_OFFSET + 1)*m_squareSize - viewport()->width()));
-    verticalScrollBar()->setRange(0, Max(0.0, m_boardRect.height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
+    horizontalScrollBar()->setRange(0, Max(0.0, get_board_rect().width() + 2*MARGIN_OUTER + MARGIN_INDICES + (CURRENT_TURN_ARROW_OFFSET + 1)*GetSquareSize() - viewport()->width()));
+    verticalScrollBar()->setRange(0, Max(0.0, get_board_rect().height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
 }
 
 void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
@@ -165,14 +163,13 @@ void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
     _update_rubber_band();
 }
 
-void BoardView::_animation_state_changed()
+void BoardView::_animation_finished()
 {
-    if(QAbstractAnimation::Stopped == m_animationInfo.Animation->state())
-    {
-        // The animation has finished
-        m_animationInfo.Piece = Piece();
-        hide_piece_at_index();
-    }
+    // The animation has finished
+    m_animationInfo.Piece = Piece();
+
+    // Stop hiding the piece that we were animating
+    hide_piece_at_index();
 }
 
 void BoardView::_update_rubber_band()
@@ -190,15 +187,15 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
     QModelIndex ret;
     QPointF p_t(p.x() + horizontalOffset(),
                 p.y() + verticalOffset());
-    if(m_boardRect.contains(p_t))
+    if(get_board_rect().contains(p_t))
     {
-        float x = p_t.x() - m_boardRect.x();
-        float y = m_boardRect.y() + m_boardRect.height() - p_t.y();
+        float x = p_t.x() - get_board_rect().x();
+        float y = get_board_rect().y() + get_board_rect().height() - p_t.y();
 
         GASSERT(model());
         GASSERT(0 < x && 0 < y);
 
-        ret = model()->index(y / m_squareSize, x / m_squareSize);
+        ret = model()->index(y / GetSquareSize(), x / GetSquareSize());
     }
     return ret;
 }
@@ -274,7 +271,9 @@ QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) con
 void BoardView::paintEvent(QPaintEvent *ev)
 {
     ev->accept();
-    _paint_board();
+    QPainter painter(viewport());
+
+    paint_board(painter, ev->rect());
 }
 
 void BoardView::resizeEvent(QResizeEvent *)
@@ -282,7 +281,7 @@ void BoardView::resizeEvent(QResizeEvent *)
     updateGeometries();
 }
 
-void BoardView::_paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
+void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
 {
     GASSERT(ind.isValid());
 
@@ -316,8 +315,10 @@ void BoardView::_paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p
     p.restore();
 }
 
-void BoardView::_paint_board()
+void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
 {
+    GUTIL_UNUSED(update_rect);
+
     if(!model())
         return;
 
@@ -333,17 +334,17 @@ void BoardView::_paint_board()
     QPen highlight_pen(m_activeSquareHighlightColor);
     highlight_pen.setWidth(HIGHLIGHT_THICKNESS);
 
-    QPainter painter(viewport());
+    // Set up the painter
     painter.translate(-horizontalOffset(), -verticalOffset());
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(viewport()->rect(), background);
 
     // Draw the "current turn" indicator
     {
-        QRectF indicator_rect(m_boardRect.topRight().x() + m_squareSize*CURRENT_TURN_ARROW_OFFSET,
-                              m_boardRect.topRight().y() + m_boardRect.height()/2 - (m_squareSize/2),
-                              m_squareSize,
-                              m_squareSize);
+        QRectF indicator_rect(get_board_rect().topRight().x() + GetSquareSize()*CURRENT_TURN_ARROW_OFFSET,
+                              get_board_rect().topRight().y() + get_board_rect().height()/2 - (GetSquareSize()/2),
+                              GetSquareSize(),
+                              GetSquareSize());
         painter.fillRect(indicator_rect, 
                          Piece::White == GetBoardModel()->GetBoard()->GetWhoseTurn() ? 
                          m_lightSquareColor : m_darkSquareColor);
@@ -353,7 +354,7 @@ void BoardView::_paint_board()
 
     // Shade the squares and paint the pieces
     QFont font_indices = painter.font();
-    font_indices.setPixelSize(m_squareSize * 0.25);
+    font_indices.setPixelSize(GetSquareSize() * 0.25);
 
     painter.setFont(font_indices);
     for(int c = 0; c < model()->columnCount(); ++c)
@@ -361,7 +362,7 @@ void BoardView::_paint_board()
         for(int r = 0; r < model()->rowCount(); ++r)
         {
             QModelIndex ind = model()->index(r, c);
-            QRectF tmp = _get_rect_for_index(c, r);
+            QRectF tmp = ind_2_rect(c, r);
 
             if((c & 0x1) == (r & 0x1))
             {
@@ -376,16 +377,16 @@ void BoardView::_paint_board()
 
             // Paint the pieces
             Piece pc = ind.data(BoardModel::PieceRole).value<Piece>();
-            if(m_hiddenIndex != ind && !pc.IsNull() && (!m_dragging || m_activeSquare != ind))
-                _paint_piece_at(pc, tmp, painter);
+            if(m_hiddenIndex != ind && !pc.IsNull())
+                paint_piece_at(pc, tmp, painter);
         }
     }
 
     // paint the vertical borders and indices
     {
-        float file_width = m_boardRect.width() / GetBoardModel()->columnCount();
-        QPointF p1(m_boardRect.topLeft());
-        QPointF p2(p1.x(), p1.y() + m_boardRect.height());
+        float file_width = get_board_rect().width() / GetBoardModel()->columnCount();
+        QPointF p1(get_board_rect().topLeft());
+        QPointF p2(p1.x(), p1.y() + get_board_rect().height());
         for(int i = 0; i < GetBoardModel()->columnCount(); ++i)
         {
             // Draw the line
@@ -406,9 +407,9 @@ void BoardView::_paint_board()
 
     // paint the horizontal borders and indices
     {
-        float rank_height = m_boardRect.height() / GetBoardModel()->rowCount();
-        QPointF p1(m_boardRect.topLeft());
-        QPointF p2(QPoint(p1.x() + m_boardRect.width(), p1.y()));
+        float rank_height = get_board_rect().height() / GetBoardModel()->rowCount();
+        QPointF p1(get_board_rect().topLeft());
+        QPointF p2(QPoint(p1.x() + get_board_rect().width(), p1.y()));
         for(int i = 0; i < GetBoardModel()->rowCount(); ++i)
         {
             // Draw the line
@@ -430,7 +431,7 @@ void BoardView::_paint_board()
 
     // Draw the board outline (after shading the squares)
     painter.setPen(outline_pen);
-    painter.drawRect(m_boardRect);
+    painter.drawRect(get_board_rect());
 
     // Apply any square highlighting
     painter.save();
@@ -441,30 +442,17 @@ void BoardView::_paint_board()
         ISquare const *sqr = iter->Key();
         highlight_pen.setColor(m_formatOpts[sqr].HighlightColor);
         painter.setPen(highlight_pen);
-        painter.drawRect(_get_rect_for_index(sqr->GetColumn(), sqr->GetRow()));
+        painter.drawRect(ind_2_rect(sqr->GetColumn(), sqr->GetRow()));
     }
     painter.restore();
-
-    // If we're dragging then paint the piece being dragged
-    if(m_dragging && m_activeSquare.isValid())
-    {
-        QPoint cur_pos = mapFromGlobal(QCursor::pos());
-        Piece const *active_piece = GetBoardModel()->ConvertIndexToSquare(m_activeSquare)->GetPiece();
-        if(active_piece)
-            _paint_piece_at(*active_piece,
-                            QRectF(cur_pos.x() - m_squareSize/2 + horizontalOffset(),
-                                   cur_pos.y() - m_squareSize/2 + verticalOffset(),
-                                   m_squareSize, m_squareSize),
-                            painter);
-    }
 
     // If we're animating a move, paint that now
     if(!m_animationInfo.Piece.IsNull())
     {
         QPointF v = m_animationInfo.Animation->currentValue().value<QPointF>();
         if(!v.isNull()){
-            _paint_piece_at(m_animationInfo.Piece,
-                            QRectF(v.x()-m_squareSize/2, v.y()-m_squareSize/2, m_squareSize, m_squareSize),
+            paint_piece_at(m_animationInfo.Piece,
+                            QRectF(v.x()-GetSquareSize()/2, v.y()-GetSquareSize()/2, GetSquareSize(), GetSquareSize()),
                             painter);
         }
     }
@@ -475,14 +463,14 @@ void BoardView::_paint_board()
 //    painter.drawRect(temp_rect);
 }
 
-QRectF BoardView::_get_rect_for_index(int col, int row) const
+QRectF BoardView::ind_2_rect(int col, int row) const
 {
     int cols = GetBoardModel()->columnCount();
     int rows = GetBoardModel()->rowCount();
-    float inc_w = m_boardRect.width() / cols;
-    float inc_h = m_boardRect.height() / rows;
-    return QRectF(m_boardRect.x() + col * inc_w,
-                  m_boardRect.y() + m_boardRect.height() - (inc_h * (1 + row)),
+    float inc_w = get_board_rect().width() / cols;
+    float inc_h = get_board_rect().height() / rows;
+    return QRectF(get_board_rect().x() + col * inc_w,
+                  get_board_rect().y() + get_board_rect().height() - (inc_h * (1 + row)),
                   inc_w, inc_h);
 }
 
@@ -495,7 +483,7 @@ void BoardView::setModel(QAbstractItemModel *m)
     m_formatOpts.Clear();
 
     QAbstractItemView::setModel(m);
-    _update_board_rect();
+    updateGeometries();
 }
 
 void BoardView::SetDarkSquareColor(const QColor &c)
@@ -516,27 +504,9 @@ void BoardView::SetActiveSquareHighlightColor(const QColor &c)
     viewport()->update();
 }
 
-void BoardView::_update_board_rect()
-{
-    if(model())
-    {
-        QPointF tl(MARGIN_OUTER + MARGIN_INDICES, MARGIN_OUTER);
-        QPointF br(tl.x() + m_squareSize * model()->columnCount(),
-                   tl.y() + m_squareSize * model()->rowCount());
-        m_boardRect = QRectF(tl, br);
-    }
-    else
-    {
-        m_boardRect = QRectF();
-    }
-
-    updateGeometries();
-}
-
 void BoardView::SetSquareSize(float s)
 {
     m_squareSize = s;
-    _update_board_rect();
     viewport()->update();
     _update_rubber_band();
 }
@@ -693,89 +663,12 @@ QString BoardView::GenerateHtml(const AbstractBoard &b, const HtmlFormattingOpti
     return html;
 }
 
-void BoardView::mousePressEvent(QMouseEvent *ev)
-{
-    GASSERT(m_dragOffset.isNull());
-
-    if(QAbstractAnimation::Running == m_animationInfo.Animation->state())
-        return;
-
-    ev->accept();
-
-    if(!m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
-    {
-        QPoint p(ev->pos());
-        m_activeSquare = indexAt(ev->pos());
-
-        QPointF center = _get_rect_for_index(m_activeSquare.column(), m_activeSquare.row()).center();
-        m_dragging = true;
-
-        // Add highlighting to the active square
-        HighlightSquare(m_activeSquare, GetActiveSquareHighlightColor());
-
-        viewport()->update();
-
-        GASSERT(m_activeSquare.isValid());
-    }
-
-    _update_cursor_at(ev->posF());
-}
-
-void BoardView::mouseReleaseEvent(QMouseEvent *ev)
-{
-    ev->accept();
-
-    if(m_activeSquare.isValid() && m_boardRect.contains(ev->pos()))
-    {
-        attempt_move(m_activeSquare, indexAt(ev->pos()));
-    }
-
-    m_formatOpts.Remove(GetBoardModel()->ConvertIndexToSquare(m_activeSquare));
-    m_activeSquare = QModelIndex();
-    m_dragging = false;
-
-    viewport()->update();
-
-    _update_cursor_at(ev->posF());
-}
-
-void BoardView::mouseMoveEvent(QMouseEvent *ev)
-{
-    ev->accept();
-
-    if(m_dragging)
-    {
-        viewport()->update();
-    }
-    else if(m_boardRect.contains(ev->posF()))
-    {
-        setCurrentIndex(indexAt(ev->pos()));
-    }
-
-    _update_cursor_at(ev->posF());
-}
-
-void BoardView::mouseDoubleClickEvent(QMouseEvent *ev)
-{
-    ev->accept();
-}
-
-void BoardView::_update_cursor_at(const QPointF &pt)
-{
-    if(m_dragging)
-        setCursor(Qt::ClosedHandCursor);
-    else if(m_boardRect.contains(QPoint(pt.x()+horizontalOffset(), pt.y()+verticalOffset())))
-        setCursor(Qt::OpenHandCursor);
-    else
-        setCursor(Qt::ArrowCursor);
-}
-
 void BoardView::wheelEvent(QWheelEvent *ev)
 {
     // Control-scroll changes the board size
     if(QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
     {
-        float tmp = m_squareSize + SCROLL_SPEED_FACTOR * ev->delta();
+        float tmp = GetSquareSize() + SCROLL_SPEED_FACTOR * ev->delta();
         if(0.0 < tmp)
             SetSquareSize(tmp);
         ev->accept();
@@ -787,34 +680,32 @@ void BoardView::wheelEvent(QWheelEvent *ev)
     _update_rubber_band();
 }
 
-void BoardView::attempt_move(const QModelIndex &s, const QModelIndex &d)
+void BoardView::attempt_move(const QModelIndex &, const QModelIndex &)
 {
-    GUTIL_UNUSED(s);
-    GUTIL_UNUSED(d);
+    // Since this is a readonly model, we don't actually let them move a piece, but
+    //  if you override this method you can actually move
+}
 
-    if(s != d && s.data(BoardModel::PieceRole).isValid())
-    {
-        // Since this is a readonly model, we dont' actually let them move a piece, so
-        //  we animate the piece snapping back to the original location
-        hide_piece_at_index(s);
-        animate_piece(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
-                      _get_rect_for_index(d.column(), d.row()).center(),
-                      _get_rect_for_index(s.column(), s.row()).center(),
-                      ANIM_SNAPBACKDURATION * 1000,
-                      //QEasingCurve::InOutQuad
-                      //QEasingCurve::InOutCubic
-                      //QEasingCurve::InOutQuart
-                      //QEasingCurve::InOutQuint
-                      //QEasingCurve::InOutCirc
-                      //QEasingCurve::InOutSine
+void BoardView::animate_snapback(const QPointF &from, const QModelIndex &s)
+{
+    hide_piece_at_index(s);
+    animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
+                  from,
+                  ind_2_rect(s.column(), s.row()).center(),
+                  ANIM_SNAPBACKDURATION * 1000,
+                  //QEasingCurve::InOutQuad
+                  //QEasingCurve::InOutCubic
+                  //QEasingCurve::InOutQuart
+                  //QEasingCurve::InOutQuint
+                  //QEasingCurve::InOutCirc
+                  //QEasingCurve::InOutSine
 
-                      //QEasingCurve::OutQuad
-                      //QEasingCurve::OutCubic
-                      //QEasingCurve::OutQuart
-                      QEasingCurve::OutQuint
-                      //QEasingCurve::OutExpo
-                      );
-    }
+                  //QEasingCurve::OutQuad
+                  //QEasingCurve::OutCubic
+                  //QEasingCurve::OutQuart
+                  QEasingCurve::OutQuint
+                  //QEasingCurve::OutExpo
+                  );
 }
 
 void BoardView::hide_piece_at_index(const QModelIndex &ind)
@@ -823,7 +714,7 @@ void BoardView::hide_piece_at_index(const QModelIndex &ind)
     viewport()->update();
 }
 
-void BoardView::animate_piece(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
+void BoardView::animate_move(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
 {
     if(QVariantAnimation::Running != m_animationInfo.Animation->state())
     {
@@ -865,6 +756,34 @@ void BoardView::ClearSquareHighlighting()
 {
     m_formatOpts.Clear();
     viewport()->update();
+}
+
+QRectF BoardView::get_board_rect() const
+{
+    QRectF ret;
+    if(model())
+    {
+        ret = QRectF(MARGIN_OUTER + MARGIN_INDICES,
+                     MARGIN_OUTER,
+                     GetSquareSize() * model()->columnCount(),
+                     GetSquareSize() * model()->rowCount());
+    }
+    return ret;
+}
+
+void BoardView::mouseMoveEvent(QMouseEvent *ev)
+{
+    QAbstractItemView::mouseMoveEvent(ev);
+
+    if(get_board_rect().contains(ev->posF()))
+    {
+        setCurrentIndex(indexAt(ev->pos()));
+    }
+}
+
+void BoardView::mouseDoubleClickEvent(QMouseEvent *)
+{
+    // Suppress this event, because we don't want to open an editor
 }
 
 

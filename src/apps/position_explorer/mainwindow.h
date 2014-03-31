@@ -15,8 +15,8 @@ limitations under the License.*/
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "gkchess_gamemodel.h"
-#include "gkchess_gamelogic.h"
+#include "gkchess_board.h"
+#include "gkchess_editableboardmodel.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -28,8 +28,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     Ui::MainWindow *ui;
-    GKChess::GameLogic m_game;
-    GKChess::UI::GameModel m_gameModel;
+    GKChess::Board m_board;
+    GKChess::UI::EditableBoardModel m_boardModel;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
