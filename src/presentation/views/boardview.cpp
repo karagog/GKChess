@@ -87,7 +87,7 @@ NAMESPACE_GKCHESS1(UI);
 
 
 /** Returns a rect with the same center but shrunken by the given factor */
-static QRect __get_shrunken_rect(const QRect &r, double factor)
+static QRectF __get_shrunken_rect(const QRectF &r, double factor)
 {
     return QRect(r.x() + r.width()*(1.0-factor)/2,
                  r.y() + r.height()*(1.0-factor)/2,
@@ -344,7 +344,7 @@ void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
     if(piece.IsNull())
         return;
 
-    QRect dest_rect(r.toAlignedRect());
+    QRectF dest_rect(r);
     QIcon ico;
     
     // First see if we have an icon factory
@@ -369,7 +369,7 @@ void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
         dest_rect = __get_shrunken_rect(dest_rect, PIECE_SIZE_FACTOR);
 
         // Paint the icon
-        ico.paint(&p, dest_rect);
+        ico.paint(&p, dest_rect.toAlignedRect());
     }
     p.restore();
 }
@@ -500,7 +500,7 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
     {
         ISquare const *sqr = iter->Key();
 
-        QRect cur_rect = ind_2_rect(sqr->GetColumn(), sqr->GetRow()).toAlignedRect();
+        QRectF cur_rect = ind_2_rect(sqr->GetColumn(), sqr->GetRow());
         QPainterPath path;
         QPainterPath subtracted;
         path.addRect(cur_rect);
