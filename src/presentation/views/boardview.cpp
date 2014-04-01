@@ -30,6 +30,7 @@ limitations under the License.*/
 #include <QApplication>
 #include <QVariantAnimation>
 #include <QRubberBand>
+#include <QSequentialAnimationGroup>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
@@ -95,9 +96,21 @@ static QRect __get_shrunken_rect(const QRect &r, double factor)
 }
 
 
-/** A dummy class we need for Qt4 animations, but should go away in Qt5. */
-class piece_animation_t : public QVariantAnimation
-{ void updateCurrentValue(const QVariant &){} };
+/** A class that remembers our current animation. */
+class piece_animation_t :
+        public QVariantAnimation
+{
+    Q_OBJECT
+public:
+
+    QModelIndex hidden_index;
+    Piece piece;
+
+    virtual void updateCurrentValue(const QVariant &){}
+
+};
+
+#include "boardview.moc"
 
 
 BoardView::BoardView(QWidget *parent)
@@ -107,14 +120,10 @@ BoardView::BoardView(QWidget *parent)
       m_lightSquareColor(Qt::white),
       m_activeSquareHighlightColor(Qt::yellow),
       i_factory(0),
-      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this))
+      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this)),
+      m_animationGroup(new QSequentialAnimationGroup)
 {
-    m_animationInfo.Animation = new piece_animation_t;
-
     setMouseTracking(true);
-
-    connect(m_animationInfo.Animation, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
-    connect(m_animationInfo.Animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
 
     connect(horizontalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
     connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(_update_rubber_band()));
@@ -190,11 +199,16 @@ void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
 
 void BoardView::_animation_finished()
 {
-    // The animation has finished
-    m_animationInfo.Piece = Piece();
+    piece_animation_t *anim = qobject_cast<piece_animation_t *>(sender());
+    if(NULL != anim)
+    {
+        // Stop hiding the piece that we were animating
+        hide_piece_at_index();
 
-    // Stop hiding the piece that we were animating
-    hide_piece_at_index();
+        // Remove the animation from the group and delete it
+        m_animationGroup->removeAnimation(anim);
+        anim->deleteLater();
+    }
 }
 
 void BoardView::_update_rubber_band()
@@ -370,6 +384,7 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
     QModelIndex cur_indx = currentIndex();
     QStyleOptionViewItem option = viewOptions();
     QStyle::State state = option.state;
+    piece_animation_t *anim = qobject_cast<piece_animation_t *>(m_animationGroup->currentAnimation());
 
     QBrush background = option.palette.base();
     QPen textPen(option.palette.color(QPalette::Text));
@@ -420,7 +435,9 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
             // Paint the pieces
             Piece pc = ind.data(BoardModel::PieceRole).value<Piece>();
             if(m_hiddenIndex != ind && !pc.IsNull())
+            {
                 paint_piece_at(pc, tmp, painter);
+            }
         }
     }
 
@@ -493,13 +510,13 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
     painter.restore();
 
     // If we're animating a move, paint that now
-    if(!m_animationInfo.Piece.IsNull())
+    if(anim && !anim->piece.IsNull())
     {
-        QPointF v = m_animationInfo.Animation->currentValue().value<QPointF>();
+        QPointF v = anim->currentValue().value<QPointF>();
         if(!v.isNull()){
-            paint_piece_at(m_animationInfo.Piece,
-                            QRectF(v.x()-GetSquareSize()/2, v.y()-GetSquareSize()/2, GetSquareSize(), GetSquareSize()),
-                            painter);
+            paint_piece_at(anim->piece,
+                           QRectF(v.x()-GetSquareSize()/2, v.y()-GetSquareSize()/2, GetSquareSize(), GetSquareSize()),
+                           painter);
         }
     }
 
@@ -522,13 +539,17 @@ QRectF BoardView::ind_2_rect(int col, int row) const
 
 void BoardView::setModel(QAbstractItemModel *m)
 {
-    if(NULL == dynamic_cast<BoardModel *>(m))
+    BoardModel *bm = dynamic_cast<BoardModel *>(m);
+    if(NULL == bm)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The BoardView was designed for BoardModels only");
 
     // Reset any old format options
     m_formatOpts.Clear();
 
     QAbstractItemView::setModel(m);
+    connect(bm, SIGNAL(NotifyPieceMoved(const Piece &, const QModelIndex &, const QModelIndex &)),
+            this, SLOT(_piece_moved(const Piece &, const QModelIndex &, const QModelIndex &)));
+
     updateGeometries();
 }
 
@@ -763,14 +784,20 @@ void BoardView::hide_piece_at_index(const QModelIndex &ind)
 
 void BoardView::animate_move(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
 {
-    if(QVariantAnimation::Running != m_animationInfo.Animation->state())
+    //if(QVariantAnimation::Running != m_animationGroup->state())
     {
-        m_animationInfo.Piece = p;
-        m_animationInfo.Animation->setStartValue(source);
-        m_animationInfo.Animation->setEndValue(dest);
-        m_animationInfo.Animation->setEasingCurve((QEasingCurve::Type)easing_curve);
-        m_animationInfo.Animation->setDuration(dur);
-        m_animationInfo.Animation->start();
+        piece_animation_t *anim = new piece_animation_t;
+        connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
+        connect(anim, SIGNAL(finished()), this, SLOT(_animation_finished()));
+
+        anim->piece = p;
+        anim->setStartValue(source);
+        anim->setEndValue(dest);
+        anim->setEasingCurve((QEasingCurve::Type)easing_curve);
+        anim->setDuration(dur);
+
+        m_animationGroup->addAnimation(anim);
+        m_animationGroup->start();
     }
 }
 
@@ -831,6 +858,27 @@ void BoardView::mouseMoveEvent(QMouseEvent *ev)
 void BoardView::mouseDoubleClickEvent(QMouseEvent *)
 {
     // Suppress this event, because we don't want to open an editor
+}
+
+void BoardView::_piece_moved(const Piece &p, const QModelIndex &s, const QModelIndex &d)
+{
+    // Animate the piece moving
+    if(QAnimationGroup::Running == m_animationGroup->state())
+    {
+        // Queue the animation after the others are finished
+        //m_animationGroup->addAnimation();
+    }
+    else
+    {
+        // Since we're not running, start a new animation
+        piece_animation_t *anim(new piece_animation_t);
+        anim->hidden_index = s;
+        anim->piece = p;
+        m_animationGroup->addAnimation(anim);
+
+        hide_piece_at_index(anim->hidden_index);
+        m_animationGroup->start();
+    }
 }
 
 

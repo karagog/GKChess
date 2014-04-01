@@ -34,6 +34,16 @@ public:
     /** Constructs an editable board model from a non-const board object. */
     explicit EditableBoardModel(AbstractBoard *, QObject * = 0);
 
+    /** Moves the piece at the source index to the dest index.
+     *
+     *  The base implementation accepts all moves without validation, and whatever piece at the
+     *  destination will be overwritten by the one from source.
+    */
+    virtual void MovePiece(const QModelIndex &source, const QModelIndex &);
+
+    /** Returns true if the move is allowable.  The base implementation always returns true. */
+    virtual bool ValidateMove(const QModelIndex &source, const QModelIndex &dest);
+
 
     /** \name QAbstractTableModel interface
      *  \{

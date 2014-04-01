@@ -70,6 +70,7 @@ public:
     virtual int ColumnCount() const;
     virtual int RowCount() const;
     virtual void SetPiece(const Piece &, int column, int row);
+    virtual void MovePiece(int, int, int, int);
     virtual ISquare const &SquareAt(int column, int row) const;
     virtual Piece::AllegienceEnum GetWhoseTurn() const;
     virtual void SetWhoseTurn(Piece::AllegienceEnum);

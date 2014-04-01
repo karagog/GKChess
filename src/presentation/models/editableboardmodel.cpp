@@ -105,35 +105,54 @@ bool EditableBoardModel::setData(const QModelIndex &ind, const QVariant &v, int 
     {
         ISquare const *sqr = ConvertIndexToSquare(ind);
         Piece const *cur_piece = sqr->GetPiece();
-        switch((Qt::ItemDataRole)r)
+        if(Qt::UserRole <= r)
         {
-        case Qt::EditRole:
-        {
-            QString s = v.toString();
-            if(s.length() == 0)
+            switch((CustomDataRoleEnum)r)
             {
-                // Clear the square
-                if(NULL != cur_piece)
-                {
-                    m_board->SetPiece(Piece(), sqr->GetColumn(), sqr->GetRow());
+            case PieceRole:
+            {
+                Piece new_piece = v.value<Piece>();
+                if(!new_piece.IsNull()){
+                    m_board->SetPiece(new_piece, ind.column(), ind.row());
                     ret = true;
                 }
             }
-            else if(1 == s.length())
-            {
-                // Set a piece if it's valid and different
-                Piece p = Piece::FromFEN(s[0].toAscii());
-                if(!p.IsNull() && (NULL == cur_piece || p != *cur_piece))
-                {
-                    m_board->SetPiece(p, sqr->GetColumn(), sqr->GetRow());
-                    ret = true;
-                }
+                break;
+            default: break;
             }
         }
-            break;
-        default:
-            ret = BoardModel::setData(ind, v, r);
-            break;
+        else
+        {
+            switch((Qt::ItemDataRole)r)
+            {
+            case Qt::EditRole:
+            {
+                QString s = v.toString();
+                if(s.length() == 0)
+                {
+                    // Clear the square
+                    if(NULL != cur_piece)
+                    {
+                        m_board->SetPiece(Piece(), sqr->GetColumn(), sqr->GetRow());
+                        ret = true;
+                    }
+                }
+                else if(1 == s.length())
+                {
+                    // Set a piece if it's valid and different
+                    Piece p = Piece::FromFEN(s[0].toAscii());
+                    if(!p.IsNull() && (NULL == cur_piece || p != *cur_piece))
+                    {
+                        m_board->SetPiece(p, sqr->GetColumn(), sqr->GetRow());
+                        ret = true;
+                    }
+                }
+            }
+                break;
+            default:
+                ret = BoardModel::setData(ind, v, r);
+                break;
+            }
         }
     }
     return ret;
@@ -145,21 +164,30 @@ Qt::ItemFlags EditableBoardModel::flags(const QModelIndex &ind) const
     if(ind.isValid())
     {
         ret = BoardModel::flags(ind) |
-                Qt::ItemIsEditable |
-                Qt::ItemIsDragEnabled |
-                Qt::ItemIsDropEnabled;
+                Qt::ItemIsEditable;
     }
     return ret;
 }
 
 Qt::DropActions EditableBoardModel::supportedDropActions() const
 {
-    return Qt::MoveAction | Qt::CopyAction;
+    return Qt::CopyAction;
 }
 
 Qt::DropActions EditableBoardModel::supportedDragActions() const
 {
-    return Qt::MoveAction | Qt::CopyAction;
+    return Qt::CopyAction;
+}
+
+void EditableBoardModel::MovePiece(const QModelIndex &source, const QModelIndex &dest)
+{
+    if(source.isValid() && dest.isValid())
+        m_board->MovePiece(source.column(), source.row(), dest.column(), dest.row());
+}
+
+bool EditableBoardModel::ValidateMove(const QModelIndex &, const QModelIndex &)
+{
+    return true;
 }
 
 

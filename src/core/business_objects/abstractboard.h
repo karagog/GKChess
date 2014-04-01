@@ -37,9 +37,6 @@ public:
      *  it will simply be replaced by the new one. If you pass Piece::NoPiece
      *  then the space will be cleared.
      *
-     *  Since all moves can be represented as a series of SetPiece()'s,
-     *  this is the main thing you have to implement.
-     *
      *  You must emit NotifySquareUpdated() as part of the interface.
      *
      * \warning It is not the responsibility of this class to check inputs for valid bounds
@@ -48,6 +45,11 @@ public:
 
     /** Convenience function returns the piece on the given square. */
     Piece const *GetPiece(int column, int row) const;
+
+    /** Moves the piece from the source index to the dest index.
+     *  You must emit NotifyPieceMoved() in the implementation.
+    */
+    virtual void MovePiece(int source_col, int source_row, int dest_col, int dest_row) = 0;
 
     /** Returns the square at the given column and row.
      *  The square is valid as long as the board is.
@@ -143,6 +145,9 @@ signals:
 
     /** The implementation needs to notify whenever a square has been updated. */
     void NotifySquareUpdated(int col, int row);
+
+    /** The implementation needs to emit this whenever a piece is moved. */
+    void NotifyPieceMoved(const Piece &, int s_col, int s_row, int d_col, int d_row);
 
 };
 

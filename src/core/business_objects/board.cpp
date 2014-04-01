@@ -173,6 +173,21 @@ void Board::SetPiece(const Piece &p, int column, int row)
     emit NotifySquareUpdated(column, row);
 }
 
+void Board::MovePiece(int s_col, int s_row, int d_col, int d_row)
+{
+    Square &s(m_squares[__map_2d_indices_to_1d(s_col, s_row)]);
+    Square &d(m_squares[__map_2d_indices_to_1d(d_col, d_row)]);
+    Piece const *p = s.GetPiece();
+    if(s != d && NULL != p)
+    {
+        d.SetPiece(*p);
+        s.SetPiece(Piece());
+
+        // Notify that the piece moved
+        emit NotifyPieceMoved(*p, s_col, s_row, d_col, d_row);
+    }
+}
+
 ISquare const &Board::SquareAt(int column, int row) const
 {
     return m_squares[__map_2d_indices_to_1d(column, row)];

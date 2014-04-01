@@ -86,9 +86,22 @@ public:
     /** \} */
 
 
+signals:
+
+    /** This signal is emitted whenever a piece is moved, and indicates the piece
+     *  being moved, the source and destination indices.
+     *
+     *  This simply forwards the signal from the board object, so views can animate pieces
+     *  moved by someone else. If they don't want to animate moves, they will still catch
+     *  the square updates when the dataChanged() signal is emitted.
+    */
+    void NotifyPieceMoved(const Piece &, const QModelIndex &source, const QModelIndex &dest);
+
+
 private slots:
 
     void _square_updated(int c, int r);
+    void _piece_moved(const Piece &, int, int, int, int);
 
 };
 

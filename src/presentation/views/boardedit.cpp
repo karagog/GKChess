@@ -18,6 +18,7 @@ limitations under the License.*/
 #include <QMouseEvent>
 #include <QEasingCurve>
 #include <QVariantAnimation>
+#include <QSequentialAnimationGroup>
 USING_NAMESPACE_GUTIL;
 
 
@@ -49,9 +50,9 @@ EditableBoardModel *BoardEdit::GetBoardModel() const
     return static_cast<EditableBoardModel *>(model());
 }
 
-bool BoardEdit::validate_move(const QModelIndex &, const QModelIndex &)
+bool BoardEdit::validate_move(const QModelIndex &s, const QModelIndex &d)
 {
-    return true;
+    return GetBoardModel()->ValidateMove(s, d);
 }
 
 void BoardEdit::attempt_move(const QModelIndex &s, const QModelIndex &d)
@@ -59,18 +60,20 @@ void BoardEdit::attempt_move(const QModelIndex &s, const QModelIndex &d)
     // As long as both indices are valid, we will move the piece
     if(s != d && s.isValid() && d.isValid())
     {
-        hide_piece_at_index(s);
-        animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
-                      ind_2_rect(s.column(), s.row()).center(),
-                      ind_2_rect(d.column(), d.row()).center(),
-                      ANIM_MOVE_DURATION * 1000,
-                      //QEasingCurve::InOutQuad
-                      QEasingCurve::InOutCubic
-                      //QEasingCurve::InOutQuart
-                      //QEasingCurve::InOutQuint
-                      //QEasingCurve::InOutCirc
-                      //QEasingCurve::InOutSine
-                      );
+//        hide_piece_at_index(s);
+//        animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
+//                      ind_2_rect(s.column(), s.row()).center(),
+//                      ind_2_rect(d.column(), d.row()).center(),
+//                      ANIM_MOVE_DURATION * 1000,
+//                      //QEasingCurve::InOutQuad
+//                      QEasingCurve::InOutCubic
+//                      //QEasingCurve::InOutQuart
+//                      //QEasingCurve::InOutQuint
+//                      //QEasingCurve::InOutCirc
+//                      //QEasingCurve::InOutSine
+//                      );
+
+        GetBoardModel()->MovePiece(s, d);
     }
 }
 

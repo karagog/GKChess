@@ -20,7 +20,7 @@ limitations under the License.*/
 #include "gutil_smartpointer.h"
 #include <QAbstractItemView>
 
-class QVariantAnimation;
+class QSequentialAnimationGroup;
 class QRubberBand;
 
 namespace GKChess{
@@ -65,15 +65,11 @@ class BoardView :
 
     GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
+    // Our animation objects
     QModelIndex m_hiddenIndex;
+    GUtil::SmartPointer<QSequentialAnimationGroup> m_animationGroup;
 
-    // This is the data we need to remember about our current animation
-    struct animation_info_t{
-        GKChess::Piece Piece;
-        GUtil::SmartPointer<QVariantAnimation> Animation;
-    }
-    m_animationInfo;
-
+    // Keeps track of our per-square format options
     GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
 
 public:
@@ -215,7 +211,7 @@ protected:
     void animate_snapback(const QPointF &from, const QModelIndex &back_to);
 
     /** Returns the animation object for direct use by the subclass. */
-    QVariantAnimation *get_animation() const{ return m_animationInfo.Animation; }
+    QSequentialAnimationGroup *get_animation() const{ return m_animationGroup; }
 
     
     /** \name QAbstractItemView interface
@@ -243,6 +239,8 @@ private slots:
 
     void _animation_finished();
     void _update_rubber_band();
+
+    void _piece_moved(const Piece &, const QModelIndex &, const QModelIndex &);
 
 };
 

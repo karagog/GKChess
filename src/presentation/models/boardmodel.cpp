@@ -28,6 +28,8 @@ BoardModel::BoardModel(AbstractBoard const *b, QObject *parent)
 {
     connect(b, SIGNAL(NotifySquareUpdated(int, int)),
             this, SLOT(_square_updated(int, int)));
+    connect(b, SIGNAL(NotifyPieceMoved(const Piece &,int,int,int,int)),
+            this, SLOT(_piece_moved(const Piece &,int,int,int,int)));
 }
 
 
@@ -142,6 +144,13 @@ void BoardModel::_square_updated(int c, int r)
 {
     QModelIndex i( index(r, c) );
     emit dataChanged(i, i);
+}
+
+void BoardModel::_piece_moved(const Piece &p, int sc, int sr, int dc, int dr)
+{
+    QModelIndex i1( index(sr, sc) );
+    QModelIndex i2( index(dr, dc) );
+    emit NotifyPieceMoved(p, i1, i2);
 }
 
 Qt::ItemFlags BoardModel::flags(const QModelIndex &ind) const
