@@ -153,12 +153,24 @@ void BoardView::SetIconFactory(IFactory_PieceIcon *i)
 QRect BoardView::visualRect(const QModelIndex &index) const
 {
     QRect ret;
-    if(index.isValid()){
-        ret = ind_2_rect(index.column(), index.row()).toAlignedRect();
-        ret.translate(-horizontalOffset(),
-                      -verticalOffset());
-    }
+    if(index.isValid())
+        ret = visual_rectf(index.column(), index.row()).toAlignedRect();
     return ret;
+}
+
+QRectF BoardView::visual_rectf(int col, int row) const
+{
+    QRectF ret = item_rect(col, row);
+    ret.translate(-horizontalOffset(),
+                  -verticalOffset());
+    return ret;
+}
+
+QRectF BoardView::item_rect(int col, int row) const
+{
+    return QRectF(get_board_rect().x() + col * GetSquareSize(),
+                  get_board_rect().y() + get_board_rect().height() - (GetSquareSize() * (1 + row)),
+                  GetSquareSize(), GetSquareSize());
 }
 
 void BoardView::scrollTo(const QModelIndex &index, ScrollHint)
@@ -237,21 +249,9 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
         // We want to have a margin within each square that doesn't select it
         int row = y/GetSquareSize();
         int col = x/GetSquareSize();
-        QRectF selection_rect = __get_shrunken_rect(
-                    ind_2_rect(col, row).toAlignedRect(),
-                    1.0-MARGIN_SQUARE_SELECTION);
+        QRectF selection_rect = __get_shrunken_rect(visual_rectf(col, row), 1.0-MARGIN_SQUARE_SELECTION);
         if(selection_rect.contains(p))
             ret = model()->index(row, col);
-
-//        double rem_y = fmod(y, GetSquareSize());
-//        double rem_x = fmod(x, GetSquareSize());
-//        if(rem_y >= MARGIN_SQUARE_SELECTION*GetSquareSize() &&
-//                rem_y < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize() &&
-//                rem_x >= MARGIN_SQUARE_SELECTION*GetSquareSize() &&
-//                rem_x < (1.0-MARGIN_SQUARE_SELECTION)*GetSquareSize())
-//        {
-//            ret = model()->index(y / GetSquareSize(), x / GetSquareSize());
-//        }
     }
     return ret;
 }
@@ -419,7 +419,7 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
         for(int r = 0; r < model()->rowCount(); ++r)
         {
             QModelIndex ind = model()->index(r, c);
-            QRectF tmp = ind_2_rect(c, r);
+            QRectF tmp = item_rect(c, r);
 
             if((c & 0x1) == (r & 0x1))
             {
@@ -500,7 +500,7 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
     {
         ISquare const *sqr = iter->Key();
 
-        QRectF cur_rect = ind_2_rect(sqr->GetColumn(), sqr->GetRow());
+        QRectF cur_rect = item_rect(sqr->GetColumn(), sqr->GetRow());
         QPainterPath path;
         QPainterPath subtracted;
         path.addRect(cur_rect);
@@ -524,17 +524,6 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
 //    painter.setPen(Qt::red);
 //    painter.drawPoint(temp_point);
 //    painter.drawRect(temp_rect);
-}
-
-QRectF BoardView::ind_2_rect(int col, int row) const
-{
-    int cols = GetBoardModel()->columnCount();
-    int rows = GetBoardModel()->rowCount();
-    float inc_w = get_board_rect().width() / cols;
-    float inc_h = get_board_rect().height() / rows;
-    return QRectF(get_board_rect().x() + col * inc_w,
-                  get_board_rect().y() + get_board_rect().height() - (inc_h * (1 + row)),
-                  inc_w, inc_h);
 }
 
 void BoardView::setModel(QAbstractItemModel *m)
@@ -759,7 +748,7 @@ void BoardView::animate_snapback(const QPointF &from, const QModelIndex &s)
     hide_piece_at_index(s);
     animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
                   from,
-                  ind_2_rect(s.column(), s.row()).center(),
+                  item_rect(s.column(), s.row()).center(),
                   ANIM_SNAPBACKDURATION * 1000,
                   //QEasingCurve::InOutQuad
                   //QEasingCurve::InOutCubic

@@ -172,7 +172,12 @@ protected:
     /** This function returns the rect for the given index.
      *  This will not compensate for the scrollbars.
     */
-    QRectF ind_2_rect(int col, int row) const;
+    QRectF item_rect(int col, int row) const;
+
+    /** Returns a floating point rect for the given index, with compensation for
+     *  scrollbars.
+    */
+    QRectF visual_rectf(int col, int row) const;
 
     /** This function is called whenever the user attempts to move a piece
         from one index to another.  In the base view this function does nothing,

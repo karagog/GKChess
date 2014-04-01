@@ -62,8 +62,8 @@ void BoardEdit::attempt_move(const QModelIndex &s, const QModelIndex &d)
     {
 //        hide_piece_at_index(s);
 //        animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
-//                      ind_2_rect(s.column(), s.row()).center(),
-//                      ind_2_rect(d.column(), d.row()).center(),
+//                      item_rect(s.column(), s.row()).center(),
+//                      item_rect(d.column(), d.row()).center(),
 //                      ANIM_MOVE_DURATION * 1000,
 //                      //QEasingCurve::InOutQuad
 //                      QEasingCurve::InOutCubic
