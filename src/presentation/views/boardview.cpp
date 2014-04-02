@@ -145,7 +145,14 @@ BoardModel *BoardView::GetBoardModel() const
 
 void BoardView::SetIconFactory(IFactory_PieceIcon *i)
 {
+    if(i_factory)
+        disconnect(i_factory, SIGNAL(NotifyIconUpdated(Piece)),
+                   viewport(), SLOT(update()));
+
     i_factory = i;
+    connect(i_factory, SIGNAL(NotifyIconUpdated(Piece)),
+            viewport(), SLOT(update()));
+
     viewport()->update();
 }
 

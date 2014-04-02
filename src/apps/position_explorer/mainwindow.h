@@ -17,7 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_board.h"
 #include "gkchess_editableboardmodel.h"
-#include "gkchess_iconfactory.h"
+#include "gkchess_coloredpieceiconfactory.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -32,7 +32,7 @@ class MainWindow : public QMainWindow
     GKChess::Board m_board;
     GKChess::UI::EditableBoardModel m_boardModel;
 
-    GKChess::UI::DirectoryPieceIconFactory m_iconFactory;
+    GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
 public:
     explicit MainWindow(QWidget *parent = 0);

@@ -12,24 +12,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_DIRECTORY_PIECE_ICON_FACTORY_H
-#define GKCHESS_DIRECTORY_PIECE_ICON_FACTORY_H
+#ifndef GKCHESS_COLORED_PIECE_ICON_FACTORY_H
+#define GKCHESS_COLORED_PIECE_ICON_FACTORY_H
 
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_piece.h"
 #include "gutil_map.h"
 #include <QDir>
-#include <QThread>
 #include <QUuid>
 #include <QReadWriteLock>
 #include <QMutex>
+#include <QFuture>
 
 namespace GKChess{ namespace UI{
 
 
-/** Implements a piece icon factory that gets icons from a directory. */
-class DirectoryPieceIconFactory :
-        private QThread,
+/** Implements a piece icon factory that dynamically generates colored icons.
+ *  It expects as input to the constructor a directory of template icons with the following
+ *  requirements: Each should have a color index (GIMP can do this) and when it generates the
+ *  colored icons it replaces white (0xFFFFFFFF) with whatever color you want.
+*/
+class ColoredPieceIconFactory :
         public IFactory_PieceIcon
 {
     Q_OBJECT
@@ -55,6 +58,8 @@ class DirectoryPieceIconFactory :
     GUtil::Map<int, index_item_t> index;
 
     QMutex this_lock;
+    QFuture<void> bg_thread;
+    bool is_running;
     bool is_cancelled;
     int light_progress;
     int dark_progress;
@@ -67,12 +72,12 @@ public:
     /** Constructs an icon factory with the given icon template path, and initializes them with
      *  the given colors.
     */
-    DirectoryPieceIconFactory(const QString &template_dir_path,
+    ColoredPieceIconFactory(const QString &template_dir_path,
                               const QColor &light_color,
                               const QColor &dark_color,
                               QObject * = 0);
 
-    virtual ~DirectoryPieceIconFactory();
+    virtual ~ColoredPieceIconFactory();
 
     void ChangeColor(bool light_pieces, const QColor &);
 
@@ -81,13 +86,8 @@ public:
 
 signals:
 
-    /** Notifies that there is an updated icon for the given piece. */
-    void NotifyIconUpdated(const GKChess::Piece &, const QString &icon_path);
-
-
-protected:
-
-    virtual void run();
+    /** Internal signal used to process QIcons on the main thread. */
+    void notify_icon_updated(const GKChess::Piece &, const QString &icon_path);
 
 
 private slots:
@@ -99,9 +99,11 @@ private:
 
     void _validate_template_icons();
 
+    void _worker_thread();
+
 };
 
 
 }}
 
-#endif // GKCHESS_DIRECTORY_PIECE_ICON_FACTORY_H
+#endif // GKCHESS_COLORED_PIECE_ICON_FACTORY_H

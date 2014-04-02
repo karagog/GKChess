@@ -15,6 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_IPIECEGKCHESS_ICONFACTORY_H
 #define GKCHESS_IPIECEGKCHESS_ICONFACTORY_H
 
+#include <QObject>
 #include <QIcon>
 
 namespace GKChess{
@@ -27,12 +28,22 @@ namespace UI{
     The benefit of this interface is that all the views can use
     the same piece icons and nobody will care where they came from.
 */
-class IFactory_PieceIcon
+class IFactory_PieceIcon :
+        public QObject
 {
+    Q_OBJECT
 public:
+
+    explicit IFactory_PieceIcon(QObject *p = 0):QObject(p){}
 
     /** Returns a QIcon that corresponds to the given piece. */
     virtual QIcon GetIcon(const Piece &) = 0;
+
+
+signals:
+
+    /** This signal emits when an icon for the given piece gets updated. */
+    void NotifyIconUpdated(const Piece &);
     
 };
 

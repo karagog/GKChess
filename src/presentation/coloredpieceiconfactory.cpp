@@ -12,27 +12,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "iconfactory.h"
+#include "coloredpieceiconfactory.h"
 #include "gkchess_piece.h"
 #include "gutil_flags.h"
+#include "gutil_thread.h"
 #include <QApplication>
 #include <QDir>
 #include <QDirIterator>
 #include <QDesktopServices>
 #include <QImage>
+#include <QtConcurrentRun>
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS1(UI);
 
 
-DirectoryPieceIconFactory::DirectoryPieceIconFactory(const QString &dirname, const QColor &light_color, const QColor &dark_color, QObject *p)
-    :QThread(p),
+ColoredPieceIconFactory::ColoredPieceIconFactory(const QString &dirname, const QColor &light_color, const QColor &dark_color, QObject *p)
+    :IFactory_PieceIcon(p),
       id(QUuid::createUuid()),
       dir_templates(dirname),
       dir_gen(QDir::toNativeSeparators(QString("%1/%2/temp_icons/%3")
                                        .arg(QDesktopServices::storageLocation(QDesktopServices::TempLocation))
                                        .arg(qApp->applicationName())
                                        .arg(id))),
+      is_running(false),
       is_cancelled(false),
       light_progress(-1),
       dark_progress(-1)
@@ -56,7 +59,7 @@ DirectoryPieceIconFactory::DirectoryPieceIconFactory(const QString &dirname, con
     //qDebug("Temp directory for icons: %s", dir_gen.toUtf8().constData());
 
     qRegisterMetaType<GKChess::Piece>("GKChess::Piece");
-    connect(this, SIGNAL(NotifyIconUpdated(const GKChess::Piece &, const QString &)),
+    connect(this, SIGNAL(notify_icon_updated(const GKChess::Piece &, const QString &)),
             this, SLOT(_icon_updated(const GKChess::Piece &, const QString &)),
             Qt::QueuedConnection);
 
@@ -65,14 +68,14 @@ DirectoryPieceIconFactory::DirectoryPieceIconFactory(const QString &dirname, con
     ChangeColor(false, dark_color);
 }
 
-DirectoryPieceIconFactory::~DirectoryPieceIconFactory()
+ColoredPieceIconFactory::~ColoredPieceIconFactory()
 {
-    if(isRunning())
+    QMutexLocker lkr (&this_lock);
+    if(is_running)
     {
-        this_lock.lock();
         is_cancelled = true;
-        this_lock.unlock();
-        wait();
+        lkr.unlock();
+        bg_thread.waitForFinished();
     }
 
     // Remove our temp icon directory:
@@ -85,7 +88,7 @@ DirectoryPieceIconFactory::~DirectoryPieceIconFactory()
     QDir().rmdir(dir_gen);
 }
 
-void DirectoryPieceIconFactory::_validate_template_icons()
+void ColoredPieceIconFactory::_validate_template_icons()
 {
     // Attempt to load the icons, skipping any files that don't match our file convention
     QDirIterator iter(dir_templates);
@@ -126,7 +129,7 @@ void DirectoryPieceIconFactory::_validate_template_icons()
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The icon factory did not find all the necessary templates");
 }
 
-QIcon DirectoryPieceIconFactory::GetIcon(const Piece &p)
+QIcon ColoredPieceIconFactory::GetIcon(const Piece &p)
 {
     QIcon ret;
     typename Map<int, index_item_t>::iterator i(index.Search(p.UnicodeValue()));
@@ -140,9 +143,9 @@ QIcon DirectoryPieceIconFactory::GetIcon(const Piece &p)
     return ret;
 }
 
-void DirectoryPieceIconFactory::ChangeColor(bool light_pieces, const QColor &c)
+void ColoredPieceIconFactory::ChangeColor(bool light_pieces, const QColor &c)
 {
-    this_lock.lock();
+    QMutexLocker lkr(&this_lock);
 
     if(light_pieces)
     {
@@ -155,15 +158,14 @@ void DirectoryPieceIconFactory::ChangeColor(bool light_pieces, const QColor &c)
         dark_color = c;
     }
 
-    // This does nothing if the thread is already running
-    start();
-
-    this_lock.unlock();
+    if(!is_running)
+        bg_thread = QtConcurrent::run(this, &ColoredPieceIconFactory::_worker_thread);
 }
 
-void DirectoryPieceIconFactory::run()
+void ColoredPieceIconFactory::_worker_thread()
 {
     QMutexLocker lkr(&this_lock);
+    is_running = true;
 
     while(!is_cancelled && (-1 != light_progress || -1 != dark_progress))
     {
@@ -211,28 +213,32 @@ void DirectoryPieceIconFactory::run()
                                                          .arg(allegience == Piece::White ? "w" : "b")
                                                          .arg(QChar(p.ToFEN()).toLower()));
 
-        // We lock here because we are overwriting a file that is protected, even though we're not modifying our memory structures
-        item.lock.lockForWrite();
+
         template_image.save(temp_filename);
-        item.lock.unlock();
+
+        // For testing we can wait here to simulate a slow disk
+        //GUtil::QT::Thread::sleep(1);
 
         // We are also listening to this signal, and we will create the QIcon object in the handler
         //  on the main thread.
-        emit NotifyIconUpdated(p, temp_filename);
+        emit notify_icon_updated(p, temp_filename);
 
         lkr.relock();
     }
 
-    this_lock.unlock();
+    is_running = false;
 }
 
-void DirectoryPieceIconFactory::_icon_updated(const Piece &p, const QString &path)
+void ColoredPieceIconFactory::_icon_updated(const Piece &p, const QString &path)
 {
     // We have to create the QIcon on the main thread
     index_item_t &item(index[p.UnicodeValue()]);
     item.lock.lockForWrite();
     item.icon = QIcon(path);
     item.lock.unlock();
+
+    // Now we tell the world the icon was updated
+    emit NotifyIconUpdated(p);
 }
 
 
