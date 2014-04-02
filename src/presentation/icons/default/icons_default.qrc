@@ -1,16 +1,10 @@
 <RCC>
     <qresource prefix="/gkchess/icons/default">
-        <file>bb.png</file>
-        <file>bk.png</file>
-        <file>bn.png</file>
-        <file>bp.png</file>
-        <file>bq.png</file>
-        <file>br.png</file>
-        <file>wb.png</file>
-        <file>wk.png</file>
-        <file>wn.png</file>
-        <file>wp.png</file>
-        <file>wq.png</file>
-        <file>wr.png</file>
+        <file>b.png</file>
+        <file>k.png</file>
+        <file>n.png</file>
+        <file>p.png</file>
+        <file>q.png</file>
+        <file>r.png</file>
     </qresource>
 </RCC>

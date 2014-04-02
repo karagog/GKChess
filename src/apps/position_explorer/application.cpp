@@ -15,6 +15,7 @@ limitations under the License.*/
 #include "application.h"
 #include "gkchess_uiglobals.h"
 #include "mainwindow.h"
+#include "gutil_messageboxlogger.h"
 USING_NAMESPACE_GUTIL1(QT);
 
 
@@ -27,7 +28,7 @@ PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
 
     // Make sure the GKChess resources are initialized
     GKChess::UI::InitializeApplicationResources();
-    setWindowIcon(QIcon(":/gkchess/icons/default/wk.png"));
+    setWindowIcon(QIcon(":/gkchess/icons/default/k.png"));
 
     m_mainWindow->show();
 }
@@ -37,4 +38,9 @@ void PositionExplorerApplication::about_to_quit()
 {
     m_mainWindow->hide();
     m_mainWindow->deleteLater();
+}
+
+void PositionExplorerApplication::handle_exception(const GUtil::Exception<> &ex)
+{
+    MessageBoxLogger().LogException(ex);
 }

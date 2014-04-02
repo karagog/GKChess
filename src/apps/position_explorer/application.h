@@ -27,6 +27,11 @@ class PositionExplorerApplication :
 public:
     explicit PositionExplorerApplication(int &argc, char **argv);
 
+
+protected:
+
+    virtual void handle_exception(const GUtil::Exception<> &);
+
 private:
     virtual void about_to_quit();
 };

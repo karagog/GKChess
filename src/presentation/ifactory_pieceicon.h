@@ -32,7 +32,7 @@ class IFactory_PieceIcon
 public:
 
     /** Returns a QIcon that corresponds to the given piece. */
-    virtual QIcon GetIcon(const Piece &) const = 0;
+    virtual QIcon GetIcon(const Piece &) = 0;
     
 };
 

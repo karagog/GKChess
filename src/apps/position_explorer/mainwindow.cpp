@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),
       m_boardModel(&m_board),
-      m_iconFactory(":/gkchess/icons/default")
+      m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
 
