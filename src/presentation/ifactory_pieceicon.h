@@ -42,8 +42,8 @@ public:
 
 signals:
 
-    /** This signal emits when an icon for the given piece gets updated. */
-    void NotifyIconUpdated(const Piece &);
+    /** This signal emits when the set of icons gets updated. */
+    void NotifyIconsUpdated();
     
 };
 

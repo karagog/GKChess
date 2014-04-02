@@ -19,7 +19,6 @@ limitations under the License.*/
 #include "gkchess_piece.h"
 #include "gutil_map.h"
 #include <QDir>
-#include <QUuid>
 #include <QReadWriteLock>
 #include <QMutex>
 #include <QFuture>
@@ -37,25 +36,9 @@ class ColoredPieceIconFactory :
 {
     Q_OBJECT
 
-    QUuid id;
     QString dir_templates;
     QString dir_gen;
-
-    struct index_item_t{
-        QIcon icon;
-        QReadWriteLock lock;
-        index_item_t(){}
-        index_item_t(const index_item_t &o)
-            :icon(o.icon), lock() {}
-        index_item_t &operator = (const index_item_t &o){
-            icon = o.icon;
-            return *this;
-        }
-    };
-
-    // There is no need to lock protect the index, because after the constructor it is
-    //  read-only (only the contained items may change, and they are all individually lock protected)
-    GUtil::Map<int, index_item_t> index;
+    GUtil::Map<int, QIcon> index;
 
     QMutex this_lock;
     QFuture<void> bg_thread;
@@ -87,12 +70,12 @@ public:
 signals:
 
     /** Internal signal used to process QIcons on the main thread. */
-    void notify_icon_updated(const GKChess::Piece &, const QString &icon_path);
+    void notify_icons_updated();
 
 
 private slots:
 
-    void _icon_updated(const GKChess::Piece &, const QString &);
+    void _icons_updated();
 
 
 private:
@@ -100,6 +83,9 @@ private:
     void _validate_template_icons();
 
     void _worker_thread();
+
+    QString _get_temp_path_for_piece(const Piece &);
+    void _add_pieces_icons_to_index(Piece::AllegienceEnum);
 
 };
 

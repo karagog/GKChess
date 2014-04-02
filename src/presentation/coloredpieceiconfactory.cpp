@@ -21,6 +21,7 @@ limitations under the License.*/
 #include <QDirIterator>
 #include <QDesktopServices>
 #include <QImage>
+#include <QUuid>
 #include <QtConcurrentRun>
 USING_NAMESPACE_GUTIL;
 
@@ -29,12 +30,11 @@ NAMESPACE_GKCHESS1(UI);
 
 ColoredPieceIconFactory::ColoredPieceIconFactory(const QString &dirname, const QColor &light_color, const QColor &dark_color, QObject *p)
     :IFactory_PieceIcon(p),
-      id(QUuid::createUuid()),
       dir_templates(dirname),
       dir_gen(QDir::toNativeSeparators(QString("%1/%2/temp_icons/%3")
                                        .arg(QDesktopServices::storageLocation(QDesktopServices::TempLocation))
                                        .arg(qApp->applicationName())
-                                       .arg(id))),
+                                       .arg(QUuid::createUuid()))),
       is_running(false),
       is_cancelled(false),
       light_progress(-1),
@@ -59,8 +59,8 @@ ColoredPieceIconFactory::ColoredPieceIconFactory(const QString &dirname, const Q
     //qDebug("Temp directory for icons: %s", dir_gen.toUtf8().constData());
 
     qRegisterMetaType<GKChess::Piece>("GKChess::Piece");
-    connect(this, SIGNAL(notify_icon_updated(const GKChess::Piece &, const QString &)),
-            this, SLOT(_icon_updated(const GKChess::Piece &, const QString &)),
+    connect(this, SIGNAL(notify_icons_updated()),
+            this, SLOT(_icons_updated()),
             Qt::QueuedConnection);
 
     // After this point the background thread starts running
@@ -109,10 +109,6 @@ void ColoredPieceIconFactory::_validate_template_icons()
         // Mark that the piece template is present and accounted for
         f.SetFlag((int)tmp.GetType(), 0);
 
-        // Insert some null entries into our index for the piece type we found
-        index.Insert(Piece(tmp.GetType(), Piece::White).UnicodeValue(), index_item_t());
-        index.Insert(Piece(tmp.GetType(), Piece::Black).UnicodeValue(), index_item_t());
-
         // Make sure the template has all the right qualities, like a color index and
         //  the color white (which we will replace with whatever color we like).
         QImage img(fi.absoluteFilePath());
@@ -132,13 +128,9 @@ void ColoredPieceIconFactory::_validate_template_icons()
 QIcon ColoredPieceIconFactory::GetIcon(const Piece &p)
 {
     QIcon ret;
-    typename Map<int, index_item_t>::iterator i(index.Search(p.UnicodeValue()));
+    typename Map<int, QIcon>::iterator i(index.Search(p.UnicodeValue()));
     if(i){
-        index_item_t &item(i->Value());
-
-        item.lock.lockForRead();
-        ret = item.icon;
-        item.lock.unlock();
+        ret = i->Value();
     }
     return ret;
 }
@@ -195,7 +187,6 @@ void ColoredPieceIconFactory::_worker_thread()
         lkr.unlock();
 
         // Generate a new icon
-        index_item_t &item(index[p.UnicodeValue()]);
         QImage template_image(QDir::toNativeSeparators(QString("%1/%2.png")
                                                        .arg(dir_templates)
                                                        .arg(QChar(p.ToFEN()).toLower())));
@@ -208,10 +199,7 @@ void ColoredPieceIconFactory::_worker_thread()
         template_image.setColorTable(colors);
 
         // Then save a copy to the temp directory
-        QString temp_filename = QDir::toNativeSeparators(QString("%1/%2%3.png")
-                                                         .arg(dir_gen)
-                                                         .arg(allegience == Piece::White ? "w" : "b")
-                                                         .arg(QChar(p.ToFEN()).toLower()));
+        QString temp_filename = _get_temp_path_for_piece(p);
 
 
         template_image.save(temp_filename);
@@ -219,26 +207,44 @@ void ColoredPieceIconFactory::_worker_thread()
         // For testing we can wait here to simulate a slow disk
         //GUtil::QT::Thread::sleep(1);
 
-        // We are also listening to this signal, and we will create the QIcon object in the handler
-        //  on the main thread.
-        emit notify_icon_updated(p, temp_filename);
-
         lkr.relock();
+    }
+
+    if(-1 == light_progress && -1 == dark_progress)
+    {
+        // We are the ones listening to this signal, and we will create the QIcon object in the handler
+        //  on the main thread.
+        emit notify_icons_updated();
     }
 
     is_running = false;
 }
 
-void ColoredPieceIconFactory::_icon_updated(const Piece &p, const QString &path)
+QString ColoredPieceIconFactory::_get_temp_path_for_piece(const Piece &p)
+{
+    return QDir::toNativeSeparators(QString("%1/%2%3.png")
+                                    .arg(dir_gen)
+                                    .arg(p.GetAllegience() == Piece::White ? "w" : "b")
+                                    .arg(QChar(p.ToFEN()).toLower()));
+}
+
+void ColoredPieceIconFactory::_add_pieces_icons_to_index(Piece::AllegienceEnum a)
+{
+    for(Piece::PieceTypeEnum t = Piece::King; t <= Piece::Pawn; t = (Piece::PieceTypeEnum)((int)t + 1))
+    {
+        Piece p(t, a);
+        index[p.UnicodeValue()] = QIcon(_get_temp_path_for_piece(p));
+    }
+}
+
+void ColoredPieceIconFactory::_icons_updated()
 {
     // We have to create the QIcon on the main thread
-    index_item_t &item(index[p.UnicodeValue()]);
-    item.lock.lockForWrite();
-    item.icon = QIcon(path);
-    item.lock.unlock();
+    _add_pieces_icons_to_index(Piece::White);
+    _add_pieces_icons_to_index(Piece::Black);
 
     // Now we tell the world the icon was updated
-    emit NotifyIconUpdated(p);
+    emit NotifyIconsUpdated();
 }
 
 
