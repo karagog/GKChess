@@ -35,6 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->boardEdit->setModel(&m_boardModel);
     
     //ui->boardView->hide();
+
+    m_iconFactory.ChangeColors(Qt::green, Qt::red);
 }
 
 MainWindow::~MainWindow()

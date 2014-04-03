@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_boardview.h"
 #include "gkchess_gamelogic.h"
+#include "gkchess_coloredpieceiconfactory.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -29,20 +30,22 @@ class MainWindow : public QMainWindow
 
     //GKChess::GameLogic m_game;
     GKChess::Board m_board;
+    GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    PROPERTY(HtmlFormatOptions, GKChess::UI::BoardView::HtmlFormattingOptions);
+    //PROPERTY(HtmlFormatOptions, GKChess::UI::BoardView::HtmlFormattingOptions);
 
-    QString GetBoardHtml() const;
+    //QString GetBoardHtml() const;
 
 private slots:
 
     void _change_light_color();
     void _change_dark_color();
-    void _change_piece_color();
+    void _change_light_piece_color();
+    void _change_dark_piece_color();
     void _change_piece_size(int);
     void _change_square_size(int);
     void _change_border_thickness(int);

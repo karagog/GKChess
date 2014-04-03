@@ -24,73 +24,101 @@ limitations under the License.*/
 #include <QUuid>
 #include <QtConcurrentRun>
 USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GUTIL1(QT);
 
 NAMESPACE_GKCHESS1(UI);
+
+
+static QString __get_new_temp_icon_dir()
+{
+    return QDir::toNativeSeparators(
+                QString("%1/%2/temp_icons/%3")
+                .arg(QDesktopServices::storageLocation(QDesktopServices::TempLocation))
+                .arg(qApp->applicationName())
+                .arg(QUuid::createUuid()));
+}
+
+static QString __get_filename_for_piece(const Piece &p)
+{
+    return QString("%1%2.png")
+            .arg(p.GetAllegience() == Piece::White ? "w" : "b")
+            .arg(QChar(p.ToFEN()).toLower());
+}
+
+static void __add_pieces_icons_to_index(Map<int, QIcon> &m, const QString &dir_deploy, Piece::AllegienceEnum a)
+{
+    for(Piece::PieceTypeEnum t = Piece::King; t <= Piece::Pawn; t = (Piece::PieceTypeEnum)((int)t + 1))
+    {
+        Piece p(t, a);
+        m[p.UnicodeValue()] = QIcon(
+                    QDir::toNativeSeparators(dir_deploy + "/" + __get_filename_for_piece(p))
+                    );
+    }
+}
+
+static void __make_sure_dir_exists(const QString &dirname)
+{
+    QDir dir(dirname);
+    if(!dir.exists()){
+        if(!dir.mkpath(dirname))
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Directory does not exist, and I couldn't create it");
+    }
+}
+
+// Removes a 1-deep directory with just files in it
+static void __remove_dir(const QString &d)
+{
+    // First remove all files
+    QDirIterator iter(d);
+    while(iter.hasNext()){
+        QDir().remove(iter.next());
+    }
+    // Then remove the empty directory
+    QDir().rmdir(d);
+}
 
 
 ColoredPieceIconFactory::ColoredPieceIconFactory(const QString &dirname, const QColor &light_color, const QColor &dark_color, QObject *p)
     :IFactory_PieceIcon(p),
       dir_templates(dirname),
-      dir_gen(QDir::toNativeSeparators(QString("%1/%2/temp_icons/%3")
-                                       .arg(QDesktopServices::storageLocation(QDesktopServices::TempLocation))
-                                       .arg(qApp->applicationName())
-                                       .arg(QUuid::createUuid()))),
-      is_running(false),
-      is_cancelled(false),
       light_progress(-1),
-      dark_progress(-1)
+      dark_progress(-1),
+      index_finished_updating(false),
+      shutting_down(false)
 {
-    if(!QDir(dir_templates).exists())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, QString("Directory does not exist: %s").arg(dirname).toUtf8().constData());
-
     // Make sure the template icons they gave us are valid for what we're doing
     _validate_template_icons();
 
-    // Initialize our temp directory
-    QDir dir(dir_gen);
-    if(!dir.exists()){
-        if(!dir.mkpath(dir_gen))
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Temp directory does not exist, and I couldn't create one");
-
-//        dir_gen = temp_directory;
-//        GASSERT(dir_gen.exists());
-    }
-
-    //qDebug("Temp directory for icons: %s", dir_gen.toUtf8().constData());
-
-    qRegisterMetaType<GKChess::Piece>("GKChess::Piece");
-    connect(this, SIGNAL(notify_icons_updated()),
-            this, SLOT(_icons_updated()),
+    connect(this, SIGNAL(NotifyIconsUpdated()), this, SLOT(_update_index()),
             Qt::QueuedConnection);
 
-    // After this point the background thread starts running
-    ChangeColor(true, light_color);
-    ChangeColor(false, dark_color);
+    // Start up the background thread
+    bg_threadRef = QtConcurrent::run(this, &ColoredPieceIconFactory::_worker_thread);
+
+    ChangeColors(light_color, dark_color);
 }
 
 ColoredPieceIconFactory::~ColoredPieceIconFactory()
 {
+    // Take down the background thread
     QMutexLocker lkr (&this_lock);
-    if(is_running)
-    {
-        is_cancelled = true;
-        lkr.unlock();
-        bg_thread.waitForFinished();
-    }
+    shutting_down = true;
+    lkr.unlock();
+    something_to_do.wakeOne();
+    bg_threadRef.waitForFinished();
 
-    // Remove our temp icon directory:
-    // First remove all files
-    QDir dir(dir_gen);
-    QDirIterator iter(dir_gen);
-    while(iter.hasNext()){
-        dir.remove(iter.next());
-    }
-    QDir().rmdir(dir_gen);
+    // Remove our deploy directory. No sense in doing this on the background thread,
+    //  because we need to wait here for it to finish anyways
+    __remove_dir(dir_deploy);
 }
 
 void ColoredPieceIconFactory::_validate_template_icons()
 {
     // Attempt to load the icons, skipping any files that don't match our file convention
+
+    if(!QDir(dir_templates).exists())
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, QString("Templates directory does not exist: %s").arg(dir_templates).toUtf8());
+
     QDirIterator iter(dir_templates);
     Flags<> f((GUINT32)0x03F);
     while(iter.hasNext())
@@ -129,122 +157,148 @@ QIcon ColoredPieceIconFactory::GetIcon(const Piece &p)
 {
     QIcon ret;
     typename Map<int, QIcon>::iterator i(index.Search(p.UnicodeValue()));
-    if(i){
+    if(i)
         ret = i->Value();
-    }
     return ret;
 }
 
-void ColoredPieceIconFactory::ChangeColor(bool light_pieces, const QColor &c)
+void ColoredPieceIconFactory::ChangeColors(const QColor &col_light, const QColor &col_dark)
 {
     QMutexLocker lkr(&this_lock);
+    light_progress = 0;
+    light_color = col_light;
+    dark_progress = 0;
+    dark_color = col_dark;
+    index_finished_updating = false;
 
-    if(light_pieces)
-    {
-        light_progress = 0;
-        light_color = c;
-    }
-    else
-    {
-        dark_progress = 0;
-        dark_color = c;
-    }
+    something_to_do.wakeOne();
+}
 
-    if(!is_running)
-        bg_thread = QtConcurrent::run(this, &ColoredPieceIconFactory::_worker_thread);
+static void __generate_icon(const Piece &p, const QColor &color, const QString &dir_templates, const QString &dir_gen)
+{
+    QImage template_image(QDir::toNativeSeparators(QString("%1/%2.png")
+                                                   .arg(dir_templates)
+                                                   .arg(QChar(p.ToFEN()).toLower())));
+
+    // Adjust the color of the image
+    QVector<QRgb> colors = template_image.colorTable();
+    int replace_index = colors.indexOf(0xFFFFFFFF);
+    GASSERT(-1 != replace_index);  // We should have already checked for this in the constructor.
+    colors[replace_index] = color.rgba();
+    template_image.setColorTable(colors);
+
+    // Then save a copy to the temp directory
+    template_image.save(QDir::toNativeSeparators(dir_gen + "/" + __get_filename_for_piece(p)));
 }
 
 void ColoredPieceIconFactory::_worker_thread()
 {
+    // Initialize our background thread members
+    QString dir_gen(__get_new_temp_icon_dir());
+    QString old_deploy_dir;
+
     QMutexLocker lkr(&this_lock);
-    is_running = true;
 
-    while(!is_cancelled && (-1 != light_progress || -1 != dark_progress))
+    // Loop forever
+    while(!shutting_down || !old_deploy_dir.isEmpty())
     {
-        int *cur_progress;
-        QColor const *cur_color;
-        Piece::AllegienceEnum allegience;
-
-        // Work on light icons first:
-        if(-1 != light_progress)
+        // Wait here for something to do
+        while(!shutting_down &&
+              -1 == light_progress && -1 == dark_progress &&
+              (old_deploy_dir.isEmpty() || !index_finished_updating))
         {
-            cur_progress = &light_progress;
-            cur_color = &light_color;
-            allegience = Piece::White;
-        }
-        else
-        {
-            // Then work on dark icons
-            cur_progress = &dark_progress;
-            cur_color = &dark_color;
-            allegience = Piece::Black;
+            something_to_do.wait(&this_lock);
         }
 
-        Piece p((Piece::PieceTypeEnum)*cur_progress, allegience);
-        *cur_progress += 1;
-        if(6 == *cur_progress)
-            *cur_progress = -1;
-        lkr.unlock();
+        // If we are in the process of generating icons...
+        if(!shutting_down && (-1 != light_progress || -1 != dark_progress))
+        {
+            // Work on light icons before the dark:
+            Piece p;
+            QColor c;
+            const int cur_light_progress = light_progress;
+            const int cur_dark_progress = dark_progress;
+            if(-1 != light_progress)
+            {
+                p = Piece((Piece::PieceTypeEnum)light_progress, Piece::White);
+                c = light_color;
+                if(++light_progress > (int)Piece::Pawn)
+                    light_progress = -1;
+            }
+            else
+            {
+                p = Piece((Piece::PieceTypeEnum)dark_progress, Piece::Black);
+                c = dark_color;
+                if(++dark_progress > (int)Piece::Pawn)
+                    dark_progress = -1;
+            }
 
-        // Generate a new icon
-        QImage template_image(QDir::toNativeSeparators(QString("%1/%2.png")
-                                                       .arg(dir_templates)
-                                                       .arg(QChar(p.ToFEN()).toLower())));
+            // Unlock while we generate the icon
+            lkr.unlock();
+            {
+                // Expensive task:
 
-        // Adjust the color of the image
-        QVector<QRgb> colors = template_image.colorTable();
-        int replace_index = colors.indexOf(0xFFFFFFFF);
-        GASSERT(-1 != replace_index);  // We should have already checked for this in the constructor.
-        colors[replace_index] = cur_color->rgba();
-        template_image.setColorTable(colors);
+                // The first time we need to make sure our temp directory exists
+                if(0 == cur_light_progress && 0 == cur_dark_progress)
+                    __make_sure_dir_exists(dir_gen);
 
-        // Then save a copy to the temp directory
-        QString temp_filename = _get_temp_path_for_piece(p);
+                __generate_icon(p, c, dir_templates, dir_gen);
+
+                // For testing we can wait here to simulate a really slow operation
+                //Thread::sleep(1);
+            }
+            lkr.relock();
+
+            // When we're finished with a complete set of icons we do some extra work
+            if(-1 == light_progress && -1 == dark_progress)
+            {
+                // Point to the new deploy directory, but remember the old so we can clean it up
+                old_deploy_dir = dir_deploy;
+                dir_deploy = dir_gen;
+                index_finished_updating = false;
+
+                // Unlock while we notify, so we're not hogging the resources others need
+                lkr.unlock();
+                {
+                    // Unprotected section:
+                    emit NotifyIconsUpdated();
+
+                    // Generate a new icon dir name, but don't mkdir until we need it
+                    dir_gen = __get_new_temp_icon_dir();
+                }
+                lkr.relock();
+            }
+        }
 
 
-        template_image.save(temp_filename);
-
-        // For testing we can wait here to simulate a slow disk
-        //GUtil::QT::Thread::sleep(1);
-
-        lkr.relock();
+        // If the index is done updating and we can clean up the old icon directory...
+        if(!old_deploy_dir.isEmpty() && index_finished_updating)
+        {
+            // Unlock while we remove files and directories
+            lkr.unlock();
+            __remove_dir(old_deploy_dir);
+            old_deploy_dir = QString();
+            lkr.relock();
+        }
     }
-
-    if(-1 == light_progress && -1 == dark_progress)
-    {
-        // We are the ones listening to this signal, and we will create the QIcon object in the handler
-        //  on the main thread.
-        emit notify_icons_updated();
-    }
-
-    is_running = false;
 }
 
-QString ColoredPieceIconFactory::_get_temp_path_for_piece(const Piece &p)
+void ColoredPieceIconFactory::_update_index()
 {
-    return QDir::toNativeSeparators(QString("%1/%2%3.png")
-                                    .arg(dir_gen)
-                                    .arg(p.GetAllegience() == Piece::White ? "w" : "b")
-                                    .arg(QChar(p.ToFEN()).toLower()));
-}
+    // This is an expensive operation, loading the icons, but it's necessary to
+    //  do this on the main GUI thread because of the implementation of QIcon
+    //
+    // It is not necessary to hold the lock while we do this, because it is not possible
+    //  for the user to cause an icon update unless they are on a different thread, and since
+    //  we are not thread safe that violates our conditions of use.  Normally this variable
+    //  should be protected by the lock, however, so be careful!
+    __add_pieces_icons_to_index(index, dir_deploy, Piece::White);
+    __add_pieces_icons_to_index(index, dir_deploy, Piece::Black);
 
-void ColoredPieceIconFactory::_add_pieces_icons_to_index(Piece::AllegienceEnum a)
-{
-    for(Piece::PieceTypeEnum t = Piece::King; t <= Piece::Pawn; t = (Piece::PieceTypeEnum)((int)t + 1))
-    {
-        Piece p(t, a);
-        index[p.UnicodeValue()] = QIcon(_get_temp_path_for_piece(p));
-    }
-}
-
-void ColoredPieceIconFactory::_icons_updated()
-{
-    // We have to create the QIcon on the main thread
-    _add_pieces_icons_to_index(Piece::White);
-    _add_pieces_icons_to_index(Piece::Black);
-
-    // Now we tell the world the icon was updated
-    emit NotifyIconsUpdated();
+    // Let the background thread know that we're done updating the index
+    QMutexLocker lkr(&this_lock);
+    index_finished_updating = true;
+    something_to_do.wakeOne();
 }
 
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
-    <height>800</height>
+    <width>877</width>
+    <height>934</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,22 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QWebView" name="webView">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>1</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="url">
-       <url>
-        <string>about:blank</string>
-       </url>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="GKChess::UI::BoardView" name="boardView" native="true">
+     <widget class="GKChess::UI::BoardEdit" name="boardView" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -52,7 +37,7 @@
        <item>
         <widget class="QPushButton" name="pushButton">
          <property name="text">
-          <string>Change Light Color</string>
+          <string>Set Light Square Color</string>
          </property>
         </widget>
        </item>
@@ -72,7 +57,7 @@
        <item>
         <widget class="QPushButton" name="pushButton_2">
          <property name="text">
-          <string>Change Dark Color</string>
+          <string>Set Dark Square Color</string>
          </property>
         </widget>
        </item>
@@ -92,7 +77,14 @@
        <item>
         <widget class="QPushButton" name="pushButton_4">
          <property name="text">
-          <string>Change Piece Color</string>
+          <string>Set Light Piece Color</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_5">
+         <property name="text">
+          <string>Set Dark Piece Color</string>
          </property>
         </widget>
        </item>
@@ -167,8 +159,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>700</width>
-     <height>20</height>
+     <width>877</width>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -196,14 +188,9 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>QWebView</class>
+   <class>GKChess::UI::BoardEdit</class>
    <extends>QWidget</extends>
-   <header>QtWebKitWidgets/QWebView</header>
-  </customwidget>
-  <customwidget>
-   <class>GKChess::UI::BoardView</class>
-   <extends>QWidget</extends>
-   <header>gkchess_boardview.h</header>
+   <header>gkchess_boardedit.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
@@ -216,8 +203,8 @@
    <slot>_change_light_color()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>88</x>
-     <y>366</y>
+     <x>106</x>
+     <y>595</y>
     </hint>
     <hint type="destinationlabel">
      <x>140</x>
@@ -232,8 +219,8 @@
    <slot>_change_dark_color()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>260</x>
-     <y>365</y>
+     <x>355</x>
+     <y>595</y>
     </hint>
     <hint type="destinationlabel">
      <x>313</x>
@@ -248,8 +235,8 @@
    <slot>_dump_to_file()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>62</x>
-     <y>535</y>
+     <x>71</x>
+     <y>770</y>
     </hint>
     <hint type="destinationlabel">
      <x>40</x>
@@ -261,11 +248,11 @@
    <sender>pushButton_4</sender>
    <signal>pressed()</signal>
    <receiver>MainWindow</receiver>
-   <slot>_change_piece_color()</slot>
+   <slot>_change_light_piece_color()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>440</x>
-     <y>366</y>
+     <x>570</x>
+     <y>595</y>
     </hint>
     <hint type="destinationlabel">
      <x>289</x>
@@ -280,8 +267,8 @@
    <slot>_change_piece_size(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>187</x>
-     <y>422</y>
+     <x>196</x>
+     <y>648</y>
     </hint>
     <hint type="destinationlabel">
      <x>167</x>
@@ -296,8 +283,8 @@
    <slot>_change_square_size(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>219</x>
-     <y>464</y>
+     <x>228</x>
+     <y>692</y>
     </hint>
     <hint type="destinationlabel">
      <x>190</x>
@@ -312,12 +299,28 @@
    <slot>_change_border_thickness(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>299</x>
-     <y>506</y>
+     <x>308</x>
+     <y>741</y>
     </hint>
     <hint type="destinationlabel">
      <x>276</x>
      <y>493</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_5</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>_change_dark_piece_color()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>641</x>
+     <y>588</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>614</x>
+     <y>608</y>
     </hint>
    </hints>
   </connection>
@@ -326,9 +329,10 @@
   <slot>_change_light_color()</slot>
   <slot>_change_dark_color()</slot>
   <slot>_dump_to_file()</slot>
-  <slot>_change_piece_color()</slot>
   <slot>_change_piece_size(int)</slot>
   <slot>_change_square_size(int)</slot>
   <slot>_change_border_thickness(int)</slot>
+  <slot>_change_light_piece_color()</slot>
+  <slot>_change_dark_piece_color()</slot>
  </slots>
 </ui>

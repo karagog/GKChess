@@ -16,12 +16,11 @@ limitations under the License.*/
 #define GKCHESS_COLORED_PIECE_ICON_FACTORY_H
 
 #include "gkchess_ifactory_pieceicon.h"
-#include "gkchess_piece.h"
 #include "gutil_map.h"
 #include <QDir>
-#include <QReadWriteLock>
 #include <QMutex>
 #include <QFuture>
+#include <QWaitCondition>
 
 namespace GKChess{ namespace UI{
 
@@ -30,24 +29,33 @@ namespace GKChess{ namespace UI{
  *  It expects as input to the constructor a directory of template icons with the following
  *  requirements: Each should have a color index (GIMP can do this) and when it generates the
  *  colored icons it replaces white (0xFFFFFFFF) with whatever color you want.
+ *
+ *  \note This is not a thread-safe implementation (but it does use threads in the implementation)
 */
 class ColoredPieceIconFactory :
         public IFactory_PieceIcon
 {
     Q_OBJECT
+    GUTIL_DISABLE_COPY(ColoredPieceIconFactory);
 
-    QString dir_templates;
-    QString dir_gen;
+    // Readonly members, unprotected, can be safely shared between threads
+    QString const dir_templates;
+
+    // Main GUI thread members, unprotected
     GUtil::Map<int, QIcon> index;
+    QFuture<void> bg_threadRef;
 
-    QMutex this_lock;
-    QFuture<void> bg_thread;
-    bool is_running;
-    bool is_cancelled;
-    int light_progress;
-    int dark_progress;
+    // Shared members between main and background thread, protected by this_lock
+    QString dir_deploy;
     QColor light_color;
     QColor dark_color;
+    int light_progress;
+    int dark_progress;
+    bool index_finished_updating;
+    bool shutting_down;
+
+    QMutex this_lock;
+    QWaitCondition something_to_do;
 
 public:
 
@@ -62,30 +70,33 @@ public:
 
     virtual ~ColoredPieceIconFactory();
 
-    void ChangeColor(bool light_pieces, const QColor &);
+    /** Changes the colors of the icons.  It may take a second or two before the icons are updated. */
+    void ChangeColors(const QColor &light_color, const QColor &dark_color);
 
+    /** Returns the light piece color. */
+    QColor GetLightColor() const{ return light_color; }
+
+    /** Returns the dark piece color. */
+    QColor GetDarkColor() const{ return dark_color; }
+
+
+    /** \name IFactory_PieceIcon interface
+     *  \{
+    */
     virtual QIcon GetIcon(const Piece &);
-
-
-signals:
-
-    /** Internal signal used to process QIcons on the main thread. */
-    void notify_icons_updated();
+    /** \} */
 
 
 private slots:
 
-    void _icons_updated();
+    void _update_index();
 
 
 private:
 
-    void _validate_template_icons();
-
     void _worker_thread();
 
-    QString _get_temp_path_for_piece(const Piece &);
-    void _add_pieces_icons_to_index(Piece::AllegienceEnum);
+    void _validate_template_icons();
 
 };
 
