@@ -65,16 +65,23 @@ static void __make_sure_dir_exists(const QString &dirname)
     }
 }
 
-// Removes a 1-deep directory with just files in it
+// Removes a 1-deep directory with just files in it.
+// This does nothing if the directory does not exist
 static void __remove_dir(const QString &d)
 {
-    // First remove all files
-    QDirIterator iter(d);
-    while(iter.hasNext()){
-        QDir().remove(iter.next());
+    if(!d.isEmpty()){
+        QDir dir(d);
+        if(dir.exists())
+        {
+            // First remove all files
+            QDirIterator iter(d);
+            while(iter.hasNext())
+                dir.remove(iter.next());
+
+            // Then remove the empty directory
+            dir.rmdir(d);
+        }
     }
-    // Then remove the empty directory
-    QDir().rmdir(d);
 }
 
 
@@ -106,10 +113,6 @@ ColoredPieceIconFactory::~ColoredPieceIconFactory()
     lkr.unlock();
     something_to_do.wakeOne();
     bg_threadRef.waitForFinished();
-
-    // Remove our deploy directory. No sense in doing this on the background thread,
-    //  because we need to wait here for it to finish anyways
-    __remove_dir(dir_deploy);
 }
 
 void ColoredPieceIconFactory::_validate_template_icons()
@@ -199,8 +202,8 @@ void ColoredPieceIconFactory::_worker_thread()
 
     QMutexLocker lkr(&this_lock);
 
-    // Loop forever
-    while(!shutting_down || !old_deploy_dir.isEmpty())
+    // Loop until we are shut down
+    while(!shutting_down)
     {
         // Wait here for something to do
         while(!shutting_down &&
@@ -245,7 +248,7 @@ void ColoredPieceIconFactory::_worker_thread()
                 __generate_icon(p, c, dir_templates, dir_gen);
 
                 // For testing we can wait here to simulate a really slow operation
-                //Thread::sleep(1);
+                //Thread::msleep(200);
             }
             lkr.relock();
 
@@ -281,6 +284,11 @@ void ColoredPieceIconFactory::_worker_thread()
             lkr.relock();
         }
     }
+
+    // Clean up after ourselves
+    __remove_dir(dir_gen);
+    __remove_dir(old_deploy_dir);
+    __remove_dir(dir_deploy);
 }
 
 void ColoredPieceIconFactory::_update_index()
