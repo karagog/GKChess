@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="GKChess::UI::BoardEdit" name="boardView" native="true">
+     <widget class="GKChess::UI::BoardView" name="boardView" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -160,7 +160,7 @@
      <x>0</x>
      <y>0</y>
      <width>877</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -188,9 +188,9 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>GKChess::UI::BoardEdit</class>
+   <class>GKChess::UI::BoardView</class>
    <extends>QWidget</extends>
-   <header>gkchess_boardedit.h</header>
+   <header>gkchess_boardview.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

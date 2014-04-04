@@ -14,6 +14,7 @@ limitations under the License.*/
 
 #include "gamelogic.h"
 #include "gkchess_pgn_parser.h"
+#include "gkchess_isquare.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
@@ -111,21 +112,17 @@ static bool __is_path_blocked(Board const &b, ISquare const &s, ISquare const &d
     return ret;
 }
 
-GameLogic::MoveValidationEnum GameLogic::ValidateMove(const MoveData &md) const
+GameLogic::MoveValidationEnum GameLogic::ValidateMove(const AbstractBoard &b, const ISquare &s, const ISquare &d) const
 {
-    if(NULL == md.Source || NULL == md.Destination)
-        return InvalidInputError;
-
-    ISquare const &s = *md.Source, &d = *md.Destination;
     Piece const *p( s.GetPiece() );
-    if(!p)
+    if(NULL == p)
         return InvalidEmptySquare;
 
 
     // Validate the low-level technical aspects of the move, ignoring threats to the king
 
     // A piece cannot stay in the same place if it is moving
-    if(&s == &d)
+    if(s == d)
         return InvalidTechnical;
 
     bool technically_ok = false;
@@ -161,6 +158,12 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(const MoveData &md) const
     }
 
     return ValidMove;
+}
+
+Vector<ISquare const *> GameLogic::GetValidMovesForSquare(const AbstractBoard &, const ISquare &) const
+{
+    Vector<ISquare const *> ret;
+    return ret;
 }
 
 void GameLogic::Move(const PGN_MoveData &md)

@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gutil_map.h"
 #include "gkchess_piece.h"
+#include "gkchess_imovevalidator.h"
 #include <QColor>
 #include <QAbstractTableModel>
 
@@ -33,7 +34,8 @@ namespace UI{
  *  This can be used with Qt's model-view framework.
 */
 class BoardModel :
-        public QAbstractTableModel
+        public QAbstractTableModel,
+        public IMoveValidator
 {
     Q_OBJECT
 
@@ -42,6 +44,7 @@ class BoardModel :
     };
 
     AbstractBoard const *m_board;
+    IMoveValidator *i_validator;
 public:
 
     /** You must give the model a reference to a chessboard
@@ -54,6 +57,14 @@ public:
         access the other meta-data not held in the indices.
     */
     AbstractBoard const *GetBoard() const{ return m_board; }
+
+    /** Enables validated moving. */
+    void SetMoveValidator(IMoveValidator *);
+
+    /** Returns the move validator for the model.  By default there is no validator and all
+     *  moves are valid.
+    */
+    IMoveValidator *GetMoveValidator() const{ return i_validator; }
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
@@ -83,6 +94,16 @@ public:
 
     virtual QMimeData *mimeData(const QModelIndexList &) const;
     virtual QStringList mimeTypes() const;
+    /** \} */
+
+
+    /** \name IMoveValidator interface
+     *  The model will provide move validation to the views, so they can display if a move
+     *  is valid before the user does it
+     *  \{
+    */
+    virtual MoveValidationEnum ValidateMove(const AbstractBoard &, const ISquare &, const ISquare &) const;
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const AbstractBoard &, const ISquare &) const;
     /** \} */
 
 

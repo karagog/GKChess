@@ -50,11 +50,6 @@ public:
     */
     GUtil::Vector<ISquare const *> FindPieces(const Piece &) const;
 
-    /** Determines if the move is valid, according to the rules of standard chess.
-     *  This is virtual to allow you to customize your own move validation if you like.
-    */
-    virtual MoveValidationEnum ValidateMove(const MoveData &) const;
-
     /** \name IGameLogic interface
      *  \{
     */
@@ -62,6 +57,8 @@ public:
     virtual void SetupNewGame(SetupTypeEnum = StandardChess);
     virtual void Move(const PGN_MoveData &);
     virtual void Move(const MoveData &);
+    virtual MoveValidationEnum ValidateMove(const AbstractBoard &, const ISquare &, const ISquare &) const;
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const AbstractBoard &, const ISquare &) const;
     /** \} */
 
 

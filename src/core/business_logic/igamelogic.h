@@ -15,13 +15,10 @@ limitations under the License.*/
 #ifndef GKCHESS_IGAMELOGIC_H
 #define GKCHESS_IGAMELOGIC_H
 
-#include "gkchess_piece.h"
-#include "gutil_vector.h"
+#include "gkchess_imovevalidator.h"
 
 NAMESPACE_GKCHESS;
 
-class AbstractBoard;
-class ISquare;
 class PGN_MoveData;
 class MoveData;
 
@@ -29,7 +26,8 @@ class MoveData;
 /** Defines the game logic interface.
  *  This is the set of functions required to play chess with this library.
 */
-class IGameLogic
+class IGameLogic :
+        public IMoveValidator
 {
 public:
 
@@ -44,35 +42,6 @@ public:
 
         /** You can create your own custom board setups starting from this offset. */
         CustomSetupOffset = 100
-    };
-
-    /** Encodes the ways a move can be validated. */
-    enum MoveValidationEnum
-    {
-        /** Means the move is valid. */
-        ValidMove = 0,
-
-        /** Invalid move because pieces can't move that way according to the rules of chess.
-         *  (i.e. a pawn moving backwards).
-        */
-        InvalidTechnical = 1,
-
-        /** Invalid because you would be leaving the king in check. */
-        InvalidCheck = 2,
-
-        /** The source square does not have a piece on it. */
-        InvalidEmptySquare = 3,
-
-        /** Invalid because there was a problem with the parameters you gave the function.
-         *  For example if you didn't specify a source and destination square.
-        */
-        InvalidInputError = 4,
-
-
-        /** If you are extending this class for your own custom rules then you'll base
-         *  your validation types with this value.
-        */
-        CustomInvalidMoveOffset = 100
     };
 
 

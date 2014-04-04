@@ -14,6 +14,7 @@ limitations under the License.*/
 
 #include "abstractboard.h"
 #include "piece.h"
+#include "isquare.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;

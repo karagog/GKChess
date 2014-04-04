@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //m_game.SetupNewGame();
 
-    ui->boardView->setModel(new EditableBoardModel(&m_board));
+    ui->boardView->SetBoardModel(new EditableBoardModel(&m_board));
     ui->boardView->SetIconFactory(&m_iconFactory);
 
     connect(&m_board, SIGNAL(NotifySquareUpdated(int,int)),

@@ -15,11 +15,12 @@ limitations under the License.*/
 #ifndef GKCHESS_ABSTRACTBOARD_H
 #define GKCHESS_ABSTRACTBOARD_H
 
-#include "gkchess_isquare.h"
 #include "gkchess_piece.h"
 #include <QObject>
 
 namespace GKChess{
+
+class ISquare;
 
 
 /** Describes a chess board interface. */

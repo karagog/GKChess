@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_abstractboard.h"
 #include "gkchess_piece.h"
+#include "gkchess_isquare.h"
 
 namespace GKChess{
 

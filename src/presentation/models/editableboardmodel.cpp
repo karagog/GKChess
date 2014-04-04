@@ -14,6 +14,7 @@ limitations under the License.*/
 
 #include "editableboardmodel.h"
 #include "gkchess_abstractboard.h"
+#include "gkchess_isquare.h"
 #include <QMimeData>
 NAMESPACE_GKCHESS1(UI);
 

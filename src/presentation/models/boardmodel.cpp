@@ -14,6 +14,7 @@ limitations under the License.*/
 
 #include "boardmodel.h"
 #include "gkchess_abstractboard.h"
+#include "gkchess_isquare.h"
 #include <QFont>
 #include <QMimeData>
 #include <QStringList>
@@ -33,6 +34,27 @@ BoardModel::BoardModel(AbstractBoard const *b, QObject *parent)
 }
 
 
+void BoardModel::SetMoveValidator(IMoveValidator *mv)
+{
+    i_validator = mv;
+}
+
+BoardModel::MoveValidationEnum BoardModel::ValidateMove(const AbstractBoard &b,
+                                                        const ISquare &s, const ISquare &d) const
+{
+    MoveValidationEnum ret = ValidMove;
+    if(i_validator)
+        ret = i_validator->ValidateMove(b, s, d);
+    return ret;
+}
+
+Vector<ISquare const *> BoardModel::GetValidMovesForSquare(const AbstractBoard &b, const ISquare &s) const
+{
+    Vector<ISquare const *> ret;
+    if(i_validator)
+        ret = i_validator->GetValidMovesForSquare(b, s);
+    return ret;
+}
 
 ISquare const *BoardModel::ConvertIndexToSquare(const QModelIndex &i) const
 {

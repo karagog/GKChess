@@ -29,7 +29,7 @@ class BoardEdit :
 {
     Q_OBJECT
 
-    QModelIndex m_activeSquare;
+    ISquare const *m_activeSquare;
     bool m_dragging;
     QPoint m_mousePressLoc;
     bool m_wasSquareActiveWhenPressed;

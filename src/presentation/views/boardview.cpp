@@ -19,21 +19,23 @@ limitations under the License.*/
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_isquare.h"
 #include "gkchess_uiglobals.h"
+#include "gutil_map.h"
 #include "gutil_paintutils.h"
-#include <QXmlStreamWriter>
-#include <QVBoxLayout>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QPainter>
 #include <QRubberBand>
 #include <QScrollBar>
 #include <QApplication>
-#include <QVariantAnimation>
 #include <QRubberBand>
 #include <QSequentialAnimationGroup>
+#include <QVariantAnimation>
+#include <QVBoxLayout>
+#include <QAbstractItemView>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
+USING_NAMESPACE_GKCHESS1(UI);
 
 
 // The following defines are used to parameterize the look and behavior
@@ -83,21 +85,164 @@ USING_NAMESPACE_GKCHESS;
 #define PIECE_SIZE_FACTOR  0.825
 
 
-NAMESPACE_GKCHESS1(UI);
 
-
-/** Returns a rect with the same center but shrunken by the given factor */
-static QRectF __get_shrunken_rect(const QRectF &r, double factor)
+/** A private class to implement the board view, because we don't want to expose the
+ *  QAbstractItemView interface. This gives us better encapsulation.
+*/
+class board_view_p :
+        public QAbstractItemView
 {
-    return QRect(r.x() + r.width()*(1.0-factor)/2,
-                 r.y() + r.height()*(1.0-factor)/2,
-                 factor*r.width(),
-                 factor*r.height());
-}
+    Q_OBJECT
+
+    struct SquareFormatOptions
+    {
+        QColor HighlightColor;
+    };
+
+    // Dimensional parameters
+    float m_squareSize;
+
+    // for painting
+    QColor m_darkSquareColor;
+    QColor m_lightSquareColor;
+    QColor m_activeSquareHighlightColor;
+    IFactory_PieceIcon *i_factory;
+
+    GUtil::SmartPointer<QRubberBand> m_selectionBand;
+
+    // Our animation objects
+    QModelIndex m_hiddenIndex;
+    GUtil::SmartPointer<QSequentialAnimationGroup> m_animationGroup;
+
+    // Keeps track of our per-square format options
+    GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
+
+public:
+
+    /** Constructs a board view with default options. */
+    explicit board_view_p(QWidget *parent = 0);
+    ~board_view_p();
+
+    BoardModel *GetBoardModel() const;
+    void SetBoardModel(BoardModel *);
+    void SetIconFactory(IFactory_PieceIcon *);
+    IFactory_PieceIcon *GetIconFactory() const{ return i_factory; }
+    float GetSquareSize() const{ return m_squareSize; }
+    void SetSquareSize(float);
+    QColor GetDarkSquareColor() const{ return m_darkSquareColor; }
+    void SetDarkSquareColor(const QColor &);
+    QColor GetLightSquareColor() const{ return m_lightSquareColor; }
+    void SetLightSquareColor(const QColor &);
+    QColor GetActiveSquareHighlightColor() const{ return m_activeSquareHighlightColor; }
+    void SetActiveSquareHighlightColor(const QColor &);
+    void HighlightSquare(const QModelIndex &, const QColor &);
+    void HighlightSquares(const QModelIndexList &, const QColor &);
+    void ClearSquareHighlighting();
+
+
+    /** \name QAbstractItemView interface
+     *  \{
+    */
+    virtual QRect visualRect(const QModelIndex &index) const;
+    virtual void scrollTo(const QModelIndex &, ScrollHint);
+    virtual QModelIndex indexAt(const QPoint &point) const;
+    virtual QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers);
+    virtual int horizontalOffset() const;
+    virtual int verticalOffset() const;
+    virtual bool isIndexHidden(const QModelIndex &index) const;
+    virtual void setSelection(const QRect &, QItemSelectionModel::SelectionFlags);
+    virtual QRegion visualRegionForSelection(const QItemSelection &selection) const;
+    /** /} */
+
+
+protected:
+
+    /** Returns the rect for the entire board. */
+    QRectF get_board_rect() const;
+
+    /** This function returns the rect for the given index.
+     *  This will not compensate for the scrollbars.
+    */
+    QRectF item_rect(int col, int row) const;
+
+    /** Returns a floating point rect for the given index, with compensation for
+     *  scrollbars.
+    */
+    QRectF visual_rectf(int col, int row) const;
+
+    /** This function is called whenever the user attempts to move a piece
+        from one index to another.  In the base view this function does nothing,
+        but you can override it to do something interesting (like moving a piece!)
+    */
+    virtual void attempt_move(const QModelIndex &source, const QModelIndex &dest);
+
+    /** Hides any piece at the given index. It will remain hidden until you call this function
+     *  again with an invalid QModelIndex().  This is useful for animating piece movements.
+    */
+    void hide_piece_at_index(const QModelIndex & = QModelIndex());
+
+    /** This is the function you should override when doing your own painting.
+     *  Be sure to call the base implementation!
+     *  \param painter The painter object.
+     *  \param update_rect The rect that needs to be repainted.
+    */
+    virtual void paint_board(QPainter &painter, const QRect &update_rect);
+
+    /** Paints the piece within the rect. */
+    virtual void paint_piece_at(const Piece &, const QRectF &, QPainter &);
+
+    /** Starts an animation of the piece moving from the source point to the dest point
+     *  with the given easing curve.  The easing curve responds to the Type enum of
+     *  the QEasingCurve.
+    */
+    void animate_move(const Piece &,
+                      const QPointF &source, const QPointF &dest,
+                      int duration_ms,
+                      int easing_curve);
+
+    /** A function that animates a piece snapping back from any point to the source square.
+     *  This is really just a wrapper around animate_move, so it's here for convenience and
+     *  consistency of animations.
+    */
+    void animate_snapback(const QPointF &from, const QModelIndex &back_to);
+
+    /** Returns the animation object for direct use by the subclass. */
+    QSequentialAnimationGroup *get_animation() const{ return m_animationGroup; }
+
+
+    /** \name QAbstractItemView interface
+     *  \{
+    */
+    virtual void paintEvent(QPaintEvent *);
+    virtual void resizeEvent(QResizeEvent *);
+    virtual void wheelEvent(QWheelEvent *);
+    virtual void mouseMoveEvent(QMouseEvent *);
+    virtual void mouseDoubleClickEvent(QMouseEvent *);
+    /** \} */
+
+
+protected slots:
+
+    /** \name QAbstractItemView interface
+     *  \{
+    */
+    virtual void updateGeometries();
+    virtual void currentChanged(const QModelIndex &, const QModelIndex &);
+    /** \} */
+
+
+private slots:
+
+    void _animation_finished();
+    void _update_rubber_band();
+
+    void _piece_moved(const Piece &, const QModelIndex &, const QModelIndex &);
+
+};
 
 
 /** A class that remembers our current animation. */
-class piece_animation_t :
+class piece_animation_p :
         public QVariantAnimation
 {
     Q_OBJECT
@@ -110,10 +255,21 @@ public:
 
 };
 
+// Because we are declaring QObjects in this source file:
 #include "boardview.moc"
 
 
-BoardView::BoardView(QWidget *parent)
+/** Returns a rect with the same center but shrunken by the given factor */
+static QRectF __get_shrunken_rect(const QRectF &r, double factor)
+{
+    return QRect(r.x() + r.width()*(1.0-factor)/2,
+                 r.y() + r.height()*(1.0-factor)/2,
+                 factor*r.width(),
+                 factor*r.height());
+}
+
+
+board_view_p::board_view_p(QWidget *parent)
     :QAbstractItemView(parent),
       m_squareSize(DEFAULT_SQUARE_SIZE),
       m_darkSquareColor(Qt::gray),
@@ -132,18 +288,18 @@ BoardView::BoardView(QWidget *parent)
     InitializeApplicationResources();
 }
 
-BoardView::~BoardView()
+board_view_p::~board_view_p()
 {}
 
 
-BoardModel *BoardView::GetBoardModel() const
+BoardModel *board_view_p::GetBoardModel() const
 {
     // We use static cast because we already validated that it's a BoardModel
     //  when they set the model.
     return static_cast<BoardModel *>(model());
 }
 
-void BoardView::SetIconFactory(IFactory_PieceIcon *i)
+void board_view_p::SetIconFactory(IFactory_PieceIcon *i)
 {
     if(i_factory)
         disconnect(i_factory, SIGNAL(NotifyIconsUpdated()),
@@ -157,7 +313,7 @@ void BoardView::SetIconFactory(IFactory_PieceIcon *i)
 }
 
 
-QRect BoardView::visualRect(const QModelIndex &index) const
+QRect board_view_p::visualRect(const QModelIndex &index) const
 {
     QRect ret;
     if(index.isValid())
@@ -165,7 +321,7 @@ QRect BoardView::visualRect(const QModelIndex &index) const
     return ret;
 }
 
-QRectF BoardView::visual_rectf(int col, int row) const
+QRectF board_view_p::visual_rectf(int col, int row) const
 {
     QRectF ret = item_rect(col, row);
     ret.translate(-horizontalOffset(),
@@ -173,14 +329,14 @@ QRectF BoardView::visual_rectf(int col, int row) const
     return ret;
 }
 
-QRectF BoardView::item_rect(int col, int row) const
+QRectF board_view_p::item_rect(int col, int row) const
 {
     return QRectF(get_board_rect().x() + col * GetSquareSize(),
                   get_board_rect().y() + get_board_rect().height() - (GetSquareSize() * (1 + row)),
                   GetSquareSize(), GetSquareSize());
 }
 
-void BoardView::scrollTo(const QModelIndex &index, ScrollHint)
+void board_view_p::scrollTo(const QModelIndex &index, ScrollHint)
 {
     QRect area = viewport()->rect();
     QRect rect = visualRect(index);
@@ -202,7 +358,7 @@ void BoardView::scrollTo(const QModelIndex &index, ScrollHint)
                 rect.bottom() - area.bottom(), rect.top() - area.top()));
 }
 
-void BoardView::updateGeometries()
+void board_view_p::updateGeometries()
 {
     QAbstractItemView::updateGeometries();
 
@@ -211,14 +367,14 @@ void BoardView::updateGeometries()
     verticalScrollBar()->setRange(0, Max(0.0, get_board_rect().height() + 2*MARGIN_OUTER + MARGIN_INDICES - viewport()->height()));
 }
 
-void BoardView::currentChanged(const QModelIndex &, const QModelIndex &)
+void board_view_p::currentChanged(const QModelIndex &, const QModelIndex &)
 {
     _update_rubber_band();
 }
 
-void BoardView::_animation_finished()
+void board_view_p::_animation_finished()
 {
-    piece_animation_t *anim = qobject_cast<piece_animation_t *>(sender());
+    piece_animation_p *anim = qobject_cast<piece_animation_p *>(sender());
     if(NULL != anim)
     {
         // Stop hiding the piece that we were animating
@@ -230,7 +386,7 @@ void BoardView::_animation_finished()
     }
 }
 
-void BoardView::_update_rubber_band()
+void board_view_p::_update_rubber_band()
 {
     // Update the rubber band
     QModelIndex cur = currentIndex();
@@ -240,7 +396,7 @@ void BoardView::_update_rubber_band()
     }
 }
 
-QModelIndex BoardView::indexAt(const QPoint &p) const
+QModelIndex board_view_p::indexAt(const QPoint &p) const
 {
     QModelIndex ret;
     QPointF p_t(p.x() + horizontalOffset(),
@@ -263,7 +419,7 @@ QModelIndex BoardView::indexAt(const QPoint &p) const
     return ret;
 }
 
-QModelIndex BoardView::moveCursor(CursorAction ca, Qt::KeyboardModifiers modifiers)
+QModelIndex board_view_p::moveCursor(CursorAction ca, Qt::KeyboardModifiers modifiers)
 {
     GUTIL_UNUSED(modifiers);
     QModelIndex ret;
@@ -298,30 +454,30 @@ QModelIndex BoardView::moveCursor(CursorAction ca, Qt::KeyboardModifiers modifie
     return ret;
 }
 
-int BoardView::horizontalOffset() const
+int board_view_p::horizontalOffset() const
 {
     return horizontalScrollBar()->value();
 }
 
-int BoardView::verticalOffset() const
+int board_view_p::verticalOffset() const
 {
     return verticalScrollBar()->value();
 }
 
-bool BoardView::isIndexHidden(const QModelIndex &index) const
+bool board_view_p::isIndexHidden(const QModelIndex &index) const
 {
     // There are no hidden indices on a chess board
     return false;
 }
 
-void BoardView::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
+void board_view_p::setSelection(const QRect &r, QItemSelectionModel::SelectionFlags cmd)
 {
     GUTIL_UNUSED(cmd);
     selectionModel()->select(indexAt(QPoint(r.center().x(), r.center().y())),
                              QItemSelectionModel::ClearAndSelect);
 }
 
-QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) const
+QRegion board_view_p::visualRegionForSelection(const QItemSelection &selection) const
 {
     QRegion ret;
     QModelIndexList il = selection.indexes();
@@ -331,7 +487,7 @@ QRegion BoardView::visualRegionForSelection(const QItemSelection &selection) con
     return ret;
 }
 
-void BoardView::paintEvent(QPaintEvent *ev)
+void board_view_p::paintEvent(QPaintEvent *ev)
 {
     ev->accept();
     QPainter painter(viewport());
@@ -339,12 +495,12 @@ void BoardView::paintEvent(QPaintEvent *ev)
     paint_board(painter, ev->rect());
 }
 
-void BoardView::resizeEvent(QResizeEvent *)
+void board_view_p::resizeEvent(QResizeEvent *)
 {
     updateGeometries();
 }
 
-void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
+void board_view_p::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
 {
     GASSERT(ind.isValid());
 
@@ -353,7 +509,7 @@ void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
 
     QRectF dest_rect(r);
     QIcon ico;
-    
+
     // First see if we have an icon factory
     if(i_factory)
     {
@@ -381,7 +537,7 @@ void BoardView::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
     p.restore();
 }
 
-void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
+void board_view_p::paint_board(QPainter &painter, const QRect &update_rect)
 {
     GUTIL_UNUSED(update_rect);
 
@@ -391,7 +547,7 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
     QModelIndex cur_indx = currentIndex();
     QStyleOptionViewItem option = viewOptions();
     QStyle::State state = option.state;
-    piece_animation_t *anim = qobject_cast<piece_animation_t *>(m_animationGroup->currentAnimation());
+    piece_animation_p *anim = qobject_cast<piece_animation_p *>(m_animationGroup->currentAnimation());
 
     QBrush background = option.palette.base();
     QPen textPen(option.palette.color(QPalette::Text));
@@ -409,8 +565,8 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
                               get_board_rect().topRight().y() + get_board_rect().height()/2 - (GetSquareSize()/2),
                               GetSquareSize(),
                               GetSquareSize());
-        painter.fillRect(indicator_rect, 
-                         Piece::White == GetBoardModel()->GetBoard()->GetWhoseTurn() ? 
+        painter.fillRect(indicator_rect,
+                         Piece::White == GetBoardModel()->GetBoard()->GetWhoseTurn() ?
                          m_lightSquareColor : m_darkSquareColor);
         painter.setPen(outline_pen);
         painter.drawRect(indicator_rect);
@@ -533,41 +689,42 @@ void BoardView::paint_board(QPainter &painter, const QRect &update_rect)
 //    painter.drawRect(temp_rect);
 }
 
-void BoardView::setModel(QAbstractItemModel *m)
+void board_view_p::SetBoardModel(BoardModel *bm)
 {
-    BoardModel *bm = dynamic_cast<BoardModel *>(m);
-    if(NULL == bm)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "The BoardView was designed for BoardModels only");
+    ClearSquareHighlighting();
 
-    // Reset any old format options
-    m_formatOpts.Clear();
+    // Disconnect the old model
+    if(model())
+        disconnect(GetBoardModel(), SIGNAL(NotifyPieceMoved(const Piece &, const QModelIndex &, const QModelIndex &)),
+                   this, SLOT(_piece_moved(const Piece &, const QModelIndex &, const QModelIndex &)));
 
-    QAbstractItemView::setModel(m);
+    setModel(bm);
+
     connect(bm, SIGNAL(NotifyPieceMoved(const Piece &, const QModelIndex &, const QModelIndex &)),
             this, SLOT(_piece_moved(const Piece &, const QModelIndex &, const QModelIndex &)));
 
     updateGeometries();
 }
 
-void BoardView::SetDarkSquareColor(const QColor &c)
+void board_view_p::SetDarkSquareColor(const QColor &c)
 {
     m_darkSquareColor = c;
     viewport()->update();
 }
 
-void BoardView::SetLightSquareColor(const QColor &c)
+void board_view_p::SetLightSquareColor(const QColor &c)
 {
     m_lightSquareColor = c;
     viewport()->update();
 }
 
-void BoardView::SetActiveSquareHighlightColor(const QColor &c)
+void board_view_p::SetActiveSquareHighlightColor(const QColor &c)
 {
     m_activeSquareHighlightColor = c;
     viewport()->update();
 }
 
-void BoardView::SetSquareSize(float s)
+void board_view_p::SetSquareSize(float s)
 {
     m_squareSize = s;
     updateGeometries();
@@ -576,158 +733,7 @@ void BoardView::SetSquareSize(float s)
 }
 
 
-
-
-
-
-
-
-
-
-static QString __generate_table_style(const BoardView::HtmlFormattingOptions &f)
-{
-    GUTIL_UNUSED(f);
-    return "text-align:center;"
-            "border-spacing:1pt;"
-            "font-family:'Arial Unicode MS';"
-            "border-collapse:collapse;"
-            "border-color:#FFFFFFFF;"
-            "border-style:solid;"
-            "border-width:0pt 0pt 0pt 0pt;";
-}
-
-static QString __generate_row_style(const BoardView::HtmlFormattingOptions &)
-{
-    return "vertical-align:bottom;";
-}
-
-static QColor __get_square_color(ISquare const &s, const BoardView::HtmlFormattingOptions &f)
-{
-    QColor ret;
-    if((0x1 & s.GetColumn()) == (0x1 &s.GetRow()))
-        ret = f.DarkSquareColor;
-    else
-        ret = f.LightSquareColor;
-    return ret;
-}
-
-
-static QString __generate_cell_style(const ISquare &s, const BoardView::HtmlFormattingOptions &f)
-{
-    return QString("width:%1pt;"
-                   "height:%2pt;"
-                   "border-collapse:collapse;"
-                   "border-color:#FFFFFFFF;"
-                   "border-style:solid;"
-                   "border-width:%3pt %3pt %3pt %3pt;"
-                   "background-color:#%4;")
-            .arg(f.SquareSize)
-            .arg(f.SquareSize)
-            .arg(f.BorderSize)
-            .arg(0x00FFFFFF & __get_square_color(s, f).rgb(), 6, 16, QChar('0'));
-}
-
-static QString __generate_piece_style(const Piece &, const BoardView::HtmlFormattingOptions &f)
-{
-    return QString("font-size:%1pt;"
-                   "color:#%2")
-            .arg(f.PieceSize)
-            .arg(0x00FFFFFF & f.PieceColor.rgb(), 6, 16, QChar('0'));
-}
-
-BoardView::HtmlFormattingOptions::HtmlFormattingOptions()
-    :HumanReadable(true),
-      PieceColor(Qt::black),
-      LightSquareColor(Qt::white),
-      DarkSquareColor(Qt::gray),
-      SquareSize(40),
-      BorderSize(1),
-      PieceSize(30),
-      IndexSize(15)
-{}
-
-
-QString BoardView::GenerateHtml(const AbstractBoard &b, const HtmlFormattingOptions &f)
-{
-    QString html;
-    if(b.ColumnCount() > 0 && b.RowCount() > 0)
-    {
-        QXmlStreamWriter sw(&html);
-        sw.setAutoFormatting(f.HumanReadable);
-
-        sw.writeStartElement("table");
-        sw.writeAttribute("style", __generate_table_style(f));
-
-        // Write each row to html
-        for(int i = b.RowCount() - 1; 0 <= i; --i)
-        {
-            sw.writeStartElement("tr");
-            sw.writeAttribute("style", __generate_row_style(f));
-
-            // Write the row number:
-            sw.writeStartElement("td");
-            sw.writeAttribute("style",
-                              QString("vertical-align:middle;width:12pt;font-size:%1pt;")
-                              .arg(f.IndexSize));
-            sw.writeCharacters(QString("%1").arg(i + 1));
-            sw.writeEndElement(); //td
-
-            // Iterate through the columns and write each cell
-            for(int j = 0; j < b.ColumnCount(); ++j)
-            {
-                ISquare const &s( b.SquareAt(j, i) );
-
-                sw.writeStartElement("td");
-                sw.writeAttribute("style", __generate_cell_style(s, f));
-
-                // Put a piece in the square if there is one
-                Piece const *p = s.GetPiece();
-                if(p)
-                {
-                    sw.writeStartElement("span");
-                    sw.writeAttribute("style", __generate_piece_style(*p, f));
-                    sw.writeEntityReference(QString("#%1").arg(p->UnicodeValue()));
-                    sw.writeEndElement(); //span
-                }
-                else
-                {
-                    // Need to write an empty piece to force the xml stream writer to write a
-                    //  close tag for the cell
-                    sw.writeCharacters(" ");
-                }
-
-                sw.writeEndElement();
-            }
-
-            sw.writeEndElement(); //tr
-        }
-
-        // Write the last row which holds the column letters
-        sw.writeStartElement("tr");
-        {
-            // Empty cell
-            sw.writeStartElement("td");
-            sw.writeCharacters("");
-            sw.writeEndElement(); //td
-
-            char letter = 'a';
-            for(int i = 0; i < b.RowCount(); ++i, ++letter)
-            {
-                sw.writeStartElement("td");
-                sw.writeAttribute("style", QString("font-size:%1pt;").arg(f.IndexSize));
-                sw.writeCharacters(QString::fromUtf8(&letter, 1));
-                sw.writeEndElement(); //td
-            }
-        }
-        sw.writeEndElement(); //tr
-
-        sw.writeEndElement(); //table
-        sw.writeEndElement(); //html
-    }
-    return html;
-}
-
-void BoardView::wheelEvent(QWheelEvent *ev)
+void board_view_p::wheelEvent(QWheelEvent *ev)
 {
     // Control-scroll changes the board size
     if(QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
@@ -744,13 +750,13 @@ void BoardView::wheelEvent(QWheelEvent *ev)
     _update_rubber_band();
 }
 
-void BoardView::attempt_move(const QModelIndex &, const QModelIndex &)
+void board_view_p::attempt_move(const QModelIndex &, const QModelIndex &)
 {
     // Since this is a readonly model, we don't actually let them move a piece, but
     //  if you override this method you can actually move
 }
 
-void BoardView::animate_snapback(const QPointF &from, const QModelIndex &s)
+void board_view_p::animate_snapback(const QPointF &from, const QModelIndex &s)
 {
     hide_piece_at_index(s);
     animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
@@ -772,17 +778,17 @@ void BoardView::animate_snapback(const QPointF &from, const QModelIndex &s)
                   );
 }
 
-void BoardView::hide_piece_at_index(const QModelIndex &ind)
+void board_view_p::hide_piece_at_index(const QModelIndex &ind)
 {
     m_hiddenIndex = ind;
     viewport()->update();
 }
 
-void BoardView::animate_move(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
+void board_view_p::animate_move(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
 {
     //if(QVariantAnimation::Running != m_animationGroup->state())
     {
-        piece_animation_t *anim = new piece_animation_t;
+        piece_animation_p *anim = new piece_animation_p;
         connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
         connect(anim, SIGNAL(finished()), this, SLOT(_animation_finished()));
 
@@ -797,7 +803,7 @@ void BoardView::animate_move(const Piece &p, const QPointF &source, const QPoint
     }
 }
 
-void BoardView::HighlightSquare(const QModelIndex &i, const QColor &c)
+void board_view_p::HighlightSquare(const QModelIndex &i, const QColor &c)
 {
     ISquare const *s = GetBoardModel()->ConvertIndexToSquare(i);
     if(s)
@@ -809,7 +815,7 @@ void BoardView::HighlightSquare(const QModelIndex &i, const QColor &c)
     }
 }
 
-void BoardView::HighlightSquares(const QModelIndexList &il, const QColor &c)
+void board_view_p::HighlightSquares(const QModelIndexList &il, const QColor &c)
 {
     SquareFormatOptions sfo;
     sfo.HighlightColor = c;
@@ -822,13 +828,13 @@ void BoardView::HighlightSquares(const QModelIndexList &il, const QColor &c)
     viewport()->update();
 }
 
-void BoardView::ClearSquareHighlighting()
+void board_view_p::ClearSquareHighlighting()
 {
     m_formatOpts.Clear();
     viewport()->update();
 }
 
-QRectF BoardView::get_board_rect() const
+QRectF board_view_p::get_board_rect() const
 {
     QRectF ret;
     if(model())
@@ -841,7 +847,7 @@ QRectF BoardView::get_board_rect() const
     return ret;
 }
 
-void BoardView::mouseMoveEvent(QMouseEvent *ev)
+void board_view_p::mouseMoveEvent(QMouseEvent *ev)
 {
     QAbstractItemView::mouseMoveEvent(ev);
 
@@ -851,12 +857,12 @@ void BoardView::mouseMoveEvent(QMouseEvent *ev)
     }
 }
 
-void BoardView::mouseDoubleClickEvent(QMouseEvent *)
+void board_view_p::mouseDoubleClickEvent(QMouseEvent *)
 {
     // Suppress this event, because we don't want to open an editor
 }
 
-void BoardView::_piece_moved(const Piece &p, const QModelIndex &s, const QModelIndex &d)
+void board_view_p::_piece_moved(const Piece &p, const QModelIndex &s, const QModelIndex &d)
 {
     // Animate the piece moving
     if(QAnimationGroup::Running == m_animationGroup->state())
@@ -867,7 +873,7 @@ void BoardView::_piece_moved(const Piece &p, const QModelIndex &s, const QModelI
     else
     {
         // Since we're not running, start a new animation
-        piece_animation_t *anim(new piece_animation_t);
+        piece_animation_p *anim(new piece_animation_p);
         anim->hidden_index = s;
         anim->piece = p;
         m_animationGroup->addAnimation(anim);
@@ -875,6 +881,105 @@ void BoardView::_piece_moved(const Piece &p, const QModelIndex &s, const QModelI
         hide_piece_at_index(anim->hidden_index);
         m_animationGroup->start();
     }
+}
+
+
+
+
+NAMESPACE_GKCHESS1(UI);
+
+#define v  reinterpret_cast<board_view_p *>(ptr)
+
+// Converts a square to a QModelIndex
+#define stoi(square_ptr)    v->model() ? \
+    v->model()->index(square_ptr->GetRow(), square_ptr->GetColumn()) : \
+    QModelIndex()
+
+
+BoardView::BoardView(QWidget *parent)
+    :QWidget(parent),
+      ptr(new board_view_p(this))
+{
+    setContentsMargins(0,0,0,0);
+    new QVBoxLayout(this);
+    layout()->addWidget(v);
+    v->show();
+}
+
+BoardView::~BoardView()
+{}
+
+void BoardView::SetIconFactory(IFactory_PieceIcon *f)
+{
+    v->SetIconFactory(f);
+}
+
+IFactory_PieceIcon *BoardView::GetIconFactory() const
+{
+    return v->GetIconFactory();
+}
+
+float BoardView::GetSquareSize() const
+{
+    return v->GetSquareSize();
+}
+void BoardView::SetSquareSize(float s)
+{
+    v->SetSquareSize(s);
+}
+
+QColor BoardView::GetDarkSquareColor() const
+{
+    return v->GetDarkSquareColor();
+}
+void BoardView::SetDarkSquareColor(const QColor &c)
+{
+    v->SetDarkSquareColor(c);
+}
+
+QColor BoardView::GetLightSquareColor() const
+{
+    return v->GetLightSquareColor();
+}
+void BoardView::SetLightSquareColor(const QColor &c)
+{
+    v->SetLightSquareColor(c);
+}
+
+QColor BoardView::GetActiveSquareHighlightColor() const
+{
+    return v->GetActiveSquareHighlightColor();
+}
+void BoardView::SetActiveSquareHighlightColor(const QColor &c)
+{
+    v->SetActiveSquareHighlightColor(c);
+}
+
+void BoardView::HighlightSquare(const ISquare &s, const QColor &c)
+{
+    v->HighlightSquare(stoi((&s)), c);
+}
+void BoardView::HighlightSquares(const Vector<ISquare const *> &vec, const QColor &c)
+{
+    QModelIndexList il;
+    G_FOREACH_CONST(ISquare const *s, vec)
+        il.append(stoi(s));
+    v->HighlightSquares(il, c);
+}
+
+void BoardView::ClearSquareHighlighting()
+{
+    v->ClearSquareHighlighting();
+}
+
+BoardModel *BoardView::GetBoardModel() const
+{
+    return v->GetBoardModel();
+}
+
+void BoardView::SetBoardModel(BoardModel *bm)
+{
+    v->SetBoardModel(bm);
 }
 
 

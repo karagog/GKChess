@@ -46,6 +46,25 @@ public:
     */
     virtual Piece const *GetPiece() const = 0;
 
+    /** Compares squares based on their row and column.
+     *  You should implement an equality comparer in the most efficient way for your
+     *  board implementation.
+    */
+    virtual bool operator == (const ISquare &other) const{
+        return GetColumn() == other.GetColumn() &&
+                GetRow() == other.GetRow();
+    }
+
+    /** Compares squares based on their row and column.
+     *  You should implement an equality comparer in the most efficient way for your
+     *  board implementation.
+    */
+    virtual bool operator != (const ISquare &other) const{
+        return GetColumn() != other.GetColumn() ||
+                GetRow() != other.GetRow();
+    }
+
+
     /** \} */
 
     
@@ -59,18 +78,6 @@ public:
     /** A convenience function that tells you if this square is light or dark. */
     bool IsDarkSquare() const{ 
         return (0x1 & GetRow()) == (0x1 & GetColumn()); 
-    }
-
-    /** Compares squares based on their row and column. */
-    bool operator == (const ISquare &other){
-        return GetColumn() == other.GetColumn() &&
-                GetRow() == other.GetRow();
-    }
-    
-    /** Compares squares based on their row and column. */
-    bool operator != (const ISquare &other){
-        return GetColumn() != other.GetColumn() ||
-                GetRow() != other.GetRow();
     }
 
 
