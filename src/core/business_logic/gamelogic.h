@@ -18,7 +18,6 @@ limitations under the License.*/
 #include "gkchess_igamelogic.h"
 #include "gkchess_board.h"
 #include "gkchess_pgn_move_data.h"
-#include "gkchess_movedata.h"
 #include "gutil_map.h"
 #include <QObject>
 

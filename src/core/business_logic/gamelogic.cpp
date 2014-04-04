@@ -287,7 +287,7 @@ static bool __is_move_valid_for_king(Board const *b,
     return 1 >= col_diff_abs && 1 >= row_diff_abs;
 }
 
-MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
+GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 {
     MoveData ret;
     Piece::AllegienceEnum turn = m_board.GetWhoseTurn();
