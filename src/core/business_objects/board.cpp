@@ -19,6 +19,37 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS;
 
 
+/** Maps col-row indices to a 1-dimensional index. */
+static int __map_2d_indices_to_1d(int col, int row)
+{
+    return (col << 3) | row;
+}
+
+
+
+Board::GameState::GameState()
+    :WhoseTurn(Piece::AnyAllegience),
+      CastleWhite1(-1),
+      CastleWhite2(-1),
+      CastleBlack1(-1),
+      CastleBlack2(-1),
+      EnPassantSquare(0),
+      HalfMoveClock(-1),
+      FullMoveNumber(-1)
+{}
+
+Board::GameState::GameState(const IGameState &o)
+    :WhoseTurn(o.GetWhoseTurn()),
+      CastleWhite1(o.GetCastleWhite1()),
+      CastleWhite2(o.GetCastleWhite2()),
+      CastleBlack1(o.GetCastleBlack1()),
+      CastleBlack2(o.GetCastleBlack2()),
+      EnPassantSquare(o.GetEnPassantSquare()),
+      HalfMoveClock(o.GetHalfMoveClock()),
+      FullMoveNumber(o.GetFullMoveNumber())
+{}
+
+
 Board::Square::Square(int c, int r)
     :m_column(c),
       m_row(r)
@@ -47,38 +78,35 @@ void Board::Square::SetPiece(const Piece &p)
 
 
 Board::Board(QObject *parent)
-    :AbstractBoard(parent),
-      m_currentTurn(Piece::White),
-      m_halfMoveClock(0),
-      m_fullMoveNumber(0),
-      m_enPassantSquare(0),
-      m_whiteCastleInfo(0),
-      m_blackCastleInfo(0)
+    :AbstractBoard(parent)
+{
+    _init();
+}
+
+Board::Board(const AbstractBoard &o)
+    :AbstractBoard(o.parent()),
+      m_gameState(o.GameState())
+{
+    if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot copy from different sized board");
+
+    _init();
+
+    for(int c = 0; c < ColumnCount(); ++c){
+        for(int r = 0; r < RowCount(); ++r){
+            Piece const *p = o.GetPiece(c, r);
+            if(p)
+                set_piece_p(*p, c, r);
+        }
+    }
+}
+
+void Board::_init()
 {
     m_squares.ReserveExactly(64);
     for(int c = 0; c < ColumnCount(); ++c)
         for(int r = 0; r < RowCount(); ++r)
             m_squares.PushBack(Square(c, r));
-}
-
-Board::Board(const AbstractBoard &o)
-    :AbstractBoard(o.parent()),
-      m_currentTurn(o.GetWhoseTurn()),
-      m_halfMoveClock(o.GetHalfMoveClock()),
-      m_fullMoveNumber(o.GetFullMoveNumber()),
-      m_enPassantSquare(o.GetEnPassantSquare()),
-      m_whiteCastleInfo(o.GetCastleInfo(Piece::White)),
-      m_blackCastleInfo(o.GetCastleInfo(Piece::Black))
-{
-    if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot copy from different sized board");
-    for(int c = 0; c < ColumnCount(); ++c){
-        for(int r = 0; r < RowCount(); ++r){
-            Piece const *p = o.GetPiece(c, r);
-            if(p)
-                SetPiece(*p, c, r);
-        }
-    }
 }
 
 Board &Board::operator = (const AbstractBoard &o)
@@ -101,96 +129,88 @@ int Board::RowCount() const
     return 8;
 }
 
-Piece::AllegienceEnum Board::GetWhoseTurn() const
+void Board::set_piece_p(const Piece &p, int col, int row)
 {
-    return m_currentTurn;
+    Square &sqr(_square_at(col, row));
+    Piece const *piece_orig = sqr.GetPiece();
+
+    // Remove the old piece from the index
+    if(piece_orig)
+        _index(piece_orig->GetAllegience()).Remove(piece_orig->GetType(), &sqr);
+
+    // Add the new piece to the index
+    if(!p.IsNull())
+        _index(p.GetAllegience()).InsertMulti(p.GetType(), &sqr);
+
+    sqr.SetPiece(p);
 }
 
-void Board::SetWhoseTurn(Piece::AllegienceEnum a)
+void Board::move_p(const MoveData &md)
 {
-    m_currentTurn = a;
-}
+    Square &s(_square_at(md.Source->GetColumn(), md.Source->GetRow()));
+    Square &d(_square_at(md.Destination->GetColumn(), md.Destination->GetRow()));
 
-ISquare const *Board::GetEnPassantSquare() const
-{
-    return m_enPassantSquare;
-}
+    Piece const *piece_orig = s.GetPiece();
+    Piece const *piece_dest = d.GetPiece();
+    Map<Piece::PieceTypeEnum, ISquare const *> &index(_index(piece_orig->GetAllegience()));
 
-void Board::SetEnPassantSquare(const ISquare *s)
-{
-    m_enPassantSquare = s;
-}
-
-GUINT8 Board::GetCastleInfo(Piece::AllegienceEnum a) const
-{
-    return Piece::White == a ? m_whiteCastleInfo : m_blackCastleInfo;
-}
-
-void Board::SetCastleInfo(Piece::AllegienceEnum a, GUINT8 info)
-{
-    switch(a)
-    {
-    case Piece::White:
-        m_whiteCastleInfo = info;
-        break;
-    case Piece::Black:
-        m_blackCastleInfo = info;
-        break;
-    default:
-        break;
+    // Remove the piece at the dest square from the index
+    if(piece_dest){
+        index.Remove(piece_dest->GetType(), &d);
     }
-}
 
-int Board::GetHalfMoveClock() const
-{
-    return m_halfMoveClock;
-}
-
-void Board::SetHalfMoveClock(int h)
-{
-    m_halfMoveClock = h;
-}
-
-int Board::GetFullMoveNumber() const
-{
-    return m_fullMoveNumber;
-}
-
-void Board::SetFullMoveNumber(int f)
-{
-    m_fullMoveNumber = f;
-}
-
-/** Maps col-row indices to a 1-dimensional index. */
-static int __map_2d_indices_to_1d(int col, int row)
-{
-    return (col << 3) | row;
-}
-
-void Board::SetPiece(const Piece &p, int column, int row)
-{
-    m_squares[__map_2d_indices_to_1d(column, row)].SetPiece(p);
-    emit NotifySquareUpdated(column, row);
-}
-
-void Board::MovePiece(int s_col, int s_row, int d_col, int d_row)
-{
-    Square &s(m_squares[__map_2d_indices_to_1d(s_col, s_row)]);
-    Square &d(m_squares[__map_2d_indices_to_1d(d_col, d_row)]);
-    Piece const *p = s.GetPiece();
-    if(s != d && NULL != p)
+    // Update the index for the piece being moved
+    if(piece_orig)
     {
-        d.SetPiece(*p);
-        s.SetPiece(Piece());
-
-        // Notify that the piece moved
-        emit NotifyPieceMoved(*p, s_col, s_row, d_col, d_row);
+        // If the piece being moved is not the same piece as the source square (corner case)
+        if(*piece_orig != md.PieceMoved)
+        {
+            // This section of code should not execute unless there is a bug in our move logic
+            GASSERT(false);
+            index.Remove(piece_orig->GetType(), &s);
+            _index(md.PieceMoved.GetAllegience()).InsertMulti(md.PieceMoved.GetType(), &d);
+        }
+        else
+            index[piece_orig->GetType()] = &d;
     }
+
+    s.SetPiece(Piece());
+    d.SetPiece(md.PieceMoved);
 }
 
-ISquare const &Board::SquareAt(int column, int row) const
+ISquare const &Board::SquareAt(int col, int row) const
 {
-    return m_squares[__map_2d_indices_to_1d(column, row)];
+    return m_squares[__map_2d_indices_to_1d(col, row)];
+}
+
+Board::Square &Board::_square_at(int col, int row)
+{
+    return m_squares[__map_2d_indices_to_1d(col, row)];
+}
+
+Map<Piece::PieceTypeEnum, ISquare const *> &Board::_index(Piece::AllegienceEnum a)
+{
+    return Piece::White == a ? m_whitePieceIndex : m_blackPieceIndex;
+}
+
+Map<Piece::PieceTypeEnum, ISquare const *> const &Board::_index(Piece::AllegienceEnum a) const
+{
+    return Piece::White == a ? m_whitePieceIndex : m_blackPieceIndex;
+}
+
+Vector<ISquare const *> Board::FindPieces(const Piece &pc) const
+{
+    Vector<ISquare const *> ret( (Piece::White == pc.GetAllegience() ?
+                                      &m_whitePieceIndex : &m_blackPieceIndex)->Values(pc.GetType()) );
+
+    // To help debug, make sure all the returned pieces are the correct type
+    for(GINT32 i = 0; i < ret.Length(); ++i){
+        Piece const *p = ret[i]->GetPiece();
+        GUTIL_UNUSED(p);
+        GASSERT(p && pc.GetType() == p->GetType() && pc.GetAllegience() == p->GetAllegience());
+    }
+
+    return ret;
 }
 
 

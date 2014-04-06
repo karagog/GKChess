@@ -17,7 +17,7 @@ limitations under the License.*/
 
 #include "gutil_map.h"
 #include "gkchess_piece.h"
-#include "gkchess_imovevalidator.h"
+#include "gkchess_igamelogic.h"
 #include <QColor>
 #include <QAbstractTableModel>
 
@@ -28,14 +28,19 @@ namespace GKChess{
 namespace UI{
 
 
-/** Describes a data model for a chess board. This is a readonly model, so you can
- *  only display boards with it.
+/** Describes a data model for a chess board. It supports readonly and editable
+ *  experiences.
+ *
+ *  You supply game logic via SetGameLogic().  If you don't supply any game logic,
+ *  then it behaves as a readonly model, allowing you to view positions but not edit them.
+ *
+ *  If you supply a game logic, then it immediately takes effect without disrupting the position
+ *  on the board.
  *
  *  This can be used with Qt's model-view framework.
 */
 class BoardModel :
-        public QAbstractTableModel,
-        public IMoveValidator
+        public QAbstractTableModel
 {
     Q_OBJECT
 
@@ -43,28 +48,29 @@ class BoardModel :
         QColor BackgroundColor;
     };
 
-    AbstractBoard const *m_board;
-    IMoveValidator *i_validator;
+    AbstractBoard *m_board;
+    IGameLogic *i_logic;
 public:
 
     /** You must give the model a reference to a chessboard
      *  object. It must exist at least for the lifetime of
      *  this object.
+     *
+     *  By default there is no game logic, meaning you cannot move any pieces,
+     *  only look at the position on the board.
     */
-    explicit BoardModel(AbstractBoard const *, QObject *parent = 0);
+    explicit BoardModel(AbstractBoard *, QObject *parent = 0);
 
     /** Returns a const reference to the board object, so you can
         access the other meta-data not held in the indices.
     */
     AbstractBoard const *GetBoard() const{ return m_board; }
 
-    /** Enables validated moving. */
-    void SetMoveValidator(IMoveValidator *);
+    /** Sets the game logic. */
+    void SetGameLogic(IGameLogic *);
 
-    /** Returns the move validator for the model.  By default there is no validator and all
-     *  moves are valid.
-    */
-    IMoveValidator *GetMoveValidator() const{ return i_validator; }
+    /** Returns the current game logic. */
+    IGameLogic *GetGameLogic() const{ return i_logic; }
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
@@ -79,9 +85,23 @@ public:
     enum CustomDataRoleEnum
     {
         /** This role returns the Piece on the square, or a null QVariant if the square is empty. */
-        PieceRole = Qt::UserRole
+        PieceRole = Qt::UserRole,
+
+        /** This role returns a list of model indexes to which the piece on the given index can move. */
+        ValidMovesRole = Qt::UserRole + 1
     };
 
+
+    /** Returns true if the piece moving from source to dest is a valid chess move. */
+    bool ValidateMove(const QModelIndex &source, const QModelIndex &dest) const;
+
+    /** Moves the piece at the source index to the dest index.
+     *
+     *  This function does nothing if there is no game logic set.
+     *
+     *  You must supply a player response object, to handle pawn promotions when they occur.
+    */
+    void MovePiece(const QModelIndex &source, const QModelIndex &dest, IGameLogic::IPlayerResponse *);
 
     /** \name QAbstractTableModel interface
      *  \{
@@ -89,40 +109,19 @@ public:
     virtual int rowCount(const QModelIndex & = QModelIndex()) const;
     virtual int columnCount(const QModelIndex & = QModelIndex()) const;
     virtual QVariant data(const QModelIndex &, int) const;
+    virtual bool setData(const QModelIndex &, const QVariant &, int);
     virtual QVariant headerData(int, Qt::Orientation, int) const;
     virtual Qt::ItemFlags flags(const QModelIndex &) const;
 
     virtual QMimeData *mimeData(const QModelIndexList &) const;
+    virtual bool dropMimeData(const QMimeData *, Qt::DropAction, int, int, const QModelIndex &);
     virtual QStringList mimeTypes() const;
     /** \} */
 
-
-    /** \name IMoveValidator interface
-     *  The model will provide move validation to the views, so they can display if a move
-     *  is valid before the user does it
-     *  \{
-    */
-    virtual MoveValidationEnum ValidateMove(const AbstractBoard &, const ISquare &, const ISquare &) const;
-    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const AbstractBoard &, const ISquare &) const;
-    /** \} */
-
-
-signals:
-
-    /** This signal is emitted whenever a piece is moved, and indicates the piece
-     *  being moved, the source and destination indices.
-     *
-     *  This simply forwards the signal from the board object, so views can animate pieces
-     *  moved by someone else. If they don't want to animate moves, they will still catch
-     *  the square updates when the dataChanged() signal is emitted.
-    */
-    void NotifyPieceMoved(const Piece &, const QModelIndex &source, const QModelIndex &dest);
-
-
 private slots:
 
-    void _square_updated(int c, int r);
-    void _piece_moved(const Piece &, int, int, int, int);
+    void _square_updated(const GKChess::ISquare &);
+    void _piece_moved(const GKChess::AbstractBoard::MoveData &);
 
 };
 
@@ -139,6 +138,9 @@ private slots:
  *  if it describes a new piece.
 */
 #define MIMETYPE_GKCHESS_PIECE "gkchess/piece"
+
+
+Q_DECLARE_METATYPE(QModelIndexList)
 
 
 #endif // GKCHESS_BOARDMODEL_H

@@ -16,8 +16,6 @@ limitations under the License.*/
 #define GKCHESS_GAMELOGIC_H
 
 #include "gkchess_igamelogic.h"
-#include "gkchess_board.h"
-#include "gkchess_pgn_move_data.h"
 #include "gutil_map.h"
 #include <QObject>
 
@@ -30,42 +28,20 @@ class GameLogic :
         public IGameLogic
 {
     Q_OBJECT
-
-    Board m_board;
-
-    // These facilitate fast piece lookups
-    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_whitePieceIndex;
-    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_blackPieceIndex;
-
 public:
 
     explicit GameLogic(QObject * = 0);
     virtual ~GameLogic();
 
-    /** Returns a list of squares occupied by the type of piece specified.
-     *  The list will be empty if it didn't find any.
-     *
-     *  This lookup is done in O(log(N)) time, where N is the number of different types of pieces.
-    */
-    GUtil::Vector<ISquare const *> FindPieces(const Piece &) const;
-
     /** \name IGameLogic interface
      *  \{
     */
-    virtual AbstractBoard const &GetBoard() const;
-    virtual void SetupNewGame(SetupTypeEnum = StandardChess);
-    virtual void Move(const PGN_MoveData &);
-    virtual void Move(const MoveData &);
-    virtual MoveData GenerateMoveData(const ISquare *, const ISquare *, IUserFeedback *) const;
-    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
-    virtual MoveValidationEnum ValidateMove(const ISquare &source, const ISquare &dest) const;
-    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
+    virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess);
+    virtual AbstractBoard::MoveData GenerateMoveData(AbstractBoard const &, const ISquare &, const ISquare &, IPlayerResponse *) const;
+    virtual AbstractBoard::MoveData GenerateMoveData(AbstractBoard const &, const PGN_MoveData &) const;
+    virtual MoveValidationEnum ValidateMove(AbstractBoard const &, const ISquare &source, const ISquare &dest) const;
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(AbstractBoard const &, const ISquare &) const;
     /** \} */
-
-
-private:
-
-    void _move(const MoveData &, bool reverse = false);
 
 };
 

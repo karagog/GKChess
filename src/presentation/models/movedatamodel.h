@@ -15,8 +15,8 @@ limitations under the License.*/
 #ifndef GKCHESS_MOVEDATAMODEL_H
 #define GKCHESS_MOVEDATAMODEL_H
 
-#include "gkchess_movedata.h"
 #include "gkchess_pgn_move_data.h"
+#include "gkchess_abstractboard.h"
 #include "gutil_vector.h"
 #include <QAbstractItemModel>
 
@@ -47,7 +47,7 @@ class MoveDataModel :
         MoveDataCache *Parent;
         
         /** The data held within an index. */
-        MoveData Data;
+        AbstractBoard::MoveData Data;
         
         MoveDataCache(MoveDataCache *parent = 0) :Parent(parent){}
     };

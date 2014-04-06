@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_boardview.h"
 #include "gkchess_gamelogic.h"
+#include "gkchess_board.h"
 #include "gkchess_coloredpieceiconfactory.h"
 #include <QMainWindow>
 
@@ -28,8 +29,8 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    //GKChess::GameLogic m_game;
     GKChess::Board m_board;
+    GKChess::GameLogic m_gameLogic;
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
 public:

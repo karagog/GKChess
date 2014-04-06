@@ -15,6 +15,7 @@ limitations under the License.*/
 #include "abstractboard.h"
 #include "piece.h"
 #include "isquare.h"
+#include "pgn_move_data.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
@@ -27,16 +28,37 @@ AbstractBoard::AbstractBoard(QObject *p)
 AbstractBoard::~AbstractBoard()
 {}
 
+void AbstractBoard::SetPiece(const Piece &p, ISquare const &sqr)
+{
+    if(0 <= sqr.GetColumn() && sqr.GetColumn() < ColumnCount() &&
+            0 <= sqr.GetRow() && sqr.GetRow() < RowCount())
+    {
+        emit NotifySquareAboutToBeUpdated(sqr);
+        set_piece_p(p, sqr.GetColumn(), sqr.GetRow());
+        emit NotifySquareUpdated(sqr);
+    }
+}
+
 Piece const *AbstractBoard::GetPiece(int column, int row) const
 {
     return SquareAt(column, row).GetPiece();
+}
+
+void AbstractBoard::Move(const MoveData &md)
+{
+    if(!md.IsNull())
+    {
+        emit NotifyPieceAboutToBeMoved(md);
+        move_p(md);
+        emit NotifyPieceMoved(md);
+    }
 }
 
 void AbstractBoard::Clear()
 {
     for(int i = 0; i < ColumnCount(); ++i)
         for(int j = 0; j < RowCount(); ++j)
-            SetPiece(Piece(), i, j);
+            SetPiece(Piece(), SquareAt(i, j));
 }
 
 void AbstractBoard::FromFEN(const String &s)
@@ -61,7 +83,7 @@ void AbstractBoard::FromFEN(const String &s)
 
             // For each character in the section...
             for(;
-                iter != sl2[i].end() && col < this->ColumnCount();
+                iter != sl2[i].end() && col < ColumnCount();
                 ++iter)
             {
                 int num(-1);
@@ -81,12 +103,12 @@ void AbstractBoard::FromFEN(const String &s)
                 {
                     // Numbers define empty space. Set all empty spaces null
                     for(int h = col; h < col + num; ++h)
-                        this->SetPiece(Piece(), h, rank);
+                        SetPiece(Piece(), SquareAt(h, rank));
                     col += num;
                 }
                 else
                 {
-                    this->SetPiece(Piece::FromFEN(c), col, rank);
+                    SetPiece(Piece::FromFEN(c), SquareAt(col, rank));
                     col++;
                 }
 
@@ -111,14 +133,16 @@ void AbstractBoard::FromFEN(const String &s)
         default:
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "The current turn must be either a 'w' or 'b'");
         }
-        this->SetWhoseTurn(a);
+        GameState().SetWhoseTurn(a);
     }
 
 
     // Then parse the castle info:
     {
-        this->SetCastleInfo(Piece::White, 0);
-        this->SetCastleInfo(Piece::Black, 0);
+        GameState().SetCastleWhite1(-1);
+        GameState().SetCastleWhite2(-1);
+        GameState().SetCastleBlack1(-1);
+        GameState().SetCastleBlack2(-1);
 
         G_FOREACH_CONST(char c, sl[2])
         {
@@ -146,16 +170,23 @@ void AbstractBoard::FromFEN(const String &s)
             //  the range from a-h
             if('A' <= c && c <= 'H')
             {
-                GUINT8 cur = this->GetCastleInfo(a);
-
-                if(0 != (0xF0 & cur))
-                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Too many castling parameters");
-
-                GUINT8 tmp = c - 'A' + 1;
-                if(0 != (0x0F & cur))
-                    tmp = tmp << 4;
-
-                this->SetCastleInfo(a, tmp | cur);
+                int file = c-'A';
+                switch(a)
+                {
+                case Piece::White:
+                    if(-1 == GameState().GetCastleWhite1())
+                        GameState().SetCastleWhite1(file);
+                    else
+                        GameState().SetCastleWhite2(file);
+                    break;
+                case Piece::Black:
+                    if(-1 == GameState().GetCastleBlack1())
+                        GameState().SetCastleBlack1(file);
+                    else
+                        GameState().SetCastleBlack2(file);
+                    break;
+                default: break;
+                }
             }
             else
             {
@@ -177,7 +208,7 @@ void AbstractBoard::FromFEN(const String &s)
             if(f < 'a' || 'h' < f || rnk < '1' || '8' < rnk)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid En Passant square");
 
-            this->SetEnPassantSquare(&this->SquareAt(f - 'a', rnk - '1'));
+            GameState().SetEnPassantSquare(&SquareAt(f - 'a', rnk - '1'));
         }
     }
 
@@ -185,7 +216,7 @@ void AbstractBoard::FromFEN(const String &s)
     // Parse the half-move clock:
     {
         bool ok(false);
-        this->SetHalfMoveClock(sl[4].ToInt(&ok));
+        GameState().SetHalfMoveClock(sl[4].ToInt(&ok));
         if(!ok)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid half-move clock");
     }
@@ -194,7 +225,7 @@ void AbstractBoard::FromFEN(const String &s)
     // Parse the full-move number:
     {
         bool ok(false);
-        this->SetFullMoveNumber(sl[5].ToInt(&ok));
+        GameState().SetFullMoveNumber(sl[5].ToInt(&ok));
         if(!ok)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid full-move number");
     }

@@ -15,26 +15,28 @@ limitations under the License.*/
 #ifndef GKCHESS_IGAMELOGIC_H
 #define GKCHESS_IGAMELOGIC_H
 
-#include "gkchess_imovevalidator.h"
 #include "gkchess_piece.h"
+#include "gkchess_abstractboard.h"
 
 NAMESPACE_GKCHESS;
 
+class ISquare;
 class PGN_MoveData;
 
 
 /** Defines the game logic interface.
  *  This is the set of functions required to play chess with this library.
+ *
+ *  For each operation you supply a board that this class will operate on.
 */
-class IGameLogic :
-        public IMoveValidator
+class IGameLogic
 {
 public:
 
     /** An interface that encapsulates feedback from the user, such as choosing a promoted piece.
      *  The implementation should leverage the user interface to prompt the user for the given input.
     */
-    class IUserFeedback
+    class IPlayerResponse
     {
     public:
 
@@ -62,54 +64,6 @@ public:
         CustomSetupOffset = 100
     };
 
-
-    /** Holds all the information we need to do a move. */
-    struct MoveData
-    {
-        /** The half-move number for the move. */
-        int PlyNumber;
-
-        /** The starting square.  If the move was a castle this will be null. */
-        ISquare const *Source;
-
-        /** The ending square.  If the move was a castle this will be null. */
-        ISquare const *Destination;
-
-        /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
-        enum CastleTypeEnum
-        {
-            NoCastle = 0,
-            CastleNormal = 1,
-            CastleQueenside = -1
-        }
-        CastleType;
-
-        /** The piece being moved. */
-        Piece PieceMoved;
-
-        /** The captured piece, if any. If this is type NoPiece then the
-         *  move did not involve a capture.
-        */
-        Piece PieceCaptured;
-
-        /** The piece that was promoted, if any. If this is type NoPiece then the
-         *  move did not involve a promotion. */
-        Piece PiecePromoted;
-
-        /** The position of the board before the move, in FEN notation. */
-        GUtil::String CurrentPosition_FEN;
-
-        /** Returns true if this is a null move data (default constructed). */
-        bool IsNull() const{ return -1 == PlyNumber; }
-
-        MoveData()
-            :PlyNumber(-1),
-              Source(0),
-              Destination(0),
-              CastleType(NoCastle)
-        {}
-
-    };
 
 
     /** Encodes the different possible results of a move validation. */
@@ -141,41 +95,37 @@ public:
         CustomInvalidMoveOffset = 100
     };
 
-
-    /** Returns the game board. */
-    virtual AbstractBoard const &GetBoard() const = 0;
-
     /** Sets up the board for a new game. */
-    virtual void SetupNewGame(SetupTypeEnum = StandardChess) = 0;
+    virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess) = 0;
 
-    /** Moves based on a MoveData object. You can create one via GenerateMoveData. */
-    virtual void Move(const MoveData &) = 0;
+    /** Validates the move. */
+    virtual MoveValidationEnum ValidateMove(const AbstractBoard &,
+                                            const ISquare &source,
+                                            const ISquare &dest) const = 0;
+
+
+    /** Returns a list of valid squares that the piece on the given square can move to. */
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const AbstractBoard &,
+                                                                  const ISquare &) const = 0;
+
+    /** Creates a MoveData object from a PGN MoveData object. */
+    virtual AbstractBoard::MoveData GenerateMoveData(const AbstractBoard &,
+                                                     const PGN_MoveData &) const = 0;
 
     /** Creates a MoveData object from a source and dest square input.
      *  You must supply a user feedback object, so the game logic knows how the
      *  user wants to proceed in the event of a pawn promotion.
      *
-     *  \note This function also works with invalid moves, so if you care about
-     *  validation you have to call ValidateMove before generating the move data.
+     *  \note This function works with invalid moves, so if you care about
+     *  validation you have to use ValidateMove() on the source and dest squares.
+     *
+     *  \returns A move data object, which is always populated except in the case of a
+     *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
     */
-    virtual MoveData GenerateMoveData(const ISquare *source,
-                                      const ISquare *dest,
-                                      IUserFeedback *) const = 0;
-
-    /** Creates a MoveData object from a PGN MoveData object. */
-    virtual MoveData GenerateMoveData(const PGN_MoveData &) const = 0;
-
-    /** Validates the move. */
-    virtual MoveValidationEnum ValidateMove(const ISquare &source,
-                                            const ISquare &dest) const = 0;
-
-
-    /** Returns a list of valid squares that the piece on the given square can move to. */
-    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const = 0;
-
-
-    /** Convenience function clears the board. */
-    void Clear(){ SetupNewGame(Empty); }
+    virtual AbstractBoard::MoveData GenerateMoveData(const AbstractBoard &,
+                                                     const ISquare &source,
+                                                     const ISquare &dest,
+                                                     IPlayerResponse *) const = 0;
 
 };
 

@@ -74,8 +74,10 @@ USING_NAMESPACE_GKCHESS1(UI);
 /** Defines the duration of move animation, in seconds */
 #define ANIM_SNAPBACKDURATION 0.25
 
-/** The number of refreshes per second while animating. */
-#define ANIM_REFRESH_FREQUENCY 30
+#define ANIM_MOVE_DURATION 0.75
+
+/** The size of a rect that determines when to start dragging a piece (as a factor of square size). */
+#define DRAG_START_RECT_SIZE 0.35
 
 #define SCROLL_SPEED_FACTOR 0.05
 
@@ -84,6 +86,8 @@ USING_NAMESPACE_GKCHESS1(UI);
 */
 #define PIECE_SIZE_FACTOR  0.825
 
+/** The default cursor to use. */
+#define CURSOR_DEFAULT Qt::ArrowCursor
 
 
 /** A private class to implement the board view, because we don't want to expose the
@@ -102,12 +106,20 @@ class board_view_p :
     // Dimensional parameters
     float m_squareSize;
 
+    // Behavioral parameters
+    bool m_editable;
+
     // for painting
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
     QColor m_activeSquareHighlightColor;
     IFactory_PieceIcon *i_factory;
 
+    // Our current state for user interaction
+    QModelIndex m_activeSquare;
+    bool m_dragging;
+    QPoint m_mousePressLoc;
+    bool m_wasSquareActiveWhenPressed;
     GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
     // Our animation objects
@@ -115,7 +127,7 @@ class board_view_p :
     GUtil::SmartPointer<QSequentialAnimationGroup> m_animationGroup;
 
     // Keeps track of our per-square format options
-    GUtil::Map<ISquare const *, SquareFormatOptions> m_formatOpts;
+    GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;
 
 public:
 
@@ -138,6 +150,8 @@ public:
     void HighlightSquare(const QModelIndex &, const QColor &);
     void HighlightSquares(const QModelIndexList &, const QColor &);
     void ClearSquareHighlighting();
+    bool Editable() const{ return m_editable; }
+    void SetEditable(bool b){ m_editable = b; }
 
 
     /** \name QAbstractItemView interface
@@ -218,6 +232,8 @@ protected:
     virtual void wheelEvent(QWheelEvent *);
     virtual void mouseMoveEvent(QMouseEvent *);
     virtual void mouseDoubleClickEvent(QMouseEvent *);
+    virtual void mousePressEvent(QMouseEvent *);
+    virtual void mouseReleaseEvent(QMouseEvent *);
     /** \} */
 
 
@@ -236,7 +252,13 @@ private slots:
     void _animation_finished();
     void _update_rubber_band();
 
-    void _piece_moved(const Piece &, const QModelIndex &, const QModelIndex &);
+    void _piece_about_to_move(const GKChess::AbstractBoard::MoveData &);
+    void _piece_moved(const GKChess::AbstractBoard::MoveData &);
+
+
+private:
+
+    void _update_cursor_at_point(const QPointF &);
 
 };
 
@@ -272,10 +294,13 @@ static QRectF __get_shrunken_rect(const QRectF &r, double factor)
 board_view_p::board_view_p(QWidget *parent)
     :QAbstractItemView(parent),
       m_squareSize(DEFAULT_SQUARE_SIZE),
+      m_editable(true),
       m_darkSquareColor(Qt::gray),
       m_lightSquareColor(Qt::white),
       m_activeSquareHighlightColor(Qt::yellow),
       i_factory(0),
+      m_dragging(false),
+      m_wasSquareActiveWhenPressed(false),
       m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this)),
       m_animationGroup(new QSequentialAnimationGroup)
 {
@@ -566,7 +591,7 @@ void board_view_p::paint_board(QPainter &painter, const QRect &update_rect)
                               GetSquareSize(),
                               GetSquareSize());
         painter.fillRect(indicator_rect,
-                         Piece::White == GetBoardModel()->GetBoard()->GetWhoseTurn() ?
+                         Piece::White == GetBoardModel()->GetBoard()->GameState().GetWhoseTurn() ?
                          m_lightSquareColor : m_darkSquareColor);
         painter.setPen(outline_pen);
         painter.drawRect(indicator_rect);
@@ -657,18 +682,18 @@ void board_view_p::paint_board(QPainter &painter, const QRect &update_rect)
 
     // Apply any square highlighting
     painter.save();
-    for(typename Map<ISquare const *, SquareFormatOptions>::const_iterator iter = m_formatOpts.begin();
+    for(typename Map<QModelIndex, SquareFormatOptions>::const_iterator iter = m_formatOpts.begin();
         iter != m_formatOpts.end();
         ++iter)
     {
-        ISquare const *sqr = iter->Key();
+        ISquare const *sqr = GetBoardModel()->ConvertIndexToSquare(iter->Key());
 
         QRectF cur_rect = item_rect(sqr->GetColumn(), sqr->GetRow());
         QPainterPath path;
         QPainterPath subtracted;
         path.addRect(cur_rect);
         subtracted.addRect(__get_shrunken_rect(cur_rect, 1.0-HIGHLIGHT_THICKNESS));
-        painter.fillPath(path.subtracted(subtracted), m_formatOpts[sqr].HighlightColor);
+        painter.fillPath(path.subtracted(subtracted), iter->Value().HighlightColor);
     }
     painter.restore();
 
@@ -683,6 +708,21 @@ void board_view_p::paint_board(QPainter &painter, const QRect &update_rect)
         }
     }
 
+
+    // If we're dragging then paint the piece being dragged (always paint at the end so it's on top)
+    if(m_dragging && m_activeSquare.isValid())
+    {
+        QPoint cur_pos = mapFromGlobal(QCursor::pos());
+        Piece const *active_piece = GetBoardModel()->ConvertIndexToSquare(m_activeSquare)->GetPiece();
+
+        QRectF r(cur_pos.x() - GetSquareSize()/2 + horizontalOffset(),
+                 cur_pos.y() - GetSquareSize()/2 + verticalOffset(),
+                 GetSquareSize(), GetSquareSize());
+
+        if(active_piece)
+            paint_piece_at(*active_piece, r, painter);
+    }
+
     // Any debug drawing?
 //    painter.setPen(Qt::red);
 //    painter.drawPoint(temp_point);
@@ -694,14 +734,19 @@ void board_view_p::SetBoardModel(BoardModel *bm)
     ClearSquareHighlighting();
 
     // Disconnect the old model
-    if(model())
-        disconnect(GetBoardModel(), SIGNAL(NotifyPieceMoved(const Piece &, const QModelIndex &, const QModelIndex &)),
-                   this, SLOT(_piece_moved(const Piece &, const QModelIndex &, const QModelIndex &)));
+    if(model()){
+        disconnect(GetBoardModel()->GetBoard(), SIGNAL(NotifyPieceAboutToBeMoved(const GKChess::AbstractBoard::MoveData &)),
+                   this, SLOT(_piece_about_to_move(const GKChess::AbstractBoard::MoveData &)));
+        disconnect(GetBoardModel()->GetBoard(), SIGNAL(NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &)),
+                   this, SLOT(_piece_moved(const GKChess::AbstractBoard::MoveData &)));
+    }
 
     setModel(bm);
 
-    connect(bm, SIGNAL(NotifyPieceMoved(const Piece &, const QModelIndex &, const QModelIndex &)),
-            this, SLOT(_piece_moved(const Piece &, const QModelIndex &, const QModelIndex &)));
+    connect(bm->GetBoard(), SIGNAL(NotifyPieceAboutToBeMoved(const GKChess::AbstractBoard::MoveData &)),
+            this, SLOT(_piece_about_to_move(const GKChess::AbstractBoard::MoveData &)));
+    connect(bm->GetBoard(), SIGNAL(NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &)),
+            this, SLOT(_piece_moved(const GKChess::AbstractBoard::MoveData &)));
 
     updateGeometries();
 }
@@ -805,12 +850,11 @@ void board_view_p::animate_move(const Piece &p, const QPointF &source, const QPo
 
 void board_view_p::HighlightSquare(const QModelIndex &i, const QColor &c)
 {
-    ISquare const *s = GetBoardModel()->ConvertIndexToSquare(i);
-    if(s)
+    if(i.isValid())
     {
         SquareFormatOptions sfo;
         sfo.HighlightColor = c;
-        m_formatOpts[s] = sfo;
+        m_formatOpts[i] = sfo;
         viewport()->update();
     }
 }
@@ -821,9 +865,8 @@ void board_view_p::HighlightSquares(const QModelIndexList &il, const QColor &c)
     sfo.HighlightColor = c;
     foreach(const QModelIndex &i, il)
     {
-        ISquare const *s = GetBoardModel()->ConvertIndexToSquare(i);
-        if(s)
-            m_formatOpts[s] = sfo;
+        if(i.isValid())
+            m_formatOpts[i] = sfo;
     }
     viewport()->update();
 }
@@ -847,22 +890,145 @@ QRectF board_view_p::get_board_rect() const
     return ret;
 }
 
+void board_view_p::mousePressEvent(QMouseEvent *ev)
+{
+    GASSERT(m_dragOffset.isNull());
+
+    if(!Editable() ||
+            QAbstractAnimation::Running == get_animation()->state())
+        return;
+
+    QModelIndex ind = indexAt(ev->pos());
+    if(ind.isValid())
+    {
+        QPoint p(ev->pos());
+        Piece target_piece = ind.data(BoardModel::PieceRole).value<Piece>();
+        if(target_piece.IsNull())
+            return;
+
+        if(m_activeSquare.isValid())
+        {
+            Piece active_piece = m_activeSquare.data(BoardModel::PieceRole).value<Piece>();
+            m_wasSquareActiveWhenPressed = m_activeSquare == ind;
+
+            if(target_piece.GetAllegience() != active_piece.GetAllegience())
+                return;
+        }
+
+        m_activeSquare = ind;
+
+        // Remember where they clicked, so we can start dragging if they pull away from this spot
+        m_mousePressLoc = ev->pos();
+
+        // Add highlighting to the active square
+        ClearSquareHighlighting();
+        HighlightSquare(m_activeSquare, GetActiveSquareHighlightColor());
+
+        viewport()->update();
+
+        GASSERT(m_activeSquare.isValid());
+    }
+
+    _update_cursor_at_point(ev->posF());
+}
+
+void board_view_p::mouseReleaseEvent(QMouseEvent *ev)
+{
+    if(m_activeSquare.isValid())
+    {
+        QModelIndex ind_active = m_activeSquare;
+        QModelIndex ind_released = indexAt(ev->pos());
+        m_activeSquare = QModelIndex();
+
+        if(ind_released.isValid())
+        {
+            if(ind_active == ind_released)
+            {
+                // If they released on the square they started on, then it leaves that square activated
+                //  But if the square was already active, then we make it inactive if they click it.
+                if(!m_wasSquareActiveWhenPressed)
+                    m_activeSquare = ind_active;
+            }
+            else
+            {
+                // If they released on a different square, then execute a move
+                attempt_move(ind_active, ind_released);
+            }
+        }
+        else
+        {
+            // If they dropped the piece off the board, snap it back to the start location
+            if(m_dragging)
+                animate_snapback(ev->pos(), ind_active);
+        }
+    }
+
+    m_dragging = false;
+    m_mousePressLoc = QPoint();
+    m_wasSquareActiveWhenPressed = false;
+
+    if(!m_activeSquare.isValid())
+        ClearSquareHighlighting();
+    viewport()->update();
+
+    _update_cursor_at_point(ev->posF());
+}
+
 void board_view_p::mouseMoveEvent(QMouseEvent *ev)
 {
     QAbstractItemView::mouseMoveEvent(ev);
 
-    if(get_board_rect().contains(ev->posF()))
+    if(get_board_rect().translated(-horizontalOffset(), -verticalOffset()).contains(ev->posF()))
     {
         setCurrentIndex(indexAt(ev->pos()));
     }
+
+    if(m_activeSquare.isValid())
+    {
+        ClearSquareHighlighting();
+
+        // Highlight the valid squares for moving
+        QModelIndexList valid_moves;
+        valid_moves.append(m_activeSquare);
+
+        // Todo:  Generate a list of valid moves for the piece
+
+        HighlightSquares(valid_moves, GetActiveSquareHighlightColor());
+
+
+        // Next we want to highlight the square the user is hovering over
+        QModelIndex ind = indexAt(ev->pos());
+        if(ind.isValid() && ind != m_activeSquare)
+            HighlightSquare(ind, GetBoardModel()->ValidateMove(m_activeSquare, ind) ? Qt::green : Qt::red);
+    }
+
+    if(Editable() && !m_mousePressLoc.isNull())
+    {
+        double side = DRAG_START_RECT_SIZE*GetSquareSize();
+        if(!QRect(m_mousePressLoc.x()-side/2, m_mousePressLoc.y()-side/2, side, side)
+                .contains(ev->pos()))
+        {
+            m_dragging = true;
+        }
+        viewport()->update();
+    }
+
+    _update_cursor_at_point(ev->posF());
 }
 
-void board_view_p::mouseDoubleClickEvent(QMouseEvent *)
+void board_view_p::mouseDoubleClickEvent(QMouseEvent *ev)
 {
-    // Suppress this event, because we don't want to open an editor
+    // Only allow this event to our our subclass if we are editable
+    if(Editable())
+        QAbstractItemView::mouseDoubleClickEvent(ev);
 }
 
-void board_view_p::_piece_moved(const Piece &p, const QModelIndex &s, const QModelIndex &d)
+void board_view_p::_piece_about_to_move(const AbstractBoard::MoveData &md)
+{
+
+}
+
+void board_view_p::_piece_moved(const AbstractBoard::MoveData &md)
 {
     // Animate the piece moving
     if(QAnimationGroup::Running == m_animationGroup->state())
@@ -873,14 +1039,32 @@ void board_view_p::_piece_moved(const Piece &p, const QModelIndex &s, const QMod
     else
     {
         // Since we're not running, start a new animation
-        piece_animation_p *anim(new piece_animation_p);
-        anim->hidden_index = s;
-        anim->piece = p;
-        m_animationGroup->addAnimation(anim);
+//        piece_animation_p *anim(new piece_animation_p);
+//        anim->hidden_index = s;
+//        anim->piece = p;
+//        m_animationGroup->addAnimation(anim);
 
-        hide_piece_at_index(anim->hidden_index);
-        m_animationGroup->start();
+//        hide_piece_at_index(anim->hidden_index);
+//        m_animationGroup->start();
     }
+}
+
+void board_view_p::_update_cursor_at_point(const QPointF &pt)
+{
+    if(!Editable())
+        setCursor(CURSOR_DEFAULT);
+    else if(m_dragging)
+        setCursor(Qt::ClosedHandCursor);
+    else if(get_board_rect().contains(QPoint(pt.x()+horizontalOffset(), pt.y()+verticalOffset())))
+    {
+        QModelIndex ind = indexAt(pt.toPoint());
+        if(ind.isValid() && !ind.data(BoardModel::PieceRole).isNull())
+            setCursor(Qt::OpenHandCursor);
+        else
+            setCursor(CURSOR_DEFAULT);
+    }
+    else
+        setCursor(CURSOR_DEFAULT);
 }
 
 
@@ -980,6 +1164,15 @@ BoardModel *BoardView::GetBoardModel() const
 void BoardView::SetBoardModel(BoardModel *bm)
 {
     v->SetBoardModel(bm);
+}
+
+bool BoardView::Editable() const
+{
+    return v->Editable();
+}
+void BoardView::SetEditable(bool b)
+{
+    v->SetEditable(b);
 }
 
 

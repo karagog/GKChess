@@ -14,8 +14,7 @@ limitations under the License.*/
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "gkchess_gamelogic.h"
-#include "gkchess_editableboardmodel.h"
+#include "gkchess_boardmodel.h"
 #include "gkchess_pgn_parser.h"
 #include <QFile>
 #include <QColorDialog>
@@ -34,15 +33,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->sldr_squareSize->setValue(ui->boardView->GetSquareSize());
 
-    //m_game.SetupNewGame();
+    m_gameLogic.SetupNewGame(m_board);
 
-    ui->boardView->SetBoardModel(new EditableBoardModel(&m_board));
+    ui->boardView->SetBoardModel(new BoardModel(&m_board));
     ui->boardView->SetIconFactory(&m_iconFactory);
+    ui->boardView->GetBoardModel()->SetGameLogic(&m_gameLogic);
+    //ui->boardView->SetEditable(false);
 
-    connect(&m_board, SIGNAL(NotifySquareUpdated(int,int)),
+    connect(&m_board, SIGNAL(NotifySquareUpdated(const GKChess::ISquare &)),
             this, SLOT(_update()));
 
-    m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
+    //m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
     //m_board.FromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     _update();

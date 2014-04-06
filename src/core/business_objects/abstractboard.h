@@ -21,6 +21,7 @@ limitations under the License.*/
 namespace GKChess{
 
 class ISquare;
+class PGN_MoveData;
 
 
 /** Describes a chess board interface. */
@@ -28,93 +29,146 @@ class AbstractBoard :
         public QObject
 {
     Q_OBJECT
-    GUTIL_DISABLE_COPY(AbstractBoard);
+    GUTIL_DISABLE_COPY(AbstractBoard);    
 public:
+
+    /** The board class has no concept of what these variables mean, it just stores the data. */
+    class IGameState
+    {
+    public:
+        /** Whose turn it is. */
+        virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
+        virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
+
+        /** A castle column, 0 based. If this castling move has been executed, or otherwise
+         *  the opportunity ruined, it will be -1
+        */
+        virtual int GetCastleWhite1() const = 0;
+        virtual void SetCastleWhite1(int) = 0;
+        /** A castle column, 0 based. If this castling move has been executed, or otherwise
+         *  the opportunity ruined, it will be -1
+        */
+        virtual int GetCastleWhite2() const = 0;
+        virtual void SetCastleWhite2(int) = 0;
+        /** A castle column, 0 based. If this castling move has been executed, or otherwise
+         *  the opportunity ruined, it will be -1
+        */
+        virtual int GetCastleBlack1() const = 0;
+        virtual void SetCastleBlack1(int) = 0;
+        /** A castle column, 0 based. If this castling move has been executed, or otherwise
+         *  the opportunity ruined, it will be -1
+        */
+        virtual int GetCastleBlack2() const = 0;
+        virtual void SetCastleBlack2(int) = 0;
+
+        /** The en passant square, if there is one. If not then this is null. */
+        virtual ISquare const *GetEnPassantSquare() const = 0;
+        virtual void SetEnPassantSquare(ISquare const *) = 0;
+
+        /** The current number of half-moves since the last capture or pawn advance.
+         *  This is used for determining a draw from lack of progress.
+        */
+        virtual int GetHalfMoveClock() const = 0;
+        virtual void SetHalfMoveClock(int) = 0;
+
+        /** Returns the current full move number. */
+        virtual int GetFullMoveNumber() const = 0;
+        virtual void SetFullMoveNumber(int) = 0;
+
+        virtual ~IGameState(){}
+
+    };
+
+
+
+    /** Holds all the information we need to do a move. */
+    struct MoveData
+    {
+        /** The half-move number for the move. */
+        int PlyNumber;
+
+        /** The starting square.  If the move was a castle this will be null. */
+        ISquare const *Source;
+
+        /** The ending square.  If the move was a castle this will be null. */
+        ISquare const *Destination;
+
+        /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
+        enum CastleTypeEnum
+        {
+            NoCastle = 0,
+            CastleNormal = 1,
+            CastleQueenside = -1
+        }
+        CastleType;
+
+        /** The piece being moved. */
+        Piece PieceMoved;
+
+        /** The captured piece, if any. If this is type NoPiece then the
+         *  move did not involve a capture.
+        */
+        Piece PieceCaptured;
+
+        /** The piece that was promoted, if any. If this is type NoPiece then the
+         *  move did not involve a promotion. */
+        Piece PiecePromoted;
+
+        /** The position of the board before the move, in FEN notation. */
+        GUtil::String CurrentPosition_FEN;
+
+        /** Returns true if this is a null move data (default constructed). */
+        bool IsNull() const{ return -1 == PlyNumber; }
+
+        MoveData()
+            :PlyNumber(-1),
+              Source(0),
+              Destination(0),
+              CastleType(NoCastle)
+        {}
+
+    };
+
+
 
     AbstractBoard(QObject * = 0);
     virtual ~AbstractBoard();
+
+    /** Populates this board with the position given in X-FEN notation.
+
+        This has a default implementation that should work for all board
+        implementations, but it is left virtual in case you want to optimize it
+        for your board implementation.
+    */
+    virtual void FromFEN(const GUtil::String &);
+
+    /** Serializes the board object into a FEN string.
+        \note The default implementation should work for all board implementations,
+        but it is left virtual in case you want to customize/optimize it.
+    */
+    virtual GUtil::String ToFEN() const;
 
     /** Sets a piece on the square. If the square was occupied then
      *  it will simply be replaced by the new one. If you pass Piece::NoPiece
      *  then the space will be cleared.
      *
-     *  You must emit NotifySquareUpdated() as part of the interface.
+     *  The signal NotifySquareUpdated will be emitted.
      *
-     * \warning It is not the responsibility of this class to check inputs for valid bounds
+     *  \warning It is not the responsibility of this class to check inputs for valid bounds
     */
-    virtual void SetPiece(const Piece &, int column, int row) = 0;
+    void SetPiece(const Piece &, ISquare const &);
 
     /** Convenience function returns the piece on the given square. */
     Piece const *GetPiece(int column, int row) const;
 
-    /** Moves the piece from the source index to the dest index.
-     *  You must emit NotifyPieceMoved() in the implementation.
-    */
-    virtual void MovePiece(int source_col, int source_row, int dest_col, int dest_row) = 0;
+    /** Moves based on a MoveData object. You can create one via GenerateMoveData. */
+    void Move(const MoveData &);
 
-    /** Returns the square at the given column and row.
-     *  The square is valid as long as the board is.
+    /** Returns a reference to the square at the given column and row.
+     *  The square is valid as long as the board is, so you can safely pass around pointers to it.
      * \warning It is not the responsibility of this class to check inputs for valid bounds
     */
     virtual ISquare const &SquareAt(int column, int row) const = 0;
-
-
-    /** Returns who has the current turn. */
-    virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
-
-    /** Sets who has the current turn. */
-    virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
-
-
-    /** Returns the castle information, which is represented as the files of the rooks'
-     *  initial positions.  If So in standard chess this is (0,7), but is flexible enough
-     *  to support non-standard chess variants where the rooks can be elsewhere.
-     *
-     *  \returns A char with the first 4 bits as the first rook position, and the last 4
-     *  bits as the second rook position.  The position is given as a base-1 index, so you
-     *  can compare this char with 0 to see if castling is available at all before testing
-     *  further.  This is done for efficiency's sake, so you can quickly query the castle info.
-     *
-     *  \note The order doesn't matter in the return value, you can treat it as an unordered pair
-     *  of values.
-    */
-    virtual GUINT8 GetCastleInfo(Piece::AllegienceEnum) const = 0;
-
-    /** Sets the castle info for the allegience.
-     *
-     *  \param info A char with the first 4 bits as the first rook position, and the last 4
-     *  bits as the second rook position.  The position is given as a base-1 index, so you
-     *  can compare this char with 0 to see if castling is available at all before testing
-     *  further.  This is done for efficiency's sake, so you can quickly query the castle info.
-     *
-     *  \note The order doesn't matter in the parameter, you can treat it as an unordered pair
-     *  of values.
-    */
-    virtual void SetCastleInfo(Piece::AllegienceEnum, GUINT8 info) = 0;
-
-
-    /** Returns the en passant square, if there is one. If not then returns null. */
-    virtual ISquare const *GetEnPassantSquare() const = 0;
-
-    /** Sets the en passant square, or clears it if you pass null */
-    virtual void SetEnPassantSquare(ISquare const *) = 0;
-
-
-    /** Returns the current number of half-moves since the last capture or pawn advance.
-     *  This is used for determining a draw from lack of progress.
-    */
-    virtual int GetHalfMoveClock() const = 0;
-
-    /** Sets the current half-move clock. */
-    virtual void SetHalfMoveClock(int) = 0;
-
-
-    /** Returns the current full-move number. */
-    virtual int GetFullMoveNumber() const = 0;
-
-    /** Sets the current full-move number. */
-    virtual void SetFullMoveNumber(int) = 0;
-
 
     /** Returns the number of rows. */
     virtual int RowCount() const = 0;
@@ -122,33 +176,51 @@ public:
     /** Returns the number of columns. */
     virtual int ColumnCount() const = 0;
 
+    /** Returns the current game state, as a reference for best performance. */
+    virtual IGameState const &GameState() const = 0;
+
+    /** Returns the current game state, as a reference for best performance. You
+     *  modify it directly.
+    */
+    virtual IGameState &GameState() = 0;
+
+    /** Returns a list of squares occupied by the type of piece specified.
+     *  The list will be empty if there are no such pieces on the board.
+     *
+     *  This lookup should be done at least as good as O(log(N)) time, where N is the
+     *  number of different types of pieces.
+    */
+    virtual GUtil::Vector<ISquare const *> FindPieces(const Piece &) const = 0;
+
     /** This function has a basic implementation provided for convenience, which merely
      *  iterates through the squares and removes their pieces. Override it if you like.
     */
     virtual void Clear();
-    
-    /** Populates this board with the position given in X-FEN notation.
-        
-        This has a default implementation that should work for all board
-        implementations, but it is left virtual in case you want to optimize it
-        for your board implementation.
-    */
-    virtual void FromFEN(const GUtil::String &);
-    
-    /** Serializes the board object into a FEN string. 
-        \note The default implementation should work for all board implementations,
-        but it is left virtual in case you want to customize/optimize it. 
-    */
-    virtual GUtil::String ToFEN() const;
 
 
 signals:
 
-    /** The implementation needs to notify whenever a square has been updated. */
-    void NotifySquareUpdated(int col, int row);
+    /** This signal is emitted to notify whenever a square is about to be updated with SetPiece(). */
+    void NotifySquareAboutToBeUpdated(const GKChess::ISquare &);
 
-    /** The implementation needs to emit this whenever a piece is moved. */
-    void NotifyPieceMoved(const Piece &, int s_col, int s_row, int d_col, int d_row);
+    /** This signal is emitted to notify whenever a square has been updated with SetPiece(). */
+    void NotifySquareUpdated(const GKChess::ISquare &);
+
+
+    /** This signal is emitted whenever a piece is about to be moved with the Move() function. */
+    void NotifyPieceAboutToBeMoved(const GKChess::AbstractBoard::MoveData &);
+
+    /** This signal is emitted whenever a piece is moved with the Move() function. */
+    void NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &);
+
+
+protected:
+
+    /** You must implement moving pieces, but don't emit any signals. */
+    virtual void move_p(const MoveData &) = 0;
+
+    /** You must implement setting pieces on the board, but don't emit any signals. */
+    virtual void set_piece_p(const Piece &, int col, int row) = 0;
 
 };
 

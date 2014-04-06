@@ -78,6 +78,9 @@ public:
     /** Removes all highlighting from the board. */
     void ClearSquareHighlighting();
 
+    bool Editable() const;
+    void SetEditable(bool);
+
 };
 
 

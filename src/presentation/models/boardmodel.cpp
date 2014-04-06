@@ -23,36 +23,29 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS1(UI);
 
 
-BoardModel::BoardModel(AbstractBoard const *b, QObject *parent)
+BoardModel::BoardModel(AbstractBoard *b, QObject *parent)
     :QAbstractTableModel(parent),
-      m_board(b)
+      m_board(b),
+      i_logic(0)
 {
-    connect(b, SIGNAL(NotifySquareUpdated(int, int)),
-            this, SLOT(_square_updated(int, int)));
-    connect(b, SIGNAL(NotifyPieceMoved(const Piece &,int,int,int,int)),
-            this, SLOT(_piece_moved(const Piece &,int,int,int,int)));
+    connect(b, SIGNAL(NotifySquareUpdated(const GKChess::ISquare &)),
+            this, SLOT(_square_updated(const GKChess::ISquare &)));
+    connect(b, SIGNAL(NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &)),
+            this, SLOT(_piece_moved(const GKChess::AbstractBoard::MoveData &)));
 }
 
-
-void BoardModel::SetMoveValidator(IMoveValidator *mv)
+void BoardModel::SetGameLogic(IGameLogic *l)
 {
-    i_validator = mv;
+    i_logic = l;
 }
 
-BoardModel::MoveValidationEnum BoardModel::ValidateMove(const AbstractBoard &b,
-                                                        const ISquare &s, const ISquare &d) const
+bool BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
 {
-    MoveValidationEnum ret = ValidMove;
-    if(i_validator)
-        ret = i_validator->ValidateMove(b, s, d);
-    return ret;
-}
-
-Vector<ISquare const *> BoardModel::GetValidMovesForSquare(const AbstractBoard &b, const ISquare &s) const
-{
-    Vector<ISquare const *> ret;
-    if(i_validator)
-        ret = i_validator->GetValidMovesForSquare(b, s);
+    bool ret = false;
+    if(i_logic && s.isValid() && d.isValid()){
+        ret = IGameLogic::ValidMove ==
+                i_logic->ValidateMove(*m_board, *ConvertIndexToSquare(s), *ConvertIndexToSquare(d));
+    }
     return ret;
 }
 
@@ -104,6 +97,10 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
                 if(p)
                     ret = QString(QChar(p->UnicodeValue()));
                 break;
+            case Qt::EditRole:
+                if(p)
+                    ret = QString(QChar(p->ToFEN()));
+                break;
             case Qt::ToolTipRole:
                 if(p)
                     ret = p->ToString(true).ToQString();
@@ -120,6 +117,79 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
             case PieceRole:
                 if(p)
                     ret.setValue(*p);
+                break;
+            case ValidMovesRole:
+            {
+                if(i_logic)
+                {
+                    QModelIndexList il;
+                    Vector<ISquare const *> tmp = i_logic->GetValidMovesForSquare(*m_board, *s);
+                    G_FOREACH_CONST(ISquare const *sqr, tmp){
+                        il.append(index(sqr->GetRow(), sqr->GetColumn()));
+                    }
+                    ret.setValue(il);
+                }
+                return ret;
+
+            }
+                break;
+            default: break;
+            }
+        }
+    }
+    return ret;
+}
+
+bool BoardModel::setData(const QModelIndex &ind, const QVariant &v, int r)
+{
+    bool ret = false;
+    if(ind.isValid())
+    {
+        ISquare const *sqr = ConvertIndexToSquare(ind);
+        Piece const *cur_piece = sqr->GetPiece();
+        if(Qt::UserRole <= r)
+        {
+            switch((CustomDataRoleEnum)r)
+            {
+            case PieceRole:
+            {
+                Piece new_piece = v.value<Piece>();
+                if(!new_piece.IsNull()){
+                    m_board->SetPiece(new_piece, *sqr);
+                    ret = true;
+                }
+            }
+                break;
+            default: break;
+            }
+        }
+        else
+        {
+            switch((Qt::ItemDataRole)r)
+            {
+            case Qt::EditRole:
+            {
+                QString s = v.toString();
+                if(s.length() == 0)
+                {
+                    // Clear the square
+                    if(NULL != cur_piece)
+                    {
+                        m_board->SetPiece(Piece(), *sqr);
+                        ret = true;
+                    }
+                }
+                else if(1 == s.length())
+                {
+                    // Set a piece if it's valid and different
+                    Piece p = Piece::FromFEN(s[0].toAscii());
+                    if(!p.IsNull() && (NULL == cur_piece || p != *cur_piece))
+                    {
+                        m_board->SetPiece(p, *sqr);
+                        ret = true;
+                    }
+                }
+            }
                 break;
             default: break;
             }
@@ -162,17 +232,22 @@ QVariant BoardModel::headerData(int indx, Qt::Orientation o, int role) const
     return ret;
 }
 
-void BoardModel::_square_updated(int c, int r)
+void BoardModel::_square_updated(const ISquare &s)
 {
-    QModelIndex i( index(r, c) );
+    QModelIndex i( index(s.GetRow(), s.GetColumn()) );
     emit dataChanged(i, i);
 }
 
-void BoardModel::_piece_moved(const Piece &p, int sc, int sr, int dc, int dr)
+void BoardModel::_piece_moved(const AbstractBoard::MoveData &md)
 {
-    QModelIndex i1( index(sr, sc) );
-    QModelIndex i2( index(dr, dc) );
-    emit NotifyPieceMoved(p, i1, i2);
+    QModelIndex i = index(md.Destination->GetRow(), md.Destination->GetColumn());
+
+    // We need to notify views that the source and dest squares will be updated
+    // As a simplification, we notify that the entire source row was updated, to simplify
+    //  special cases like enpassant and castling, which result in other squares to need updating,
+    //  but they are always along the rank of the source square.
+    emit dataChanged(index(md.Source->GetRow(), 0), index(md.Source->GetRow(), columnCount() - 1));
+    emit dataChanged(i, i);
 }
 
 Qt::ItemFlags BoardModel::flags(const QModelIndex &ind) const
@@ -180,7 +255,10 @@ Qt::ItemFlags BoardModel::flags(const QModelIndex &ind) const
     Qt::ItemFlags ret;
     if(ind.isValid())
     {
-        ret |= Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+        ret |= Qt::ItemIsEnabled
+                | Qt::ItemIsSelectable
+                | Qt::ItemIsEditable
+                ;
     }
     return ret;
 }
@@ -212,6 +290,75 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
             }
         }
     }
+    return ret;
+}
+
+void BoardModel::MovePiece(const QModelIndex &source, const QModelIndex &dest, IGameLogic::IPlayerResponse *player)
+{
+    if(i_logic && source.isValid() && dest.isValid())
+    {
+        ISquare const *s = ConvertIndexToSquare(source);
+        ISquare const *d = ConvertIndexToSquare(dest);
+        IGameLogic::MoveValidationEnum res = i_logic->ValidateMove(*m_board, *s, *d);
+        if(IGameLogic::ValidMove == res){
+            AbstractBoard::MoveData md = i_logic->GenerateMoveData(*m_board, *s, *d, player);
+            if(!md.IsNull())
+                m_board->Move(md);
+        }
+    }
+}
+
+bool BoardModel::dropMimeData(const QMimeData *data,
+                              Qt::DropAction action,
+                              int row,
+                              int column,
+                              const QModelIndex &parent)
+{
+    bool ret = false;
+    if(data && parent.isValid() && -1 == row && -1 == column)
+    {
+        QByteArray b = data->data(MIMETYPE_GKCHESS_PIECE);
+        QList<QByteArray> l = b.split(':');
+        if(!l.isEmpty() && !l[0].isEmpty())
+        {
+            int s_col(-1), s_row(-1);
+            if(1 < l.length())
+            {
+                // Parse the position information
+                QList<QByteArray> l2 = l[1].split(',');
+                if(2 == l2.length())
+                {
+                    bool ok1 = false, ok2 = false;
+                    int tmp1 = l2[0].toInt(&ok1);
+                    int tmp2 = l2[1].toInt(&ok2);
+                    if(ok1 && ok2 &&
+                            0 <= tmp1 && tmp1 < columnCount() &&
+                            0 <= tmp2 && tmp2 < rowCount())
+                    {
+                        s_col = tmp1;
+                        s_row = tmp2;
+                    }
+                }
+            }
+
+            switch(action)
+            {
+            case Qt::MoveAction:
+                if(1 <= l[0].length() && -1 != s_col && -1 != s_row)
+                {
+                    ret = setData(parent, QString::fromAscii(l[0]), Qt::EditRole);
+                    if(ret)
+                    {
+                        // Clear the source square
+                        setData(index(s_row, s_col), "", Qt::EditRole);
+                    }
+                }
+                break;
+            default: break;
+            }
+        }
+    }
+
     return ret;
 }
 

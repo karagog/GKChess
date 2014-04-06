@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_abstractboard.h"
 #include "gkchess_piece.h"
 #include "gkchess_isquare.h"
+#include "gutil_map.h"
 
 namespace GKChess{
 
@@ -49,14 +50,45 @@ class Board :
         /** This function is not part of the interface, but it's necessary anyways */
         void SetPiece(const Piece &p);
     };
+
+    class GameState : public IGameState
+    {
+        Piece::AllegienceEnum WhoseTurn;
+        int CastleWhite1;
+        int CastleWhite2;
+        int CastleBlack1;
+        int CastleBlack2;
+        ISquare const *EnPassantSquare;
+        int HalfMoveClock;
+        int FullMoveNumber;
+    public:
+        Piece::AllegienceEnum GetWhoseTurn() const{ return WhoseTurn; }
+        void SetWhoseTurn(Piece::AllegienceEnum v){ WhoseTurn=v; }
+        int GetCastleWhite1() const{ return CastleWhite1; }
+        void SetCastleWhite1(int v){ CastleWhite1=v; }
+        int GetCastleWhite2() const{ return CastleWhite2; }
+        void SetCastleWhite2(int v){ CastleWhite2=v; }
+        int GetCastleBlack1() const{ return CastleBlack1; }
+        void SetCastleBlack1(int v){ CastleBlack1=v; }
+        int GetCastleBlack2() const{ return CastleBlack2; }
+        void SetCastleBlack2(int v){ CastleBlack2=v; }
+        ISquare const *GetEnPassantSquare() const{ return EnPassantSquare; }
+        void SetEnPassantSquare(ISquare const *v){ EnPassantSquare=v; }
+        int GetHalfMoveClock() const{ return HalfMoveClock; }
+        void SetHalfMoveClock(int v){ HalfMoveClock=v; }
+        int GetFullMoveNumber() const{ return FullMoveNumber; }
+        void SetFullMoveNumber(int v){ FullMoveNumber=v; }
+        GameState();
+        GameState(const IGameState &);
+    };
     
     GUtil::Vector<Square> m_squares;
-    Piece::AllegienceEnum m_currentTurn;
-    int m_halfMoveClock;
-    int m_fullMoveNumber;
-    ISquare const *m_enPassantSquare;
-    GUINT8 m_whiteCastleInfo;
-    GUINT8 m_blackCastleInfo;
+    GameState m_gameState;
+
+    // These facilitate fast piece lookups
+    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_whitePieceIndex;
+    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_blackPieceIndex;
+
 public:
 
     explicit Board(QObject *parent = 0);
@@ -70,20 +102,29 @@ public:
     */
     virtual int ColumnCount() const;
     virtual int RowCount() const;
-    virtual void SetPiece(const Piece &, int column, int row);
-    virtual void MovePiece(int, int, int, int);
     virtual ISquare const &SquareAt(int column, int row) const;
-    virtual Piece::AllegienceEnum GetWhoseTurn() const;
-    virtual void SetWhoseTurn(Piece::AllegienceEnum);
-    virtual int GetHalfMoveClock() const;
-    virtual void SetHalfMoveClock(int);
-    virtual int GetFullMoveNumber() const;
-    virtual void SetFullMoveNumber(int);
-    virtual ISquare const *GetEnPassantSquare() const;
-    virtual void SetEnPassantSquare(ISquare const *);
-    virtual GUINT8 GetCastleInfo(Piece::AllegienceEnum) const;
-    virtual void SetCastleInfo(Piece::AllegienceEnum, GUINT8);
+    virtual IGameState const &GameState() const{ return m_gameState; }
+    virtual IGameState &GameState(){ return m_gameState; }
+    virtual GUtil::Vector<ISquare const *> FindPieces(const Piece &) const;
     /** \}*/
+
+
+protected:
+
+    /** \name AbstractBoard interface
+     *  \{
+    */
+    virtual void set_piece_p(const Piece &, int, int);
+    virtual void move_p(const MoveData &);
+    /** \} */
+
+
+private:
+
+    void _init();
+    Square &_square_at(int col, int row);
+    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> &_index(Piece::AllegienceEnum);
+    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> const &_index(Piece::AllegienceEnum) const;
 
 };
 

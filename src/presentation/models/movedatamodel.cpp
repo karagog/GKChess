@@ -46,7 +46,7 @@ QVariant MoveDataModel::data(const QModelIndex &i, int role) const
         switch((Qt::ItemDataRole)role)
         {
         case Qt::DisplayRole:
-            ret = md->Data.Text;
+            //ret = md->Data.Text;
             break;
         default:
             break;
