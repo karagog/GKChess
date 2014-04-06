@@ -112,7 +112,7 @@ static bool __is_path_blocked(Board const &b, ISquare const &s, ISquare const &d
     return ret;
 }
 
-GameLogic::MoveValidationEnum GameLogic::ValidateMove(const AbstractBoard &b, const ISquare &s, const ISquare &d) const
+GameLogic::MoveValidationEnum GameLogic::ValidateMove(const ISquare &s, const ISquare &d) const
 {
     Piece const *p( s.GetPiece() );
     if(NULL == p)
@@ -160,15 +160,10 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(const AbstractBoard &b, co
     return ValidMove;
 }
 
-Vector<ISquare const *> GameLogic::GetValidMovesForSquare(const AbstractBoard &, const ISquare &) const
+Vector<ISquare const *> GameLogic::GetValidMovesForSquare(const ISquare &) const
 {
     Vector<ISquare const *> ret;
     return ret;
-}
-
-void GameLogic::Move(const PGN_MoveData &md)
-{
-    Move(_translate_move_data(md));
 }
 
 void GameLogic::Move(const MoveData &m)
@@ -287,7 +282,7 @@ static bool __is_move_valid_for_king(Board const *b,
     return 1 >= col_diff_abs && 1 >= row_diff_abs;
 }
 
-GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
+IGameLogic::MoveData GameLogic::GenerateMoveData(const PGN_MoveData &m) const
 {
     MoveData ret;
     Piece::AllegienceEnum turn = m_board.GetWhoseTurn();
@@ -561,6 +556,44 @@ GameLogic::MoveData GameLogic::_translate_move_data(const PGN_MoveData &m)
 
             ret.PiecePromoted = Piece(m.PiecePromoted, turn);
         }
+    }
+
+    return ret;
+}
+
+IGameLogic::MoveData GameLogic::GenerateMoveData(const ISquare *s, const ISquare *d, IUserFeedback *uf) const
+{
+    MoveData ret;
+    bool ok = true;
+
+    // Check if there is a piece promotion
+    if(s->GetPiece() && s->GetPiece()->GetType() == Piece::Pawn)
+    {
+        int promotion_rank = Piece::White == s->GetPiece()->GetAllegience() ?
+                    7 : 0;
+        if(promotion_rank == d->GetRow())
+        {
+            ret.PiecePromoted = uf->ChoosePromotedPiece();
+
+            // If the user cancelled then we return a null move data
+            if(ret.PiecePromoted.IsNull())
+                ok = false;
+        }
+    }
+
+    if(ok)
+    {
+        ret.PlyNumber = 0;
+        ret.Source = s;
+        ret.Destination = d;
+
+        if(s->GetPiece())
+            ret.PieceMoved = *s->GetPiece();
+
+        if(d->GetPiece())
+            ret.PieceCaptured = *d->GetPiece();
+
+        ret.CurrentPosition_FEN = m_board.ToFEN();
     }
 
     return ret;

@@ -56,15 +56,14 @@ public:
     virtual void SetupNewGame(SetupTypeEnum = StandardChess);
     virtual void Move(const PGN_MoveData &);
     virtual void Move(const MoveData &);
-    virtual MoveValidationEnum ValidateMove(const AbstractBoard &, const ISquare &, const ISquare &) const;
-    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const AbstractBoard &, const ISquare &) const;
+    virtual MoveData GenerateMoveData(const ISquare *, const ISquare *, IUserFeedback *) const;
+    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
+    virtual MoveValidationEnum ValidateMove(const ISquare &source, const ISquare &dest) const;
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
     /** \} */
 
 
 private:
-
-    /** Maps a MoveData object to our own move_data type. */
-    MoveData _translate_move_data(const PGN_MoveData &);
 
     void _move(const MoveData &, bool reverse = false);
 
