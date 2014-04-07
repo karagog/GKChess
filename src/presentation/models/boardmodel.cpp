@@ -302,8 +302,12 @@ void BoardModel::MovePiece(const QModelIndex &source, const QModelIndex &dest, I
         IGameLogic::MoveValidationEnum res = i_logic->ValidateMove(*m_board, *s, *d);
         if(IGameLogic::ValidMove == res){
             AbstractBoard::MoveData md = i_logic->GenerateMoveData(*m_board, *s, *d, player);
-            if(!md.IsNull())
-                m_board->Move(md);
+            if(!md.IsNull()){
+                if(i_logic)
+                    i_logic->Move(*m_board, md);
+                else
+                    m_board->Move(md);
+            }
         }
     }
 }

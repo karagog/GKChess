@@ -52,7 +52,7 @@ public:
     void Previous();
 
     /** Returns the game logic object used by the PGN player. */
-    const GameLogic &GetGameLogic() const{ return m_game; }
+    const IGameLogic &GetGameLogic() const{ return m_game; }
 
     /** Returns the moves from the file.  This will be null if data has not been loaded. */
     PGN_Parser::Data_t const *GetPGNData() const{ return m_pgnData; }
@@ -60,7 +60,7 @@ public:
 
 private:
 
-    GameLogic m_game;
+    StandardGameLogic m_game;
     GUtil::SmartPointer<PGN_Parser::Data_t> m_pgnData;
 
 };

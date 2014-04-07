@@ -16,8 +16,9 @@ limitations under the License.*/
 #define MAINWINDOW_H
 
 #include "gkchess_board.h"
-#include "gkchess_editableboardmodel.h"
 #include "gkchess_coloredpieceiconfactory.h"
+#include "gkchess_boardmodel.h"
+#include "gkchess_gamelogic.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -30,7 +31,8 @@ class MainWindow : public QMainWindow
 
     Ui::MainWindow *ui;
     GKChess::Board m_board;
-    GKChess::UI::EditableBoardModel m_boardModel;
+    GKChess::StandardGameLogic m_gameLogic;
+    GKChess::UI::BoardModel m_boardModel;
 
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 

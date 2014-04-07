@@ -75,18 +75,18 @@ public:
         /** Invalid move because pieces can't move that way according to the rules of chess.
          *  (i.e. a pawn moving backwards).
         */
-        InvalidTechnical = 1,
+        InvalidTechnical,
 
         /** Invalid because you would be leaving the king in check. */
-        InvalidCheck = 2,
+        InvalidCheck,
 
         /** The source square does not have a piece on it. */
-        InvalidEmptySquare = 3,
+        InvalidEmptySquare,
 
         /** Invalid because there was a problem with the parameters you gave the function.
          *  For example if you didn't specify a source and destination square.
         */
-        InvalidInputError = 4,
+        InvalidInputError,
 
 
         /** If you are extending this class for your own custom rules then you'll base
@@ -95,8 +95,9 @@ public:
         CustomInvalidMoveOffset = 100
     };
 
+
     /** Sets up the board for a new game. */
-    virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess) = 0;
+    virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess) const = 0;
 
     /** Validates the move. */
     virtual MoveValidationEnum ValidateMove(const AbstractBoard &,
@@ -126,6 +127,8 @@ public:
                                                      const ISquare &source,
                                                      const ISquare &dest,
                                                      IPlayerResponse *) const = 0;
+
+    virtual void Move(AbstractBoard &, const AbstractBoard::MoveData &) = 0;
 
 };
 

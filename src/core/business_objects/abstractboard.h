@@ -130,6 +130,29 @@ public:
     };
 
 
+    /** Encodes the different ways the game could end. */
+    enum ResultTypeEnum
+    {
+        /** Means the game is still in progress; there is no result yet. */
+        Undecided = 0,
+
+        /** Game ended because of checkmate. */
+        Checkmate,
+
+        /** Game ended because a player ran out of time. */
+        TimeControl,
+
+        /** Game ended because one side resigned. */
+        Resignation,
+
+        /** The game ended in a stalemate. */
+        Stalemate,
+
+        /** The game ended in a stalemate due to the 50 moves rule. */
+        Stalemate_50Moves
+    };
+
+
 
     AbstractBoard(QObject * = 0);
     virtual ~AbstractBoard();

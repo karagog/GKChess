@@ -795,10 +795,11 @@ void board_view_p::wheelEvent(QWheelEvent *ev)
     _update_rubber_band();
 }
 
-void board_view_p::attempt_move(const QModelIndex &, const QModelIndex &)
+void board_view_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
     // Since this is a readonly model, we don't actually let them move a piece, but
     //  if you override this method you can actually move
+    GetBoardModel()->MovePiece(s, d, 0);
 }
 
 void board_view_p::animate_snapback(const QPointF &from, const QModelIndex &s)
@@ -895,6 +896,7 @@ void board_view_p::mousePressEvent(QMouseEvent *ev)
     GASSERT(m_dragOffset.isNull());
 
     if(!Editable() ||
+            !GetBoardModel()->GetGameLogic() ||
             QAbstractAnimation::Running == get_animation()->state())
         return;
 

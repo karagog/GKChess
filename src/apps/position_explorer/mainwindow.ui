@@ -16,9 +16,6 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="GKChess::UI::BoardEdit" name="boardEdit" native="true"/>
-    </item>
-    <item>
      <widget class="GKChess::UI::BoardView" name="boardView" native="true"/>
     </item>
    </layout>
@@ -73,12 +70,6 @@
    <class>GKChess::UI::PGNView</class>
    <extends>QPlainTextEdit</extends>
    <header>gkchess_pgnview.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>GKChess::UI::BoardEdit</class>
-   <extends>QWidget</extends>
-   <header>gkchess_boardedit.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

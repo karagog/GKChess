@@ -15,7 +15,6 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "gkchess_pgn_parser.h"
-#include "gkchess_gamelogic.h"
 USING_NAMESPACE_GKCHESS;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -27,12 +26,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
+    m_boardModel.SetGameLogic(&m_gameLogic);
 
     ui->boardView->SetIconFactory(&m_iconFactory);
-    ui->boardEdit->SetIconFactory(&m_iconFactory);
 
-    ui->boardView->setModel(&m_boardModel);
-    ui->boardEdit->setModel(&m_boardModel);
+    ui->boardView->SetBoardModel(&m_boardModel);
     
     //ui->boardView->hide();
 

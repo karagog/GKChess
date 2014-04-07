@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_gameLogic.SetupNewGame(m_board);
 
-    ui->boardView->SetBoardModel(new BoardModel(&m_board));
+    ui->boardView->SetBoardModel(new BoardModel(&m_board, this));
     ui->boardView->SetIconFactory(&m_iconFactory);
     ui->boardView->GetBoardModel()->SetGameLogic(&m_gameLogic);
     //ui->boardView->SetEditable(false);

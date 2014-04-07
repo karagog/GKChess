@@ -17,32 +17,38 @@ limitations under the License.*/
 
 #include "gkchess_igamelogic.h"
 #include "gutil_map.h"
-#include <QObject>
 
 namespace GKChess{
 
 
 /** Describes the game logic for standard chess. */
-class GameLogic :
-        public QObject,
+class StandardGameLogic :
         public IGameLogic
 {
-    Q_OBJECT
 public:
-
-    explicit GameLogic(QObject * = 0);
-    virtual ~GameLogic();
 
     /** \name IGameLogic interface
      *  \{
     */
-    virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess);
+    virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess) const;
     virtual AbstractBoard::MoveData GenerateMoveData(AbstractBoard const &, const ISquare &, const ISquare &, IPlayerResponse *) const;
     virtual AbstractBoard::MoveData GenerateMoveData(AbstractBoard const &, const PGN_MoveData &) const;
     virtual MoveValidationEnum ValidateMove(AbstractBoard const &, const ISquare &source, const ISquare &dest) const;
     virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(AbstractBoard const &, const ISquare &) const;
+    virtual void Move(AbstractBoard &, const AbstractBoard::MoveData &);
     /** \} */
 
+};
+
+
+/** A special case of game logic that allows all moves to proceed. */
+class AnythingGoesGameLogic :
+        public StandardGameLogic
+{
+public:
+    virtual MoveValidationEnum ValidateMove(const AbstractBoard &, const ISquare &, const ISquare &) const{
+        return ValidMove;
+    }
 };
 
 

@@ -129,15 +129,7 @@ static bool __is_move_valid_for_king(AbstractBoard const &b,
 }
 
 
-
-GameLogic::GameLogic(QObject *p)
-    :QObject(p)
-{}
-
-GameLogic::~GameLogic()
-{}
-
-void GameLogic::SetupNewGame(AbstractBoard &b, GameLogic::SetupTypeEnum ste)
+void StandardGameLogic::SetupNewGame(AbstractBoard &b, StandardGameLogic::SetupTypeEnum ste) const
 {
     switch(ste)
     {
@@ -149,14 +141,19 @@ void GameLogic::SetupNewGame(AbstractBoard &b, GameLogic::SetupTypeEnum ste)
     }
 }
 
-GameLogic::MoveValidationEnum GameLogic::ValidateMove(AbstractBoard const &b, const ISquare &s, const ISquare &d) const
+StandardGameLogic::MoveValidationEnum StandardGameLogic::ValidateMove(AbstractBoard const &b, const ISquare &s, const ISquare &d) const
 {
-    Piece const *p( s.GetPiece() );
+    Piece const *p(s.GetPiece());
+    Piece const *dp(d.GetPiece());
     if(NULL == p)
         return InvalidEmptySquare;
 
 
     // Validate the low-level technical aspects of the move, ignoring threats to the king
+
+    // Only the player whose turn it is can move pieces
+    if(p->GetAllegience() != b.GameState().GetWhoseTurn())
+        return InvalidTechnical;
 
     // A piece cannot stay in the same place if it is moving
     if(s == d)
@@ -170,12 +167,47 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(AbstractBoard const &b, co
     switch(p->GetType())
     {
     case Piece::Pawn:
+    {
+        int sign;
+        int startRank;
+        if(Piece::White == p->GetAllegience()){
+            sign = 1;
+            startRank = 1;
+        }
+        else{
+            sign = -1;
+            startRank = 6;
+        }
+
+        // non-capture
+        if(col_diff == 0)
+        {
+            technically_ok = row_diff == 1*sign || (startRank == s.GetRow() && row_diff == 2*sign);
+        }
+
+        // capture move
+        else if(col_diff_abs == 1)
+        {
+            technically_ok =
+
+                    // must be one diagonal forward
+                    row_diff == 1*sign && 1 == col_diff_abs &&
+
+                    // there must be a captured piece of the other color on the dest square
+                    ((dp && dp->GetAllegience() != p->GetAllegience()) ||
+
+                     //  or the square being captured to must be an en passant square
+                     (b.GameState().GetEnPassantSquare() && d == *b.GameState().GetEnPassantSquare()));
+        }
+    }
         break;
     case Piece::Bishop:
         if(col_diff_abs == row_diff_abs)
             technically_ok = !__is_path_blocked(b, s, d, p->GetAllegience());
         break;
     case Piece::Knight:
+        technically_ok = __is_move_valid_for_knight(b, &s, &d, p->GetAllegience()) &&
+                (!dp || dp->GetAllegience() == Piece::Black);
         break;
     case Piece::Rook:
         if(0 == col_diff_abs || 0 == row_diff_abs)
@@ -194,16 +226,22 @@ GameLogic::MoveValidationEnum GameLogic::ValidateMove(AbstractBoard const &b, co
         THROW_NEW_GUTIL_EXCEPTION(Exception);
     }
 
+    if(!technically_ok)
+        return InvalidTechnical;
+
+    if(d.GetPiece() && d.GetPiece()->GetAllegience() == p->GetAllegience())
+        return InvalidTechnical;
+
     return ValidMove;
 }
 
-Vector<ISquare const *> GameLogic::GetValidMovesForSquare(AbstractBoard const &, const ISquare &) const
+Vector<ISquare const *> StandardGameLogic::GetValidMovesForSquare(AbstractBoard const &, const ISquare &) const
 {
     Vector<ISquare const *> ret;
     return ret;
 }
 
-AbstractBoard::MoveData GameLogic::GenerateMoveData(AbstractBoard const &b, const PGN_MoveData &m) const
+AbstractBoard::MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b, const PGN_MoveData &m) const
 {
     AbstractBoard::MoveData ret;
     Piece::AllegienceEnum turn = b.GameState().GetWhoseTurn();
@@ -482,7 +520,7 @@ AbstractBoard::MoveData GameLogic::GenerateMoveData(AbstractBoard const &b, cons
     return ret;
 }
 
-AbstractBoard::MoveData GameLogic::GenerateMoveData(AbstractBoard const &b,
+AbstractBoard::MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b,
                                                     const ISquare &s,
                                                     const ISquare &d,
                                                     IPlayerResponse *uf) const
@@ -517,10 +555,49 @@ AbstractBoard::MoveData GameLogic::GenerateMoveData(AbstractBoard const &b,
         if(d.GetPiece())
             ret.PieceCaptured = *d.GetPiece();
 
-        ret.CurrentPosition_FEN = b.ToFEN();
+        //ret.CurrentPosition_FEN = b.ToFEN();
     }
 
     return ret;
+}
+
+void StandardGameLogic::Move(AbstractBoard &b, const AbstractBoard::MoveData &md)
+{
+    int inc;
+    Piece::AllegienceEnum next_turn;
+    Piece const *p( md.Source->GetPiece() );
+
+    if(md.IsNull() || NULL == p)
+        return;
+
+    b.GameState().SetHalfMoveClock(b.GameState().GetHalfMoveClock() + 1);
+    if(p->GetAllegience() == Piece::Black)
+    {
+        b.GameState().SetFullMoveNumber(b.GameState().GetFullMoveNumber() + 1);
+        next_turn = Piece::White;
+        inc = -1;
+    }
+    else
+    {
+        b.GameState().SetWhoseTurn(Piece::Black);
+        next_turn = Piece::Black;
+        inc = 1;
+    }
+    b.GameState().SetWhoseTurn(next_turn);
+
+    // Set the en-passant square
+    if(md.Source->GetPiece() && md.Source->GetPiece()->GetType() == Piece::Pawn)
+    {
+        int row_diff_abs = Abs(md.Destination->GetRow() - md.Source->GetRow());
+        if(2 == row_diff_abs)
+            b.GameState().SetEnPassantSquare(&b.SquareAt(md.Source->GetColumn(), md.Source->GetRow() + inc));
+        else
+            b.GameState().SetEnPassantSquare(0);
+    }
+    else
+        b.GameState().SetEnPassantSquare(0);
+
+    b.Move(md);
 }
 
 
