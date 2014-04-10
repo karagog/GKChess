@@ -19,6 +19,9 @@ HEADER_PREFIX = gkchess_
 # Directory patterns for which we want to ignore all headers
 IGNORE_PATHS = Test
 
+# File patterns to ignore
+IGNORE_FILES = *_p.h
+
 HEADERGEN_TARGET_DIRS = core,presentation
 
 
@@ -27,7 +30,8 @@ headers.commands = $$HEADER_CMD \
                         --output-dir=../include \
                         --input-dirs=$$HEADERGEN_TARGET_DIRS \
                         --ignore-path=$$IGNORE_PATHS \
-                        --output-prefix=$$HEADER_PREFIX
+                        --output-prefix=$$HEADER_PREFIX \
+                        --ignore-patterns=$$IGNORE_FILES
 
 PRE_TARGETDEPS =  headers
 

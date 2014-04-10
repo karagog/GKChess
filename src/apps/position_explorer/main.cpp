@@ -13,8 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "application.h"
+#include "gutil_messageboxlogger.h"
 
 int main(int argc, char *argv[])
 {
-    return PositionExplorerApplication(argc, argv).exec();
+    try
+    {
+        return PositionExplorerApplication(argc, argv).exec();
+    }
+    catch(const GUtil::Exception<> &ex)
+    {
+        GUtil::QT::MessageBoxLogger().LogException(ex);
+        return -1;
+    }
 }

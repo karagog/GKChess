@@ -30,7 +30,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     GKChess::Board m_board;
-    GKChess::GameLogic m_gameLogic;
+    GKChess::StandardGameLogic m_gameLogic;
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
 public:

@@ -15,7 +15,6 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_H
 #define GKCHESS_BOARDVIEW_H
 
-#include "gutil_smartpointer.h"
 #include "gutil_vector.h"
 #include <QWidget>
 
@@ -23,7 +22,6 @@ namespace GKChess{
     class ISquare;
     class AbstractBoard;
 namespace UI{
-
 
 class BoardModel;
 class IFactory_PieceIcon;
@@ -46,7 +44,6 @@ class BoardView :
     void *ptr;
 public:
     BoardView(QWidget * = 0);
-    ~BoardView();
 
     BoardModel *GetBoardModel() const;
     void SetBoardModel(BoardModel *);
