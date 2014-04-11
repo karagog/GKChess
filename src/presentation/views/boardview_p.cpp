@@ -544,18 +544,18 @@ void BoardView_p::SetBoardModel(BoardModel *bm)
 
     // Disconnect the old model
     if(model()){
-        disconnect(GetBoardModel()->GetBoard(), SIGNAL(NotifyPieceAboutToBeMoved(const GKChess::AbstractBoard::MoveData &)),
-                   this, SLOT(_piece_about_to_move(const GKChess::AbstractBoard::MoveData &)));
-        disconnect(GetBoardModel()->GetBoard(), SIGNAL(NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &)),
-                   this, SLOT(_piece_moved(const GKChess::AbstractBoard::MoveData &)));
+        disconnect(GetBoardModel()->GetBoard(), SIGNAL(NotifyPieceAboutToBeMoved(const GKChess::MoveData &)),
+                   this, SLOT(_piece_about_to_move(const GKChess::MoveData &)));
+        disconnect(GetBoardModel()->GetBoard(), SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
+                   this, SLOT(_piece_moved(const GKChess::MoveData &)));
     }
 
     setModel(bm);
 
-    connect(bm->GetBoard(), SIGNAL(NotifyPieceAboutToBeMoved(const GKChess::AbstractBoard::MoveData &)),
-            this, SLOT(_piece_about_to_move(const GKChess::AbstractBoard::MoveData &)));
-    connect(bm->GetBoard(), SIGNAL(NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &)),
-            this, SLOT(_piece_moved(const GKChess::AbstractBoard::MoveData &)));
+    connect(bm->GetBoard(), SIGNAL(NotifyPieceAboutToBeMoved(const GKChess::MoveData &)),
+            this, SLOT(_piece_about_to_move(const GKChess::MoveData &)));
+    connect(bm->GetBoard(), SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
+            this, SLOT(_piece_moved(const GKChess::MoveData &)));
 
     updateGeometries();
 }
@@ -834,12 +834,12 @@ void BoardView_p::mouseDoubleClickEvent(QMouseEvent *ev)
         QAbstractItemView::mouseDoubleClickEvent(ev);
 }
 
-void BoardView_p::_piece_about_to_move(const AbstractBoard::MoveData &md)
+void BoardView_p::_piece_about_to_move(const MoveData &md)
 {
 
 }
 
-void BoardView_p::_piece_moved(const AbstractBoard::MoveData &md)
+void BoardView_p::_piece_moved(const MoveData &md)
 {
     // Animate the piece moving
     if(QAnimationGroup::Running == m_animationGroup->state())

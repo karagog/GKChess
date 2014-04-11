@@ -110,7 +110,7 @@ public:
                                                                   const ISquare &) const = 0;
 
     /** Creates a MoveData object from a PGN MoveData object. */
-    virtual AbstractBoard::MoveData GenerateMoveData(const AbstractBoard &,
+    virtual MoveData GenerateMoveData(const AbstractBoard &,
                                                      const PGN_MoveData &) const = 0;
 
     /** Creates a MoveData object from a source and dest square input.
@@ -123,12 +123,12 @@ public:
      *  \returns A move data object, which is always populated except in the case of a
      *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
     */
-    virtual AbstractBoard::MoveData GenerateMoveData(const AbstractBoard &,
+    virtual MoveData GenerateMoveData(const AbstractBoard &,
                                                      const ISquare &source,
                                                      const ISquare &dest,
                                                      IPlayerResponse *) const = 0;
 
-    virtual void Move(AbstractBoard &, const AbstractBoard::MoveData &) = 0;
+    virtual void Move(AbstractBoard &, const MoveData &) = 0;
 
 };
 

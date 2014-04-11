@@ -194,8 +194,8 @@ private slots:
     void _animation_finished();
     void _update_rubber_band();
 
-    void _piece_about_to_move(const GKChess::AbstractBoard::MoveData &);
-    void _piece_moved(const GKChess::AbstractBoard::MoveData &);
+    void _piece_about_to_move(const GKChess::MoveData &);
+    void _piece_moved(const GKChess::MoveData &);
 
 
 private:

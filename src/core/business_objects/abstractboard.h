@@ -16,11 +16,16 @@ limitations under the License.*/
 #define GKCHESS_ABSTRACTBOARD_H
 
 #include "gkchess_piece.h"
+#include "gkchess_movedata.h"
+#include "gkchess_igamestate.h"
 #include <QObject>
+
+// Even though we don't need this to compile, we include it anyways for completeness of this
+//  class interface.
+#include "gkchess_isquare.h"
 
 namespace GKChess{
 
-class ISquare;
 class PGN_MoveData;
 
 
@@ -31,104 +36,6 @@ class AbstractBoard :
     Q_OBJECT
     GUTIL_DISABLE_COPY(AbstractBoard);    
 public:
-
-    /** The board class has no concept of what these variables mean, it just stores the data. */
-    class IGameState
-    {
-    public:
-        /** Whose turn it is. */
-        virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
-        virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
-
-        /** A castle column, 0 based. If this castling move has been executed, or otherwise
-         *  the opportunity ruined, it will be -1
-        */
-        virtual int GetCastleWhite1() const = 0;
-        virtual void SetCastleWhite1(int) = 0;
-        /** A castle column, 0 based. If this castling move has been executed, or otherwise
-         *  the opportunity ruined, it will be -1
-        */
-        virtual int GetCastleWhite2() const = 0;
-        virtual void SetCastleWhite2(int) = 0;
-        /** A castle column, 0 based. If this castling move has been executed, or otherwise
-         *  the opportunity ruined, it will be -1
-        */
-        virtual int GetCastleBlack1() const = 0;
-        virtual void SetCastleBlack1(int) = 0;
-        /** A castle column, 0 based. If this castling move has been executed, or otherwise
-         *  the opportunity ruined, it will be -1
-        */
-        virtual int GetCastleBlack2() const = 0;
-        virtual void SetCastleBlack2(int) = 0;
-
-        /** The en passant square, if there is one. If not then this is null. */
-        virtual ISquare const *GetEnPassantSquare() const = 0;
-        virtual void SetEnPassantSquare(ISquare const *) = 0;
-
-        /** The current number of half-moves since the last capture or pawn advance.
-         *  This is used for determining a draw from lack of progress.
-        */
-        virtual int GetHalfMoveClock() const = 0;
-        virtual void SetHalfMoveClock(int) = 0;
-
-        /** Returns the current full move number. */
-        virtual int GetFullMoveNumber() const = 0;
-        virtual void SetFullMoveNumber(int) = 0;
-
-        virtual ~IGameState(){}
-
-    };
-
-
-
-    /** Holds all the information we need to do a move. */
-    struct MoveData
-    {
-        /** The half-move number for the move. */
-        int PlyNumber;
-
-        /** The starting square.  If the move was a castle this will be null. */
-        ISquare const *Source;
-
-        /** The ending square.  If the move was a castle this will be null. */
-        ISquare const *Destination;
-
-        /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
-        enum CastleTypeEnum
-        {
-            NoCastle = 0,
-            CastleNormal = 1,
-            CastleQueenside = -1
-        }
-        CastleType;
-
-        /** The piece being moved. */
-        Piece PieceMoved;
-
-        /** The captured piece, if any. If this is type NoPiece then the
-         *  move did not involve a capture.
-        */
-        Piece PieceCaptured;
-
-        /** The piece that was promoted, if any. If this is type NoPiece then the
-         *  move did not involve a promotion. */
-        Piece PiecePromoted;
-
-        /** The position of the board before the move, in FEN notation. */
-        GUtil::String CurrentPosition_FEN;
-
-        /** Returns true if this is a null move data (default constructed). */
-        bool IsNull() const{ return -1 == PlyNumber; }
-
-        MoveData()
-            :PlyNumber(-1),
-              Source(0),
-              Destination(0),
-              CastleType(NoCastle)
-        {}
-
-    };
-
 
     /** Encodes the different ways the game could end. */
     enum ResultTypeEnum
@@ -231,10 +138,10 @@ signals:
 
 
     /** This signal is emitted whenever a piece is about to be moved with the Move() function. */
-    void NotifyPieceAboutToBeMoved(const GKChess::AbstractBoard::MoveData &);
+    void NotifyPieceAboutToBeMoved(const GKChess::MoveData &);
 
     /** This signal is emitted whenever a piece is moved with the Move() function. */
-    void NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &);
+    void NotifyPieceMoved(const GKChess::MoveData &);
 
 
 protected:

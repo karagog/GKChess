@@ -31,11 +31,11 @@ public:
      *  \{
     */
     virtual void SetupNewGame(AbstractBoard &, SetupTypeEnum = StandardChess) const;
-    virtual AbstractBoard::MoveData GenerateMoveData(AbstractBoard const &, const ISquare &, const ISquare &, IPlayerResponse *) const;
-    virtual AbstractBoard::MoveData GenerateMoveData(AbstractBoard const &, const PGN_MoveData &) const;
+    virtual MoveData GenerateMoveData(AbstractBoard const &, const ISquare &, const ISquare &, IPlayerResponse *) const;
+    virtual MoveData GenerateMoveData(AbstractBoard const &, const PGN_MoveData &) const;
     virtual MoveValidationEnum ValidateMove(AbstractBoard const &, const ISquare &source, const ISquare &dest) const;
     virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(AbstractBoard const &, const ISquare &) const;
-    virtual void Move(AbstractBoard &, const AbstractBoard::MoveData &);
+    virtual void Move(AbstractBoard &, const MoveData &);
     /** \} */
 
 };

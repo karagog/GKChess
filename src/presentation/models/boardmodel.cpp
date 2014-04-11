@@ -30,8 +30,8 @@ BoardModel::BoardModel(AbstractBoard *b, QObject *parent)
 {
     connect(b, SIGNAL(NotifySquareUpdated(const GKChess::ISquare &)),
             this, SLOT(_square_updated(const GKChess::ISquare &)));
-    connect(b, SIGNAL(NotifyPieceMoved(const GKChess::AbstractBoard::MoveData &)),
-            this, SLOT(_piece_moved(const GKChess::AbstractBoard::MoveData &)));
+    connect(b, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
+            this, SLOT(_piece_moved(const GKChess::MoveData &)));
 }
 
 void BoardModel::SetGameLogic(IGameLogic *l)
@@ -238,7 +238,7 @@ void BoardModel::_square_updated(const ISquare &s)
     emit dataChanged(i, i);
 }
 
-void BoardModel::_piece_moved(const AbstractBoard::MoveData &md)
+void BoardModel::_piece_moved(const MoveData &md)
 {
     QModelIndex i = index(md.Destination->GetRow(), md.Destination->GetColumn());
 
@@ -301,7 +301,7 @@ void BoardModel::MovePiece(const QModelIndex &source, const QModelIndex &dest, I
         ISquare const *d = ConvertIndexToSquare(dest);
         IGameLogic::MoveValidationEnum res = i_logic->ValidateMove(*m_board, *s, *d);
         if(IGameLogic::ValidMove == res){
-            AbstractBoard::MoveData md = i_logic->GenerateMoveData(*m_board, *s, *d, player);
+            MoveData md = i_logic->GenerateMoveData(*m_board, *s, *d, player);
             if(!md.IsNull()){
                 if(i_logic)
                     i_logic->Move(*m_board, md);

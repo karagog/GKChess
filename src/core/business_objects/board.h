@@ -16,11 +16,10 @@ limitations under the License.*/
 #define GKCHESS_BOARD_H
 
 #include "gkchess_abstractboard.h"
-#include "gkchess_piece.h"
-#include "gkchess_isquare.h"
-#include "gutil_map.h"
 
 namespace GKChess{
+
+class Piece;
 
 
 /** The implementation for a standard chess board.
@@ -31,63 +30,9 @@ class Board :
         public AbstractBoard
 {
     Q_OBJECT
-    
-    /** Our square implementation. */
-    class Square :
-            public ISquare
-    {
-        // For fast lookups this is implemented as quickly queryable data types
-        Piece m_piece;
-        int m_column;
-        int m_row;
-    public:
 
-        Square(int col, int row);
-        virtual int GetColumn() const;
-        virtual int GetRow() const;
-        virtual Piece const *GetPiece() const;
-
-        /** This function is not part of the interface, but it's necessary anyways */
-        void SetPiece(const Piece &p);
-    };
-
-    class GameState : public IGameState
-    {
-        Piece::AllegienceEnum WhoseTurn;
-        int CastleWhite1;
-        int CastleWhite2;
-        int CastleBlack1;
-        int CastleBlack2;
-        ISquare const *EnPassantSquare;
-        int HalfMoveClock;
-        int FullMoveNumber;
-    public:
-        Piece::AllegienceEnum GetWhoseTurn() const{ return WhoseTurn; }
-        void SetWhoseTurn(Piece::AllegienceEnum v){ WhoseTurn=v; }
-        int GetCastleWhite1() const{ return CastleWhite1; }
-        void SetCastleWhite1(int v){ CastleWhite1=v; }
-        int GetCastleWhite2() const{ return CastleWhite2; }
-        void SetCastleWhite2(int v){ CastleWhite2=v; }
-        int GetCastleBlack1() const{ return CastleBlack1; }
-        void SetCastleBlack1(int v){ CastleBlack1=v; }
-        int GetCastleBlack2() const{ return CastleBlack2; }
-        void SetCastleBlack2(int v){ CastleBlack2=v; }
-        ISquare const *GetEnPassantSquare() const{ return EnPassantSquare; }
-        void SetEnPassantSquare(ISquare const *v){ EnPassantSquare=v; }
-        int GetHalfMoveClock() const{ return HalfMoveClock; }
-        void SetHalfMoveClock(int v){ HalfMoveClock=v; }
-        int GetFullMoveNumber() const{ return FullMoveNumber; }
-        void SetFullMoveNumber(int v){ FullMoveNumber=v; }
-        GameState();
-        GameState(const IGameState &);
-    };
-    
-    GUtil::Vector<Square> m_squares;
-    GameState m_gameState;
-
-    // These facilitate fast piece lookups
-    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_whitePieceIndex;
-    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> m_blackPieceIndex;
+    // Very secret...
+    void *data;
 
 public:
 
@@ -103,8 +48,8 @@ public:
     virtual int ColumnCount() const;
     virtual int RowCount() const;
     virtual ISquare const &SquareAt(int column, int row) const;
-    virtual IGameState const &GameState() const{ return m_gameState; }
-    virtual IGameState &GameState(){ return m_gameState; }
+    virtual IGameState const &GameState() const;
+    virtual IGameState &GameState();
     virtual GUtil::Vector<ISquare const *> FindPieces(const Piece &) const;
     /** \}*/
 
@@ -122,9 +67,6 @@ protected:
 private:
 
     void _init();
-    Square &_square_at(int col, int row);
-    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> &_index(Piece::AllegienceEnum);
-    GUtil::Map<Piece::PieceTypeEnum, ISquare const *> const &_index(Piece::AllegienceEnum) const;
 
 };
 

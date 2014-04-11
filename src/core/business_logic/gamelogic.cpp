@@ -241,15 +241,15 @@ Vector<ISquare const *> StandardGameLogic::GetValidMovesForSquare(AbstractBoard 
     return ret;
 }
 
-AbstractBoard::MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b, const PGN_MoveData &m) const
+MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b, const PGN_MoveData &m) const
 {
-    AbstractBoard::MoveData ret;
+    MoveData ret;
     Piece::AllegienceEnum turn = b.GameState().GetWhoseTurn();
 
     if(m.Flags.TestFlag(PGN_MoveData::CastleNormal))
-        ret.CastleType = AbstractBoard::MoveData::CastleNormal;
+        ret.CastleType = MoveData::CastleNormal;
     else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
-        ret.CastleType = AbstractBoard::MoveData::CastleQueenside;
+        ret.CastleType = MoveData::CastleQueenside;
     else
     {
         // Validate the inputs
@@ -520,12 +520,12 @@ AbstractBoard::MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const 
     return ret;
 }
 
-AbstractBoard::MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b,
+MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b,
                                                     const ISquare &s,
                                                     const ISquare &d,
                                                     IPlayerResponse *uf) const
 {
-    AbstractBoard::MoveData ret;
+    MoveData ret;
     bool ok = true;
 
     // Check if there is a piece promotion
@@ -561,7 +561,7 @@ AbstractBoard::MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const 
     return ret;
 }
 
-void StandardGameLogic::Move(AbstractBoard &b, const AbstractBoard::MoveData &md)
+void StandardGameLogic::Move(AbstractBoard &b, const MoveData &md)
 {
     int inc;
     Piece::AllegienceEnum next_turn;

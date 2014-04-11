@@ -121,7 +121,7 @@ public:
 private slots:
 
     void _square_updated(const GKChess::ISquare &);
-    void _piece_moved(const GKChess::AbstractBoard::MoveData &);
+    void _piece_moved(const GKChess::MoveData &);
 
 };
 

@@ -47,7 +47,7 @@ class MoveDataModel :
         MoveDataCache *Parent;
         
         /** The data held within an index. */
-        AbstractBoard::MoveData Data;
+        MoveData Data;
         
         MoveDataCache(MoveDataCache *parent = 0) :Parent(parent){}
     };
