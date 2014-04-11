@@ -15,6 +15,7 @@ limitations under the License.*/
 #include "boardview_p.h"
 #include "gkchess_piece.h"
 #include "gkchess_boardmodel.h"
+#include "gkchess_board.h"
 #include "gkchess_abstractboard.h"
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_isquare.h"

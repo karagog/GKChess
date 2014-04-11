@@ -65,7 +65,7 @@ class BoardView_p :
     GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
     // Our animation objects
-    QModelIndex m_hiddenIndex;
+    GUtil::SmartPointer<AbstractBoard> m_animationBoard;
     GUtil::SmartPointer<QAnimationGroup> m_animationGroup;
 
     // Keeps track of our per-square format options
