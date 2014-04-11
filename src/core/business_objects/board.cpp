@@ -116,8 +116,8 @@ public:
   {}
 };
 
-/** This is what our data looks like, when properly casted. */
-struct board_data_t
+
+struct g_d_t
 {
     Vector<Square> squares;
     GameState gamestate;
@@ -128,13 +128,10 @@ struct board_data_t
 };
 
 
-static Map<Piece::PieceTypeEnum, ISquare const *> &__index(board_data_t *d, Piece::AllegienceEnum a)
+static Map<Piece::PieceTypeEnum, ISquare const *> &__index(g_d_t *d, Piece::AllegienceEnum a)
 {
     return Piece::White == a ? d->index_white : d->index_black;
 }
-
-
-#define _D  board_data_t *d = reinterpret_cast<board_data_t *>(data)
 
 
 Board::Board(QObject *parent)
@@ -162,9 +159,8 @@ Board::Board(const AbstractBoard &o)
 
 void Board::_init()
 {
-    // Allocate our internal data structure
-    data = new board_data_t;
-    _D;
+    G_D_INIT();
+    G_D;
 
     // Instantiate all the squares
     d->squares.ReserveExactly(NUM_COLS * NUM_ROWS);
@@ -182,8 +178,7 @@ Board &Board::operator = (const AbstractBoard &o)
 
 Board::~Board()
 {
-    _D;
-    delete d;
+    G_D_UNINIT();
 }
 
 int Board::ColumnCount() const
@@ -198,7 +193,7 @@ int Board::RowCount() const
 
 void Board::set_piece_p(const Piece &p, int col, int row)
 {
-    _D;
+    G_D;
     Square &sqr(__square_at(d->squares, col, row));
     Piece const *piece_orig = sqr.GetPiece();
 
@@ -215,7 +210,7 @@ void Board::set_piece_p(const Piece &p, int col, int row)
 
 void Board::move_p(const MoveData &md)
 {
-    _D;
+    G_D;
     Square &src(__square_at(d->squares, md.Source->GetColumn(), md.Source->GetRow()));
     Square &dest(__square_at(d->squares, md.Destination->GetColumn(), md.Destination->GetRow()));
 
@@ -249,13 +244,13 @@ void Board::move_p(const MoveData &md)
 
 ISquare const &Board::SquareAt(int col, int row) const
 {
-    _D;
+    G_D;
     return __square_at(d->squares, col, row);
 }
 
 Vector<ISquare const *> Board::FindPieces(const Piece &pc) const
 {
-    _D;
+    G_D;
     Vector<ISquare const *> ret( __index(d, pc.GetAllegience()).Values(pc.GetType()) );
 
     // To help debug, make sure all the returned pieces are the correct type
@@ -270,13 +265,13 @@ Vector<ISquare const *> Board::FindPieces(const Piece &pc) const
 
 const IGameState &Board::GameState() const
 {
-    _D;
+    G_D;
     return d->gamestate;
 }
 
 IGameState &Board::GameState()
 {
-    _D;
+    G_D;
     return d->gamestate;
 }
 

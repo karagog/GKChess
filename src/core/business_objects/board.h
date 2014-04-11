@@ -32,7 +32,7 @@ class Board :
     Q_OBJECT
 
     // Very secret...
-    void *data;
+    void *g_d;
 
 public:
 
