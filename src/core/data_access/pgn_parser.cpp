@@ -23,9 +23,6 @@ PGN_Parser::Data_t::Data_t()
     :Result(INT_MAX)
 {}
 
-PGN_Parser::Data_t::~Data_t()
-{}
-
 PGN_Parser::Data_t::Data_t(const Data_t &o)
     :Tags(o.Tags),
       InitialPosition(o.InitialPosition ? new Board(*o.InitialPosition) : 0),

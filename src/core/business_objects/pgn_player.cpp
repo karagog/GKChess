@@ -14,12 +14,14 @@ limitations under the License.*/
 
 #include "pgn_player.h"
 #include "gutil_file.h"
+#include "abstractboard.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
 
-PGN_Player::PGN_Player()
+PGN_Player::PGN_Player(IGameLogic *gl)
+    :i_logic(gl)
 {}
 
 void PGN_Player::Clear()

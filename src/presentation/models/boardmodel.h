@@ -101,7 +101,7 @@ public:
      *
      *  You must supply a player response object, to handle pawn promotions when they occur.
     */
-    void MovePiece(const QModelIndex &source, const QModelIndex &dest, IGameLogic::IPlayerResponse *);
+    void MovePiece(const QModelIndex &source, const QModelIndex &dest, IPlayerResponse *);
 
     /** \name QAbstractTableModel interface
      *  \{

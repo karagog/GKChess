@@ -17,7 +17,6 @@ limitations under the License.*/
 
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
-#include "gkchess_igamestate.h"
 #include "gkchess_igamelogic.h"
 #include <QObject>
 
@@ -30,25 +29,20 @@ namespace GKChess{
 
 /** Describes a chess board interface. */
 class AbstractBoard :
-        public QObject
+        public QObject,
+        public IGameLogic
 {
     Q_OBJECT
-    IGameLogic const *const i_gameLogic;
+    GUTIL_DISABLE_COPY(AbstractBoard);
 public:
 
     /** Constructs an abstract board with the given game logic.  If null,
      *  we will default to the standard chess logic.
     */
-    AbstractBoard(IGameLogic const * = 0, QObject * = 0);
-    AbstractBoard(const AbstractBoard &);
+    AbstractBoard(QObject * = 0);
 
     /** You can be deleted by this interface. */
     virtual ~AbstractBoard();
-
-    /** Returns the game logic.  You will use this to validate moves and
-     *  generate move data.
-    */
-    IGameLogic const &GameLogic() const{ return *i_gameLogic; }
 
     /** Populates this board with the position given in X-FEN notation.
 
@@ -77,33 +71,9 @@ public:
     /** Convenience function returns the piece on the given square. */
     Piece const *GetPiece(int column, int row) const;
 
-    /** Moves based the piece from src to dest.
-     *
-     *  This validates moves using the game logic object.
-     *
-     *  You should pass a player response object so we can ask what piece to promote to.
-    */
-    void MovePiece(ISquare const &src, ISquare const &dest, IGameLogic::IPlayerResponse *);
 
-    /** Returns a reference to the square at the given column and row.
-     *  The square is valid as long as the board is, so you can safely pass around pointers to it.
-     * \warning It is not the responsibility of this class to check inputs for valid bounds
-    */
-    virtual ISquare const &SquareAt(int column, int row) const = 0;
 
-    /** Returns the number of rows. */
-    virtual int RowCount() const = 0;
 
-    /** Returns the number of columns. */
-    virtual int ColumnCount() const = 0;
-
-    /** Returns the current game state, as a reference for best performance. */
-    virtual IGameState const &GameState() const = 0;
-
-    /** Returns the current game state, as a reference for best performance. You
-     *  modify it directly.
-    */
-    virtual IGameState &GameState() = 0;
 
     /** Returns a list of squares occupied by the type of piece specified.
      *  The list will be empty if there are no such pieces on the board.
@@ -117,6 +87,24 @@ public:
      *  iterates through the squares and removes their pieces. Override it if you like.
     */
     virtual void Clear();
+
+
+
+    /** \name IGameLogic interface
+     *
+     *  These are the default implementations of the standard chess logic. You can override them
+     *  to suit your needs.
+     *
+     *  \{
+    */
+    virtual void SetupNewGame(SetupTypeEnum = SetupStandardChess);
+    virtual MoveData GenerateMoveData(const ISquare &, const ISquare &, IPlayerResponse *) const;
+    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
+    virtual MoveValidationEnum ValidateMove(const ISquare &, const ISquare &) const;
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
+    virtual void Move(const MoveData &);
+    virtual void Resign(Piece::AllegienceEnum);
+    /** \} */
 
 
 signals:
@@ -133,6 +121,9 @@ signals:
 
     /** This signal is emitted whenever a piece is moved with the Move() function. */
     void NotifyPieceMoved(const GKChess::MoveData &);
+
+    /** This signal is emitted after a side resigns. */
+    void NotifyResignation(Piece::AllegienceEnum);
 
 
 protected:

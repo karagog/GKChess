@@ -139,14 +139,14 @@ static Map<Piece::PieceTypeEnum, ISquare const *> &__index(g_d_t *d, Piece::Alle
 }
 
 
-Board::Board(IGameLogic const *gl, QObject *parent)
-    :AbstractBoard(gl, parent)
+Board::Board(QObject *parent)
+    :AbstractBoard(parent)
 {
     _init();
 }
 
 Board::Board(const AbstractBoard &o)
-    :AbstractBoard(o)
+    :AbstractBoard(o.parent())
 {
     if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot copy from different sized board");
