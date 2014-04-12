@@ -76,6 +76,7 @@ class GameState : public IGameState
     ISquare const *EnPassantSquare;
     int HalfMoveClock;
     int FullMoveNumber;
+    ResultTypeEnum Result;
 public:
     Piece::AllegienceEnum GetWhoseTurn() const{ return WhoseTurn; }
     void SetWhoseTurn(Piece::AllegienceEnum v){ WhoseTurn=v; }
@@ -93,6 +94,8 @@ public:
     void SetHalfMoveClock(int v){ HalfMoveClock=v; }
     int GetFullMoveNumber() const{ return FullMoveNumber; }
     void SetFullMoveNumber(int v){ FullMoveNumber=v; }
+    ResultTypeEnum GetResult() const{ return Result; }
+    void SetResult(ResultTypeEnum r){ Result = r; }
 
     GameState():
         WhoseTurn(Piece::AnyAllegience),
@@ -102,7 +105,8 @@ public:
         CastleBlack2(-1),
         EnPassantSquare(0),
         HalfMoveClock(-1),
-        FullMoveNumber(-1)
+        FullMoveNumber(-1),
+        Result(Undecided)
     {}
     GameState(const IGameState &o):
         WhoseTurn(o.GetWhoseTurn()),
@@ -112,7 +116,8 @@ public:
         CastleBlack2(o.GetCastleBlack2()),
         EnPassantSquare(o.GetEnPassantSquare()),
         HalfMoveClock(o.GetHalfMoveClock()),
-        FullMoveNumber(o.GetFullMoveNumber())
+        FullMoveNumber(o.GetFullMoveNumber()),
+        Result(o.GetResult())
   {}
 };
 
@@ -134,14 +139,14 @@ static Map<Piece::PieceTypeEnum, ISquare const *> &__index(g_d_t *d, Piece::Alle
 }
 
 
-Board::Board(QObject *parent)
-    :AbstractBoard(parent)
+Board::Board(IGameLogic const *gl, QObject *parent)
+    :AbstractBoard(gl, parent)
 {
     _init();
 }
 
 Board::Board(const AbstractBoard &o)
-    :AbstractBoard(o.parent())
+    :AbstractBoard(o)
 {
     if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot copy from different sized board");

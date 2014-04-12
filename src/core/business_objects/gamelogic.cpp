@@ -14,7 +14,7 @@ limitations under the License.*/
 
 #include "gamelogic.h"
 #include "gkchess_pgn_parser.h"
-#include "gkchess_isquare.h"
+#include "gkchess_abstractboard.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
@@ -561,17 +561,17 @@ MoveData StandardGameLogic::GenerateMoveData(AbstractBoard const &b,
     return ret;
 }
 
-void StandardGameLogic::Move(AbstractBoard &b, const MoveData &md)
+void StandardGameLogic::PieceMoved(AbstractBoard &b, const MoveData &md) const
 {
     int inc;
     Piece::AllegienceEnum next_turn;
-    Piece const *p( md.Source->GetPiece() );
+    Piece const &p( md.PieceMoved );
 
-    if(md.IsNull() || NULL == p)
+    if(md.IsNull() || p.IsNull())
         return;
 
     b.GameState().SetHalfMoveClock(b.GameState().GetHalfMoveClock() + 1);
-    if(p->GetAllegience() == Piece::Black)
+    if(p.GetAllegience() == Piece::Black)
     {
         b.GameState().SetFullMoveNumber(b.GameState().GetFullMoveNumber() + 1);
         next_turn = Piece::White;
@@ -586,7 +586,7 @@ void StandardGameLogic::Move(AbstractBoard &b, const MoveData &md)
     b.GameState().SetWhoseTurn(next_turn);
 
     // Set the en-passant square
-    if(md.Source->GetPiece() && md.Source->GetPiece()->GetType() == Piece::Pawn)
+    if(p.GetType() == Piece::Pawn)
     {
         int row_diff_abs = Abs(md.Destination->GetRow() - md.Source->GetRow());
         if(2 == row_diff_abs)
@@ -596,8 +596,6 @@ void StandardGameLogic::Move(AbstractBoard &b, const MoveData &md)
     }
     else
         b.GameState().SetEnPassantSquare(0);
-
-    b.Move(md);
 }
 
 

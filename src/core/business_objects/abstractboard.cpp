@@ -16,13 +16,24 @@ limitations under the License.*/
 #include "piece.h"
 #include "isquare.h"
 #include "pgn_move_data.h"
+#include "gamelogic.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
 
-AbstractBoard::AbstractBoard(QObject *p)
-    :QObject(p)
+/** Allocate one for all instances to use, since it's immutable. */
+static StandardGameLogic s_standardLogic;
+
+
+AbstractBoard::AbstractBoard(IGameLogic const *g, QObject *p)
+    :QObject(p),
+      i_gameLogic(NULL == g ? &s_standardLogic : g)
+{}
+
+AbstractBoard::AbstractBoard(const AbstractBoard &o)
+    :QObject(o.parent()),
+      i_gameLogic(o.i_gameLogic)
 {}
 
 AbstractBoard::~AbstractBoard()
@@ -44,12 +55,18 @@ Piece const *AbstractBoard::GetPiece(int column, int row) const
     return SquareAt(column, row).GetPiece();
 }
 
-void AbstractBoard::Move(const MoveData &md)
+void AbstractBoard::MovePiece(ISquare const &s, ISquare const &d, IGameLogic::IPlayerResponse *pr)
 {
-    if(!md.IsNull())
+    // If you want more moves to be valid you can implement your own liberal validator
+    if(IGameLogic::ValidMove == GameLogic().ValidateMove(*this, s, d))
     {
+        MoveData md( GameLogic().GenerateMoveData(*this, s, d, pr) );
         emit NotifyPieceAboutToBeMoved(md);
-        move_p(md);
+        {
+            // Move the piece
+            move_p(md);
+            GameLogic().PieceMoved(*this, md);
+        }
         emit NotifyPieceMoved(md);
     }
 }

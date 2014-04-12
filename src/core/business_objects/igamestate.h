@@ -27,6 +27,28 @@ class IGameState
 {
 public:
 
+    /** Encodes the different ways the game could end. */
+    enum ResultTypeEnum
+    {
+        /** Means the game is still in progress; there is no result yet. */
+        Undecided = 0,
+
+        /** Game ended because of checkmate. */
+        Checkmate,
+
+        /** Game ended because a player ran out of time. */
+        TimeControl,
+
+        /** Game ended because one side resigned. */
+        Resignation,
+
+        /** The game ended in a stalemate. */
+        Stalemate,
+
+        /** The game ended in a stalemate due to the 50 moves rule. */
+        Stalemate_50Moves
+    };
+
     /** Whose turn it is. */
     virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
     virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
@@ -65,6 +87,10 @@ public:
     /** Returns the current full move number. */
     virtual int GetFullMoveNumber() const = 0;
     virtual void SetFullMoveNumber(int) = 0;
+
+    /** Returns the result of the game, or Undedided if it's not over yet. */
+    virtual ResultTypeEnum GetResult() const = 0;
+    virtual void SetResult(ResultTypeEnum) = 0;
 
 };
 

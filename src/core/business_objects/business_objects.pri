@@ -9,7 +9,8 @@ HEADERS += \
     business_objects/board.h \
     business_objects/igamelogic.h \
     business_objects/movedata.h \
-    business_objects/igamestate.h
+    business_objects/igamestate.h \
+    business_objects/gamelogic.h
 
 SOURCES += \
     business_objects/piece.cpp \
@@ -17,4 +18,5 @@ SOURCES += \
     business_objects/clock.cpp \
     business_objects/pgn_move_data.cpp \
     business_objects/abstractboard.cpp \
-    business_objects/board.cpp
+    business_objects/board.cpp \
+    business_objects/gamelogic.cpp

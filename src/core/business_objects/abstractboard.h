@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
 #include "gkchess_igamestate.h"
+#include "gkchess_igamelogic.h"
 #include <QObject>
 
 // Even though we don't need this to compile, we include it anyways for completeness of this
@@ -26,43 +27,28 @@ limitations under the License.*/
 
 namespace GKChess{
 
-class PGN_MoveData;
-
 
 /** Describes a chess board interface. */
 class AbstractBoard :
         public QObject
 {
     Q_OBJECT
-    GUTIL_DISABLE_COPY(AbstractBoard);    
+    IGameLogic const *const i_gameLogic;
 public:
 
-    /** Encodes the different ways the game could end. */
-    enum ResultTypeEnum
-    {
-        /** Means the game is still in progress; there is no result yet. */
-        Undecided = 0,
+    /** Constructs an abstract board with the given game logic.  If null,
+     *  we will default to the standard chess logic.
+    */
+    AbstractBoard(IGameLogic const * = 0, QObject * = 0);
+    AbstractBoard(const AbstractBoard &);
 
-        /** Game ended because of checkmate. */
-        Checkmate,
-
-        /** Game ended because a player ran out of time. */
-        TimeControl,
-
-        /** Game ended because one side resigned. */
-        Resignation,
-
-        /** The game ended in a stalemate. */
-        Stalemate,
-
-        /** The game ended in a stalemate due to the 50 moves rule. */
-        Stalemate_50Moves
-    };
-
-
-
-    AbstractBoard(QObject * = 0);
+    /** You can be deleted by this interface. */
     virtual ~AbstractBoard();
+
+    /** Returns the game logic.  You will use this to validate moves and
+     *  generate move data.
+    */
+    IGameLogic const &GameLogic() const{ return *i_gameLogic; }
 
     /** Populates this board with the position given in X-FEN notation.
 
@@ -91,8 +77,13 @@ public:
     /** Convenience function returns the piece on the given square. */
     Piece const *GetPiece(int column, int row) const;
 
-    /** Moves based on a MoveData object. You can create one via GenerateMoveData. */
-    void Move(const MoveData &);
+    /** Moves based the piece from src to dest.
+     *
+     *  This validates moves using the game logic object.
+     *
+     *  You should pass a player response object so we can ask what piece to promote to.
+    */
+    void MovePiece(ISquare const &src, ISquare const &dest, IGameLogic::IPlayerResponse *);
 
     /** Returns a reference to the square at the given column and row.
      *  The square is valid as long as the board is, so you can safely pass around pointers to it.
@@ -146,7 +137,9 @@ signals:
 
 protected:
 
-    /** You must implement moving pieces, but don't emit any signals. */
+    /** You must implement moving pieces, but don't emit any signals.  The move has already
+     *  been validated at this point.
+    */
     virtual void move_p(const MoveData &) = 0;
 
     /** You must implement setting pieces on the board, but don't emit any signals. */

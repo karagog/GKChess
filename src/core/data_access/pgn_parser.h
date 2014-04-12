@@ -58,6 +58,7 @@ public:
 
         Data_t();
         Data_t(const Data_t &);
+        ~Data_t();
     } Data;
 
     

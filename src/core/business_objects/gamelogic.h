@@ -35,7 +35,7 @@ public:
     virtual MoveData GenerateMoveData(AbstractBoard const &, const PGN_MoveData &) const;
     virtual MoveValidationEnum ValidateMove(AbstractBoard const &, const ISquare &source, const ISquare &dest) const;
     virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(AbstractBoard const &, const ISquare &) const;
-    virtual void Move(AbstractBoard &, const MoveData &);
+    virtual void PieceMoved(AbstractBoard &, const MoveData &) const;
     /** \} */
 
 };

@@ -33,10 +33,13 @@ class Board :
 
     // Very secret...
     void *g_d;
-
 public:
 
-    explicit Board(QObject *parent = 0);
+    /** Constructs an empty board with the given game logic.  If null, the board will
+     *  default to the standard chess logic.
+    */
+    Board(IGameLogic const * = 0, QObject * = 0);
+
     Board(const AbstractBoard &);
     Board &operator = (const AbstractBoard &);
     virtual ~Board();

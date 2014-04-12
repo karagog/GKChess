@@ -15,12 +15,16 @@ limitations under the License.*/
 #ifndef GKCHESS_IGAMELOGIC_H
 #define GKCHESS_IGAMELOGIC_H
 
-#include "gkchess_piece.h"
-#include "gkchess_abstractboard.h"
+#include "gkchess_globals.h"
+#include "gkchess_movedata.h"
+#include "gutil_vector.h"
 
 NAMESPACE_GKCHESS;
 
+
+class AbstractBoard;
 class ISquare;
+class Piece;
 class PGN_MoveData;
 
 
@@ -111,7 +115,7 @@ public:
 
     /** Creates a MoveData object from a PGN MoveData object. */
     virtual MoveData GenerateMoveData(const AbstractBoard &,
-                                                     const PGN_MoveData &) const = 0;
+                                      const PGN_MoveData &) const = 0;
 
     /** Creates a MoveData object from a source and dest square input.
      *  You must supply a user feedback object, so the game logic knows how the
@@ -124,11 +128,12 @@ public:
      *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
     */
     virtual MoveData GenerateMoveData(const AbstractBoard &,
-                                                     const ISquare &source,
-                                                     const ISquare &dest,
-                                                     IPlayerResponse *) const = 0;
+                                      const ISquare &source,
+                                      const ISquare &dest,
+                                      IPlayerResponse *) const = 0;
 
-    virtual void Move(AbstractBoard &, const MoveData &) = 0;
+    /** You must call this after every move to advance the game state. */
+    virtual void PieceMoved(AbstractBoard &, const MoveData &) const = 0;
 
 };
 
