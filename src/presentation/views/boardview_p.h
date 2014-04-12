@@ -132,11 +132,6 @@ protected:
     */
     virtual void attempt_move(const QModelIndex &source, const QModelIndex &dest);
 
-    /** Hides any piece at the given index. It will remain hidden until you call this function
-     *  again with an invalid QModelIndex().  This is useful for animating piece movements.
-    */
-    void hide_piece_at_index(const QModelIndex & = QModelIndex());
-
     /** This is the function you should override when doing your own painting.
      *  Be sure to call the base implementation!
      *  \param painter The painter object.

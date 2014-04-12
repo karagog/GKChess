@@ -25,28 +25,12 @@ NAMESPACE_GKCHESS1(UI);
 
 BoardModel::BoardModel(AbstractBoard *b, QObject *parent)
     :QAbstractTableModel(parent),
-      m_board(b),
-      i_logic(0)
+      m_board(b)
 {
     connect(b, SIGNAL(NotifySquareUpdated(const GKChess::ISquare &)),
             this, SLOT(_square_updated(const GKChess::ISquare &)));
     connect(b, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
             this, SLOT(_piece_moved(const GKChess::MoveData &)));
-}
-
-void BoardModel::SetGameLogic(IGameLogic *l)
-{
-    i_logic = l;
-}
-
-bool BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
-{
-    bool ret = false;
-    if(i_logic && s.isValid() && d.isValid()){
-        ret = IGameLogic::ValidMove ==
-                i_logic->ValidateMove(*m_board, *ConvertIndexToSquare(s), *ConvertIndexToSquare(d));
-    }
-    return ret;
 }
 
 ISquare const *BoardModel::ConvertIndexToSquare(const QModelIndex &i) const
@@ -120,15 +104,13 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
                 break;
             case ValidMovesRole:
             {
-                if(i_logic)
+                QModelIndexList il;
+                Vector<ISquare const *> tmp = GetBoard()->GetValidMovesForSquare(*s);
+                G_FOREACH_CONST(ISquare const *sqr, tmp)
                 {
-                    QModelIndexList il;
-                    Vector<ISquare const *> tmp = i_logic->GetValidMovesForSquare(*m_board, *s);
-                    G_FOREACH_CONST(ISquare const *sqr, tmp){
-                        il.append(index(sqr->GetRow(), sqr->GetColumn()));
-                    }
-                    ret.setValue(il);
+                    il.append(index(sqr->GetRow(), sqr->GetColumn()));
                 }
+                ret.setValue(il);
                 return ret;
 
             }
@@ -293,25 +275,6 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
     return ret;
 }
 
-void BoardModel::MovePiece(const QModelIndex &source, const QModelIndex &dest, IGameLogic::IPlayerResponse *player)
-{
-    if(i_logic && source.isValid() && dest.isValid())
-    {
-        ISquare const *s = ConvertIndexToSquare(source);
-        ISquare const *d = ConvertIndexToSquare(dest);
-        IGameLogic::MoveValidationEnum res = i_logic->ValidateMove(*m_board, *s, *d);
-        if(IGameLogic::ValidMove == res){
-            MoveData md = i_logic->GenerateMoveData(*m_board, *s, *d, player);
-            if(!md.IsNull()){
-                if(i_logic)
-                    i_logic->Move(*m_board, md);
-                else
-                    m_board->Move(md);
-            }
-        }
-    }
-}
-
 bool BoardModel::dropMimeData(const QMimeData *data,
                               Qt::DropAction action,
                               int row,
@@ -364,6 +327,19 @@ bool BoardModel::dropMimeData(const QMimeData *data,
     }
 
     return ret;
+}
+
+IGameLogic::MoveValidationEnum BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
+{
+    return GetBoard()->ValidateMove(*ConvertIndexToSquare(s),
+                                    *ConvertIndexToSquare(d));
+}
+
+IGameLogic::MoveValidationEnum BoardModel::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
+{
+    return m_board->Move2(*ConvertIndexToSquare(s),
+                          *ConvertIndexToSquare(d),
+                          pr);
 }
 
 

@@ -158,10 +158,19 @@ public:
     */
     virtual MoveData GenerateMoveData(const ISquare &source,
                                       const ISquare &dest,
-                                      IPlayerResponse *) const = 0;
+                                      IPlayerResponse * = 0) const = 0;
 
-    /** Executes the move described by the move data object and advances the game state. */
-    virtual void Move(const MoveData &) = 0;
+    /** Executes the move described by the move data object and advances the game state.
+     *
+     *  This should take care to call ValidateMove() to apply validation and return the result.
+     *  If it was an invalid move, then the state of the board must not change.
+    */
+    virtual MoveValidationEnum Move(const MoveData &) = 0;
+
+    /** A convenience function generates move data, validates and executes the move. */
+    MoveValidationEnum Move2(const ISquare &src, const ISquare &dest, IPlayerResponse *pr = 0){
+        return Move(GenerateMoveData(src, dest, pr));
+    }
 
     /** Indicate that the given side wants to resign. */
     virtual void Resign(Piece::AllegienceEnum) = 0;

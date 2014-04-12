@@ -81,22 +81,32 @@ static void __update_gamestate(AbstractBoard &b, IGameState &gs, const MoveData 
         gs.SetEnPassantSquare(0);
 }
 
-void AbstractBoard::Move(const MoveData &md)
+IGameLogic::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 {
-    if(!md.IsNull())
+    MoveValidationEnum ret;
+
+    if(md.IsNull())
+        ret = InvalidInputError;
+    else
     {
         // If you want more moves to be valid you can implement your own liberal validator
-        if(IGameLogic::ValidMove == ValidateMove(*md.Source, *md.Destination))
+        ret = ValidateMove(*md.Source, *md.Destination);
+
+        if(IGameLogic::ValidMove == ret)
         {
             emit NotifyPieceAboutToBeMoved(md);
-            {
-                // Move the piece and update the gamestate
-                move_p(md);
-                __update_gamestate(*this, GameState(), md);
-            }
+            MoveQuiet(md);
             emit NotifyPieceMoved(md);
         }
     }
+    return ret;
+}
+
+void AbstractBoard::MoveQuiet(const MoveData &md)
+{
+    // Move the piece and update the gamestate
+    move_p(md);
+    __update_gamestate(*this, GameState(), md);
 }
 
 void AbstractBoard::Resign(Piece::AllegienceEnum a)

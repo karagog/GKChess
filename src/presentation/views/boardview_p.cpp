@@ -212,7 +212,7 @@ void BoardView_p::_animation_finished()
     if(NULL != anim)
     {
         // Stop hiding the piece that we were animating
-        hide_piece_at_index();
+        //hide_piece_at_index();
 
         // Remove the animation from the group and delete it
         m_animationGroup->removeAnimation(anim);
@@ -431,7 +431,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
 
             // Paint the pieces
             Piece pc = ind.data(BoardModel::PieceRole).value<Piece>();
-            if(m_hiddenIndex != ind && !pc.IsNull())
+            if(!pc.IsNull())
             {
                 paint_piece_at(pc, tmp, painter);
             }
@@ -606,14 +606,12 @@ void BoardView_p::wheelEvent(QWheelEvent *ev)
 
 void BoardView_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
-    // Since this is a readonly model, we don't actually let them move a piece, but
-    //  if you override this method you can actually move
-    GetBoardModel()->MovePiece(s, d, 0);
+    GetBoardModel()->Move(s, d);
 }
 
 void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
 {
-    hide_piece_at_index(s);
+    //hide_piece_at_index(s);
     animate_move(*GetBoardModel()->ConvertIndexToSquare(s)->GetPiece(),
                   from,
                   item_rect(s.column(), s.row()).center(),
@@ -631,12 +629,6 @@ void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
                   QEasingCurve::OutQuint
                   //QEasingCurve::OutExpo
                   );
-}
-
-void BoardView_p::hide_piece_at_index(const QModelIndex &ind)
-{
-    m_hiddenIndex = ind;
-    viewport()->update();
 }
 
 void BoardView_p::animate_move(const Piece &p, const QPointF &source, const QPointF &dest, int dur, int easing_curve)
@@ -705,7 +697,6 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
     GASSERT(m_dragOffset.isNull());
 
     if(!Editable() ||
-            !GetBoardModel()->GetGameLogic() ||
             QAbstractAnimation::Running == get_animation()->state())
         return;
 
@@ -810,7 +801,9 @@ void BoardView_p::mouseMoveEvent(QMouseEvent *ev)
         // Next we want to highlight the square the user is hovering over
         QModelIndex ind = indexAt(ev->pos());
         if(ind.isValid() && ind != m_activeSquare)
-            HighlightSquare(ind, GetBoardModel()->ValidateMove(m_activeSquare, ind) ? Qt::green : Qt::red);
+            HighlightSquare(ind,
+                            IGameLogic::ValidMove == GetBoardModel()->ValidateMove(m_activeSquare, ind) ?
+                                Qt::green : Qt::red);
     }
 
     if(Editable() && !m_mousePressLoc.isNull())

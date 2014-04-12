@@ -71,6 +71,14 @@ public:
     /** Convenience function returns the piece on the given square. */
     Piece const *GetPiece(int column, int row) const;
 
+    /** Executes a move.  The difference between this and Move() is that this one does not
+     *  emit signals and does not validate the moves.
+     *
+     *  This is useful for long simulations where you're not updating a user interface and you
+     *  know all moves are valid.  If this is not the case though, you should generally use Move()
+    */
+    void MoveQuiet(const MoveData &);
+
 
 
 
@@ -102,7 +110,7 @@ public:
     virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
     virtual MoveValidationEnum ValidateMove(const ISquare &, const ISquare &) const;
     virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
-    virtual void Move(const MoveData &);
+    virtual MoveValidationEnum Move(const MoveData &);
     virtual void Resign(Piece::AllegienceEnum);
     /** \} */
 

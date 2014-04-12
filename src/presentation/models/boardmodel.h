@@ -24,6 +24,7 @@ limitations under the License.*/
 namespace GKChess{ 
     class AbstractBoard;
     class ISquare;
+    class MoveData;
 
 namespace UI{
 
@@ -49,7 +50,6 @@ class BoardModel :
     };
 
     AbstractBoard *m_board;
-    IGameLogic *i_logic;
 public:
 
     /** You must give the model a reference to a chessboard
@@ -61,16 +61,9 @@ public:
     */
     explicit BoardModel(AbstractBoard *, QObject *parent = 0);
 
-    /** Returns a const reference to the board object, so you can
-        access the other meta-data not held in the indices.
-    */
+    /** Returns a const reference to the board object. */
     AbstractBoard const *GetBoard() const{ return m_board; }
 
-    /** Sets the game logic. */
-    void SetGameLogic(IGameLogic *);
-
-    /** Returns the current game logic. */
-    IGameLogic *GetGameLogic() const{ return i_logic; }
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
@@ -79,6 +72,10 @@ public:
 
     /** Returns the model index corresponding to the given square. */
     QModelIndex ConvertSquareToIndex(const ISquare &) const;
+
+    IGameLogic::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
+
+    IGameLogic::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, IPlayerResponse *pr = 0);
 
 
     /** Defines the custom data roles implemented by the board model. */
@@ -90,18 +87,6 @@ public:
         /** This role returns a list of model indexes to which the piece on the given index can move. */
         ValidMovesRole = Qt::UserRole + 1
     };
-
-
-    /** Returns true if the piece moving from source to dest is a valid chess move. */
-    bool ValidateMove(const QModelIndex &source, const QModelIndex &dest) const;
-
-    /** Moves the piece at the source index to the dest index.
-     *
-     *  This function does nothing if there is no game logic set.
-     *
-     *  You must supply a player response object, to handle pawn promotions when they occur.
-    */
-    void MovePiece(const QModelIndex &source, const QModelIndex &dest, IPlayerResponse *);
 
     /** \name QAbstractTableModel interface
      *  \{

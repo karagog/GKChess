@@ -26,7 +26,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
-    m_boardModel.SetGameLogic(&m_gameLogic);
 
     ui->boardView->SetIconFactory(&m_iconFactory);
 
