@@ -15,7 +15,6 @@ limitations under the License.*/
 #ifndef GKCHESS_PGN_PLAYER_H
 #define GKCHESS_PGN_PLAYER_H
 
-#include "gkchess_igamelogic.h"
 #include "gkchess_pgn_parser.h"
 #include "gutil_strings.h"
 #include "gutil_map.h"
@@ -29,12 +28,12 @@ NAMESPACE_GKCHESS;
 */
 class PGN_Player
 {
-    IGameLogic *i_logic;
+    AbstractBoard *m_board;
     GUtil::SmartPointer<PGN_Parser::Data_t> m_pgnData;
 public:
 
     /** Constructs a PGN player with the given game logic.  It will not take ownership. */
-    PGN_Player(IGameLogic *);
+    PGN_Player(AbstractBoard *);
 
     /** Parses the PGN data from the given string. */
     void LoadFromString(const GUtil::String &);
@@ -54,11 +53,11 @@ public:
     /** After loading a PGN string, you can step back through the moves with this. */
     void Previous();
 
-    /** Returns the game logic object used by the PGN player. */
-    const IGameLogic &GetGameLogic() const{ return *i_logic; }
+    /** Returns the game board object used by the PGN player. */
+    const AbstractBoard &GetBoard() const{ return *m_board; }
 
-    /** Returns the game logic object used by the PGN player. */
-    IGameLogic &GetGameLogic(){ return *i_logic; }
+    /** Returns the game board object used by the PGN player. */
+    AbstractBoard &GetBoard(){ return *m_board; }
 
     /** Returns the moves from the file.  This will be null if data has not been loaded. */
     PGN_Parser::Data_t const *GetPGNData() const{ return m_pgnData; }

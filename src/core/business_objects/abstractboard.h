@@ -17,7 +17,6 @@ limitations under the License.*/
 
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
-#include "gkchess_igamelogic.h"
 #include <QObject>
 
 // Even though we don't need this to compile, we include it anyways for completeness of this
@@ -27,14 +26,113 @@ limitations under the License.*/
 namespace GKChess{
 
 
+class PGN_MoveData;
+
+
+/** An interface that encapsulates feedback from the user, such as choosing a promoted piece.
+ *  The implementation should leverage the user interface to prompt the user for the given input.
+*/
+class IPlayerResponse
+{
+public:
+
+    /** This will be called whenever the game logic needs input from
+     *  the user to decide what piece they want to promote to.
+     *
+     *  The allegience of the promoting side is given as a paramter, so you can
+     *  show the correct colored pieces in the UI.  Also the returned piece should
+     *  have the given allegience.
+     *
+     *  \note This is only relevant when generating move data by two squares. If you are
+     *  generating moves from PGN then it's already in the notation (i.e. e8=Q)
+    */
+    virtual Piece ChoosePromotedPiece(Piece::AllegienceEnum) = 0;
+
+};
+
+
+
+
 /** Describes a chess board interface. */
 class AbstractBoard :
-        public QObject,
-        public IGameLogic
+        public QObject
 {
     Q_OBJECT
     GUTIL_DISABLE_COPY(AbstractBoard);
 public:
+
+
+    /** Describes different ways the board could be set up. */
+    enum SetupTypeEnum
+    {
+        /** Causes the board to be cleared of all pieces. */
+        Empty = 0,
+
+        /** A standard game of chess. */
+        SetupStandardChess = 1,
+
+        /** Sets up a random Chess960 board. */
+        SetupChess960 = 2,
+
+        /** You can create your own custom board setups starting from this offset. */
+        SetupCustomOffset = 100
+    };
+
+
+
+    /** Encodes the different possible results of a move validation. */
+    enum MoveValidationEnum
+    {
+        /** Means the move is valid. */
+        ValidMove = 0,
+
+        /** Invalid move because pieces can't move that way according to the rules of chess.
+         *  (i.e. a pawn moving backwards).
+        */
+        InvalidTechnical,
+
+        /** Invalid because you would be leaving the king in check. */
+        InvalidCheck,
+
+        /** The source square does not have a piece on it. */
+        InvalidEmptySquare,
+
+        /** Invalid because there was a problem with the parameters you gave the function.
+         *  For example if you didn't specify a source and destination square.
+        */
+        InvalidInputError,
+
+
+        /** If you are extending this class for your own custom rules then you'll base
+         *  your validation types with this value.
+        */
+        CustomInvalidMoveOffset = 100
+    };
+
+
+    /** Encodes the different ways the game could end. */
+    enum ResultTypeEnum
+    {
+        /** Means the game is still in progress; there is no result yet. */
+        Undecided = 0,
+
+        /** Game ended because of checkmate. */
+        Checkmate,
+
+        /** Game ended because a player ran out of time. */
+        TimeControl,
+
+        /** Game ended because one side resigned. */
+        Resignation,
+
+        /** The game ended in a stalemate. */
+        Stalemate,
+
+        /** The game ended in a stalemate due to the 50 moves rule. */
+        Stalemate_50Moves
+    };
+
+
 
     /** Constructs an abstract board with the given game logic.  If null,
      *  we will default to the standard chess logic.
@@ -98,20 +196,112 @@ public:
 
 
 
-    /** \name IGameLogic interface
+
+    /** Sets up the board for a new game. */
+    virtual void SetupNewGame(SetupTypeEnum = SetupStandardChess);
+
+    /** Returns the number of rows on the board. */
+    virtual int RowCount() const = 0;
+
+    /** Returns the number of columns on the board. */
+    virtual int ColumnCount() const = 0;
+
+    /** Returns a reference to the square at the given column and row.
+     *  The square is valid as long as the game logic is, so you can safely pass around pointers to it.
+     * \warning It is not the responsibility of this class to check inputs for valid bounds
+     *  \sa RowCount(), ColumnCount()
+    */
+    virtual ISquare const &SquareAt(int column, int row) const = 0;
+
+    /** Creates a MoveData object from a source and dest square input.
+     *  You must supply a user feedback object, so the game logic knows how the
+     *  user wants to proceed in the event of a pawn promotion.  If you do not
+     *  we will automatically promote to queen.
      *
-     *  These are the default implementations of the standard chess logic. You can override them
-     *  to suit your needs.
+     *  \note This function works with invalid moves, so if you care about
+     *  validation you have to use ValidateMove() on the source and dest squares.
      *
+     *  \returns A move data object, which is always populated except in the case of a
+     *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
+    */
+    virtual MoveData GenerateMoveData(const ISquare &, const ISquare &, IPlayerResponse *) const;
+
+    /** Creates a MoveData object from a PGN MoveData object. */
+    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
+
+    /** Validates the move. */
+    virtual MoveValidationEnum ValidateMove(const ISquare &, const ISquare &) const;
+
+    /** Returns a list of valid squares that the piece on the given square can move to. */
+    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
+
+    /** Executes the move described by the move data object and advances the game state.
+     *
+     *  This should take care to call ValidateMove() to apply validation and return the result.
+     *  If it was an invalid move, then the state of the board must not change.
+    */
+    MoveValidationEnum Move(const MoveData &);
+
+    /** A convenience function generates move data, validates and executes the move. */
+    MoveValidationEnum Move2(const ISquare &src, const ISquare &dest, IPlayerResponse *pr = 0);
+
+    /** Indicate that the given side wants to resign. */
+    virtual void Resign(Piece::AllegienceEnum);
+
+
+
+
+    /** \name Game State
+     *  This section describes the getters and setters of the game state variables
      *  \{
     */
-    virtual void SetupNewGame(SetupTypeEnum = SetupStandardChess);
-    virtual MoveData GenerateMoveData(const ISquare &, const ISquare &, IPlayerResponse *) const;
-    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
-    virtual MoveValidationEnum ValidateMove(const ISquare &, const ISquare &) const;
-    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
-    virtual MoveValidationEnum Move(const MoveData &);
-    virtual void Resign(Piece::AllegienceEnum);
+
+    /** Whose turn it is. */
+    virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
+    virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
+
+    /** A castle column, 0 based. If this castling move has been executed, or otherwise
+     *  the opportunity ruined, it will be -1
+    */
+    virtual int GetCastleWhite1() const = 0;
+    virtual void SetCastleWhite1(int) = 0;
+
+    /** A castle column, 0 based. If this castling move has been executed, or otherwise
+     *  the opportunity ruined, it will be -1
+    */
+    virtual int GetCastleWhite2() const = 0;
+    virtual void SetCastleWhite2(int) = 0;
+
+    /** A castle column, 0 based. If this castling move has been executed, or otherwise
+     *  the opportunity ruined, it will be -1
+    */
+    virtual int GetCastleBlack1() const = 0;
+    virtual void SetCastleBlack1(int) = 0;
+
+    /** A castle column, 0 based. If this castling move has been executed, or otherwise
+     *  the opportunity ruined, it will be -1
+    */
+    virtual int GetCastleBlack2() const = 0;
+    virtual void SetCastleBlack2(int) = 0;
+
+    /** The en passant square, if there is one. If not then this is null. */
+    virtual ISquare const *GetEnPassantSquare() const = 0;
+    virtual void SetEnPassantSquare(ISquare const *) = 0;
+
+    /** The current number of half-moves since the last capture or pawn advance.
+     *  This is used for determining a draw from lack of progress.
+    */
+    virtual int GetHalfMoveClock() const = 0;
+    virtual void SetHalfMoveClock(int) = 0;
+
+    /** Returns the current full move number. */
+    virtual int GetFullMoveNumber() const = 0;
+    virtual void SetFullMoveNumber(int) = 0;
+
+    /** Returns the result of the game, or Undedided if it's not over yet. */
+    virtual ResultTypeEnum GetResult() const = 0;
+    virtual void SetResult(ResultTypeEnum) = 0;
+
     /** \} */
 
 
@@ -148,5 +338,11 @@ protected:
 
 
 }
+
+
+/** Defined for your convenience, a string that represents the initial chess position
+ *  in Forsyth-Edwards notation.
+*/
+#define FEN_STANDARD_CHESS_STARTING_POSITION "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 #endif // GKCHESS_ABSTRACTBOARD_H

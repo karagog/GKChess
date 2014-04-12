@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "boardmodel.h"
-#include "gkchess_abstractboard.h"
 #include "gkchess_isquare.h"
 #include <QFont>
 #include <QMimeData>
@@ -329,13 +328,13 @@ bool BoardModel::dropMimeData(const QMimeData *data,
     return ret;
 }
 
-IGameLogic::MoveValidationEnum BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
+AbstractBoard::MoveValidationEnum BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
 {
     return GetBoard()->ValidateMove(*ConvertIndexToSquare(s),
                                     *ConvertIndexToSquare(d));
 }
 
-IGameLogic::MoveValidationEnum BoardModel::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
+AbstractBoard::MoveValidationEnum BoardModel::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
 {
     return m_board->Move2(*ConvertIndexToSquare(s),
                           *ConvertIndexToSquare(d),

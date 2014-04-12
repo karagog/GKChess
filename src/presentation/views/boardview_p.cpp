@@ -400,7 +400,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
                               GetSquareSize(),
                               GetSquareSize());
         painter.fillRect(indicator_rect,
-                         Piece::White == GetBoardModel()->GetBoard()->GameState().GetWhoseTurn() ?
+                         Piece::White == GetBoardModel()->GetBoard()->GetWhoseTurn() ?
                          m_lightSquareColor : m_darkSquareColor);
         painter.setPen(outline_pen);
         painter.drawRect(indicator_rect);
@@ -802,7 +802,7 @@ void BoardView_p::mouseMoveEvent(QMouseEvent *ev)
         QModelIndex ind = indexAt(ev->pos());
         if(ind.isValid() && ind != m_activeSquare)
             HighlightSquare(ind,
-                            IGameLogic::ValidMove == GetBoardModel()->ValidateMove(m_activeSquare, ind) ?
+                            AbstractBoard::ValidMove == GetBoardModel()->ValidateMove(m_activeSquare, ind) ?
                                 Qt::green : Qt::red);
     }
 

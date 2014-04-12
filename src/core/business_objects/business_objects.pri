@@ -7,9 +7,7 @@ HEADERS += \
     business_objects/pgn_move_data.h \
     business_objects/abstractboard.h \
     business_objects/board.h \
-    business_objects/igamelogic.h \
     business_objects/movedata.h \
-    business_objects/igamestate.h \
     business_objects/pgn_player.h
 
 

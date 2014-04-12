@@ -47,9 +47,26 @@ public:
     virtual int ColumnCount() const;
     virtual int RowCount() const;
     virtual ISquare const &SquareAt(int column, int row) const;
-    virtual IGameState const &GameState() const;
-    virtual IGameState &GameState();
     virtual GUtil::Vector<ISquare const *> FindPieces(const Piece &) const;
+
+    virtual Piece::AllegienceEnum GetWhoseTurn() const;
+    virtual void SetWhoseTurn(Piece::AllegienceEnum v);
+    virtual int GetCastleWhite1() const;
+    virtual void SetCastleWhite1(int v);
+    virtual int GetCastleWhite2() const;
+    virtual void SetCastleWhite2(int v);
+    virtual int GetCastleBlack1() const;
+    virtual void SetCastleBlack1(int v);
+    virtual int GetCastleBlack2() const;
+    virtual void SetCastleBlack2(int v);
+    virtual ISquare const *GetEnPassantSquare() const;
+    virtual void SetEnPassantSquare(ISquare const *v);
+    virtual int GetHalfMoveClock() const;
+    virtual void SetHalfMoveClock(int v);
+    virtual int GetFullMoveNumber() const;
+    virtual void SetFullMoveNumber(int v);
+    virtual ResultTypeEnum GetResult() const;
+    virtual void SetResult(ResultTypeEnum r);
     /** \}*/
 
 

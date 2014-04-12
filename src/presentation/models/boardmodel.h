@@ -17,12 +17,11 @@ limitations under the License.*/
 
 #include "gutil_map.h"
 #include "gkchess_piece.h"
-#include "gkchess_igamelogic.h"
+#include "gkchess_abstractboard.h"
 #include <QColor>
 #include <QAbstractTableModel>
 
 namespace GKChess{ 
-    class AbstractBoard;
     class ISquare;
     class MoveData;
 
@@ -73,9 +72,9 @@ public:
     /** Returns the model index corresponding to the given square. */
     QModelIndex ConvertSquareToIndex(const ISquare &) const;
 
-    IGameLogic::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
+    AbstractBoard::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
 
-    IGameLogic::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, IPlayerResponse *pr = 0);
+    AbstractBoard::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, IPlayerResponse *pr = 0);
 
 
     /** Defines the custom data roles implemented by the board model. */

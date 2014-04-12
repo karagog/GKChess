@@ -44,7 +44,7 @@ Piece const *AbstractBoard::GetPiece(int column, int row) const
     return SquareAt(column, row).GetPiece();
 }
 
-static void __update_gamestate(AbstractBoard &b, IGameState &gs, const MoveData &md)
+static void __update_gamestate(AbstractBoard &b, const MoveData &md)
 {
     int inc;
     Piece::AllegienceEnum next_turn;
@@ -53,35 +53,35 @@ static void __update_gamestate(AbstractBoard &b, IGameState &gs, const MoveData 
     if(md.IsNull() || p.IsNull())
         return;
 
-    gs.SetHalfMoveClock(gs.GetHalfMoveClock() + 1);
+    b.SetHalfMoveClock(b.GetHalfMoveClock() + 1);
     if(p.GetAllegience() == Piece::Black)
     {
-        gs.SetFullMoveNumber(gs.GetFullMoveNumber() + 1);
+        b.SetFullMoveNumber(b.GetFullMoveNumber() + 1);
         next_turn = Piece::White;
         inc = -1;
     }
     else
     {
-        gs.SetWhoseTurn(Piece::Black);
+        b.SetWhoseTurn(Piece::Black);
         next_turn = Piece::Black;
         inc = 1;
     }
-    gs.SetWhoseTurn(next_turn);
+    b.SetWhoseTurn(next_turn);
 
     // Set the en-passant square
     if(p.GetType() == Piece::Pawn)
     {
         int row_diff_abs = Abs(md.Destination->GetRow() - md.Source->GetRow());
         if(2 == row_diff_abs)
-            gs.SetEnPassantSquare(&b.SquareAt(md.Source->GetColumn(), md.Source->GetRow() + inc));
+            b.SetEnPassantSquare(&b.SquareAt(md.Source->GetColumn(), md.Source->GetRow() + inc));
         else
-            gs.SetEnPassantSquare(0);
+            b.SetEnPassantSquare(0);
     }
     else
-        gs.SetEnPassantSquare(0);
+        b.SetEnPassantSquare(0);
 }
 
-IGameLogic::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
+AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 {
     MoveValidationEnum ret;
 
@@ -92,7 +92,7 @@ IGameLogic::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
         // If you want more moves to be valid you can implement your own liberal validator
         ret = ValidateMove(*md.Source, *md.Destination);
 
-        if(IGameLogic::ValidMove == ret)
+        if(ValidMove == ret)
         {
             emit NotifyPieceAboutToBeMoved(md);
             MoveQuiet(md);
@@ -102,11 +102,16 @@ IGameLogic::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
     return ret;
 }
 
+AbstractBoard::MoveValidationEnum AbstractBoard::Move2(const ISquare &src, const ISquare &dest, IPlayerResponse *pr)
+{
+    return Move(GenerateMoveData(src, dest, pr));
+}
+
 void AbstractBoard::MoveQuiet(const MoveData &md)
 {
     // Move the piece and update the gamestate
     move_p(md);
-    __update_gamestate(*this, GameState(), md);
+    __update_gamestate(*this, md);
 }
 
 void AbstractBoard::Resign(Piece::AllegienceEnum a)
@@ -194,16 +199,16 @@ void AbstractBoard::FromFEN(const String &s)
         default:
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "The current turn must be either a 'w' or 'b'");
         }
-        GameState().SetWhoseTurn(a);
+        SetWhoseTurn(a);
     }
 
 
     // Then parse the castle info:
     {
-        GameState().SetCastleWhite1(-1);
-        GameState().SetCastleWhite2(-1);
-        GameState().SetCastleBlack1(-1);
-        GameState().SetCastleBlack2(-1);
+        SetCastleWhite1(-1);
+        SetCastleWhite2(-1);
+        SetCastleBlack1(-1);
+        SetCastleBlack2(-1);
 
         G_FOREACH_CONST(char c, sl[2])
         {
@@ -235,16 +240,16 @@ void AbstractBoard::FromFEN(const String &s)
                 switch(a)
                 {
                 case Piece::White:
-                    if(-1 == GameState().GetCastleWhite1())
-                        GameState().SetCastleWhite1(file);
+                    if(-1 == GetCastleWhite1())
+                        SetCastleWhite1(file);
                     else
-                        GameState().SetCastleWhite2(file);
+                        SetCastleWhite2(file);
                     break;
                 case Piece::Black:
-                    if(-1 == GameState().GetCastleBlack1())
-                        GameState().SetCastleBlack1(file);
+                    if(-1 == GetCastleBlack1())
+                        SetCastleBlack1(file);
                     else
-                        GameState().SetCastleBlack2(file);
+                        SetCastleBlack2(file);
                     break;
                 default: break;
                 }
@@ -269,7 +274,7 @@ void AbstractBoard::FromFEN(const String &s)
             if(f < 'a' || 'h' < f || rnk < '1' || '8' < rnk)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid En Passant square");
 
-            GameState().SetEnPassantSquare(&SquareAt(f - 'a', rnk - '1'));
+            SetEnPassantSquare(&SquareAt(f - 'a', rnk - '1'));
         }
     }
 
@@ -277,7 +282,7 @@ void AbstractBoard::FromFEN(const String &s)
     // Parse the half-move clock:
     {
         bool ok(false);
-        GameState().SetHalfMoveClock(sl[4].ToInt(&ok));
+        SetHalfMoveClock(sl[4].ToInt(&ok));
         if(!ok)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid half-move clock");
     }
@@ -286,7 +291,7 @@ void AbstractBoard::FromFEN(const String &s)
     // Parse the full-move number:
     {
         bool ok(false);
-        GameState().SetFullMoveNumber(sl[5].ToInt(&ok));
+        SetFullMoveNumber(sl[5].ToInt(&ok));
         if(!ok)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid full-move number");
     }
@@ -446,7 +451,7 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
     // Validate the low-level technical aspects of the move, ignoring threats to the king
 
     // Only the player whose turn it is can move pieces
-    if(p->GetAllegience() != GameState().GetWhoseTurn())
+    if(p->GetAllegience() != GetWhoseTurn())
         return InvalidTechnical;
 
     // A piece cannot stay in the same place if it is moving
@@ -491,7 +496,7 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
                     ((dp && dp->GetAllegience() != p->GetAllegience()) ||
 
                      //  or the square being captured to must be an en passant square
-                     (GameState().GetEnPassantSquare() && d == *GameState().GetEnPassantSquare()));
+                     (GetEnPassantSquare() && d == *GetEnPassantSquare()));
         }
     }
         break;
@@ -538,7 +543,7 @@ Vector<ISquare const *> AbstractBoard::GetValidMovesForSquare(const ISquare &) c
 MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
 {
     MoveData ret;
-    Piece::AllegienceEnum turn = GameState().GetWhoseTurn();
+    Piece::AllegienceEnum turn = GetWhoseTurn();
 
     if(m.Flags.TestFlag(PGN_MoveData::CastleNormal))
         ret.CastleType = MoveData::CastleNormal;

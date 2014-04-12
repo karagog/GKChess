@@ -20,8 +20,8 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS;
 
 
-PGN_Player::PGN_Player(IGameLogic *gl)
-    :i_logic(gl)
+PGN_Player::PGN_Player(AbstractBoard *b)
+    :m_board(b)
 {}
 
 void PGN_Player::Clear()

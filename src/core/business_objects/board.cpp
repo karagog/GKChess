@@ -65,8 +65,8 @@ static Square const &__square_at(Square const *sa, int col, int row)
 }
 
 
-/** Our game state implementation. */
-class GameState : public IGameState
+/** Our game state data. */
+struct GameState
 {
     Piece::AllegienceEnum WhoseTurn;
     int CastleWhite1;
@@ -76,26 +76,7 @@ class GameState : public IGameState
     ISquare const *EnPassantSquare;
     int HalfMoveClock;
     int FullMoveNumber;
-    ResultTypeEnum Result;
-public:
-    Piece::AllegienceEnum GetWhoseTurn() const{ return WhoseTurn; }
-    void SetWhoseTurn(Piece::AllegienceEnum v){ WhoseTurn=v; }
-    int GetCastleWhite1() const{ return CastleWhite1; }
-    void SetCastleWhite1(int v){ CastleWhite1=v; }
-    int GetCastleWhite2() const{ return CastleWhite2; }
-    void SetCastleWhite2(int v){ CastleWhite2=v; }
-    int GetCastleBlack1() const{ return CastleBlack1; }
-    void SetCastleBlack1(int v){ CastleBlack1=v; }
-    int GetCastleBlack2() const{ return CastleBlack2; }
-    void SetCastleBlack2(int v){ CastleBlack2=v; }
-    ISquare const *GetEnPassantSquare() const{ return EnPassantSquare; }
-    void SetEnPassantSquare(ISquare const *v){ EnPassantSquare=v; }
-    int GetHalfMoveClock() const{ return HalfMoveClock; }
-    void SetHalfMoveClock(int v){ HalfMoveClock=v; }
-    int GetFullMoveNumber() const{ return FullMoveNumber; }
-    void SetFullMoveNumber(int v){ FullMoveNumber=v; }
-    ResultTypeEnum GetResult() const{ return Result; }
-    void SetResult(ResultTypeEnum r){ Result = r; }
+    Board::ResultTypeEnum Result;
 
     GameState():
         WhoseTurn(Piece::AnyAllegience),
@@ -106,9 +87,11 @@ public:
         EnPassantSquare(0),
         HalfMoveClock(-1),
         FullMoveNumber(-1),
-        Result(Undecided)
+        Result(Board::Undecided)
     {}
-    GameState(const IGameState &o):
+
+    /** Constructs the game state object from another abstract board. */
+    GameState(const AbstractBoard &o):
         WhoseTurn(o.GetWhoseTurn()),
         CastleWhite1(o.GetCastleWhite1()),
         CastleWhite2(o.GetCastleWhite2()),
@@ -119,6 +102,7 @@ public:
         FullMoveNumber(o.GetFullMoveNumber()),
         Result(o.GetResult())
   {}
+
 };
 
 
@@ -268,16 +252,95 @@ Vector<ISquare const *> Board::FindPieces(const Piece &pc) const
     return ret;
 }
 
-const IGameState &Board::GameState() const
+Piece::AllegienceEnum Board::GetWhoseTurn() const
 {
     G_D;
-    return d->gamestate;
+    return d->gamestate.WhoseTurn;
 }
-
-IGameState &Board::GameState()
+void Board::SetWhoseTurn(Piece::AllegienceEnum v)
 {
     G_D;
-    return d->gamestate;
+    d->gamestate.WhoseTurn=v;
+}
+int Board::GetCastleWhite1() const
+{
+    G_D;
+    return d->gamestate.CastleWhite1;
+}
+void Board::SetCastleWhite1(int v)
+{
+    G_D;
+    d->gamestate.CastleWhite1=v;
+}
+int Board::GetCastleWhite2() const
+{
+    G_D;
+    return d->gamestate.CastleWhite2;
+}
+void Board::SetCastleWhite2(int v)
+{
+    G_D;
+    d->gamestate.CastleWhite2=v;
+}
+int Board::GetCastleBlack1() const
+{
+    G_D;
+    return d->gamestate.CastleBlack1;
+}
+void Board::SetCastleBlack1(int v)
+{
+    G_D;
+    d->gamestate.CastleBlack1=v;
+}
+int Board::GetCastleBlack2() const
+{
+    G_D;
+    return d->gamestate.CastleBlack2;
+}
+void Board::SetCastleBlack2(int v)
+{
+    G_D;
+    d->gamestate.CastleBlack2=v;
+}
+ISquare const *Board::GetEnPassantSquare() const
+{
+    G_D;
+    return d->gamestate.EnPassantSquare;
+}
+void Board::SetEnPassantSquare(ISquare const *v)
+{
+    G_D;
+    d->gamestate.EnPassantSquare=v;
+}
+int Board::GetHalfMoveClock() const
+{
+    G_D;
+    return d->gamestate.HalfMoveClock;
+}
+void Board::SetHalfMoveClock(int v)
+{
+    G_D;
+    d->gamestate.HalfMoveClock=v;
+}
+int Board::GetFullMoveNumber() const
+{
+    G_D;
+    return d->gamestate.FullMoveNumber;
+}
+void Board::SetFullMoveNumber(int v)
+{
+    G_D;
+    d->gamestate.FullMoveNumber=v;
+}
+Board::ResultTypeEnum Board::GetResult() const
+{
+    G_D;
+    return d->gamestate.Result;
+}
+void Board::SetResult(ResultTypeEnum r)
+{
+    G_D;
+    d->gamestate.Result = r;
 }
 
 
