@@ -17,7 +17,6 @@ limitations under the License.*/
 
 #include "gkchess_board.h"
 #include "gkchess_coloredpieceiconfactory.h"
-#include "gkchess_boardmodel.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -30,7 +29,6 @@ class MainWindow : public QMainWindow
 
     Ui::MainWindow *ui;
     GKChess::Board m_board;
-    GKChess::UI::BoardModel m_boardModel;
 
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 

@@ -23,7 +23,6 @@ namespace GKChess{
     class AbstractBoard;
 namespace UI{
 
-class BoardModel;
 class IFactory_PieceIcon;
 
 
@@ -37,13 +36,19 @@ class IFactory_PieceIcon;
 class BoardView :
         public QWidget
 {
-    void *g_d;
+    void *d;
 public:
     BoardView(QWidget * = 0);
     ~BoardView();
 
-    BoardModel *GetBoardModel() const;
-    void SetBoardModel(BoardModel *);
+    /** Returns the board used by this view. */
+    AbstractBoard const *GetBoard() const;
+
+    /** Returns the board used by this view. */
+    AbstractBoard *GetBoard();
+
+    /** Sets the board for the view.  The view does not own the board, only plays with it. */
+    void SetBoard(AbstractBoard *);
 
     /** Tells the view to use the given icon factory, which overrides
         icons returned by the model.  Pass NULL to clear the icon factory.
@@ -51,7 +56,10 @@ public:
     void SetIconFactory(IFactory_PieceIcon *);
     IFactory_PieceIcon *GetIconFactory() const;
 
+    /** Returns the pixel size of a square. */
     float GetSquareSize() const;
+
+    /** Sets the pixel size of a square. */
     void SetSquareSize(float);
 
     QColor GetDarkSquareColor() const;
@@ -72,7 +80,10 @@ public:
     /** Removes all highlighting from the board. */
     void ClearSquareHighlighting();
 
+    /** Returns true if the board is editable. */
     bool Editable() const;
+
+    /** Controls whether the view will allow the user to edit the board, such as moving pieces. */
     void SetEditable(bool);
 
 };

@@ -14,8 +14,8 @@ limitations under the License.*/
 
 #include "boardview.h"
 #include "boardview_p.h"
+#include "boardmodel_p.h"
 #include "gkchess_piece.h"
-#include "gkchess_boardmodel.h"
 #include "gkchess_abstractboard.h"
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_isquare.h"
@@ -41,7 +41,7 @@ USING_NAMESPACE_GKCHESS1(UI);
 NAMESPACE_GKCHESS1(UI);
 
 
-struct g_d_t
+struct d_t
 {
     BoardView_p BoardView;
 };
@@ -145,16 +145,28 @@ void BoardView::ClearSquareHighlighting()
     d->BoardView.ClearSquareHighlighting();
 }
 
-BoardModel *BoardView::GetBoardModel() const
+AbstractBoard const *BoardView::GetBoard() const
 {
     G_D;
-    return d->BoardView.GetBoardModel();
+    return &d->BoardView.GetBoardModel()->GetBoard();
 }
 
-void BoardView::SetBoardModel(BoardModel *bm)
+AbstractBoard *BoardView::GetBoard()
 {
     G_D;
+    return &d->BoardView.GetBoardModel()->GetBoard();
+}
+
+void BoardView::SetBoard(AbstractBoard *b)
+{
+    G_D;
+    BoardModel_p *bm_old(d->BoardView.GetBoardModel());
+    BoardModel_p *bm = new BoardModel_p(b, &d->BoardView);
+
     d->BoardView.SetBoardModel(bm);
+    if(bm_old){
+        bm_old->deleteLater();
+    }
 }
 
 bool BoardView::Editable() const

@@ -39,7 +39,7 @@ namespace UI{
  *
  *  This can be used with Qt's model-view framework.
 */
-class BoardModel :
+class BoardModel_p :
         public QAbstractTableModel
 {
     Q_OBJECT
@@ -58,10 +58,12 @@ public:
      *  By default there is no game logic, meaning you cannot move any pieces,
      *  only look at the position on the board.
     */
-    explicit BoardModel(AbstractBoard *, QObject *parent = 0);
+    explicit BoardModel_p(AbstractBoard *, QObject *parent = 0);
 
     /** Returns a const reference to the board object. */
     AbstractBoard const &GetBoard() const{ return *m_board; }
+
+    AbstractBoard &GetBoard(){ return *m_board; }
 
 
     /** Returns a reference to the square at the given index.

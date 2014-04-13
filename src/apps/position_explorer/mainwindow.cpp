@@ -20,7 +20,6 @@ USING_NAMESPACE_GKCHESS;
 MainWindow::MainWindow(QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),
-      m_boardModel(&m_board),
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
@@ -28,12 +27,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
 
     ui->boardView->SetIconFactory(&m_iconFactory);
+    ui->boardView->SetBoard(&m_board);
 
-    ui->boardView->SetBoardModel(&m_boardModel);
-    
-    //ui->boardView->hide();
-
-    m_iconFactory.ChangeColors(Qt::green, Qt::red);
+    m_iconFactory.ChangeColors(Qt::yellow, Qt::gray);
 }
 
 MainWindow::~MainWindow()

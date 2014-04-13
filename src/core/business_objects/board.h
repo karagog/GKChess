@@ -32,7 +32,7 @@ class Board :
     Q_OBJECT
 
     // Very secret...
-    void *g_d;
+    void *d;
 public:
 
     Board(QObject * = 0);

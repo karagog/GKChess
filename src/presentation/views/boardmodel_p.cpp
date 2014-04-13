@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "boardmodel.h"
+#include "boardmodel_p.h"
 #include "gkchess_isquare.h"
 #include <QFont>
 #include <QMimeData>
@@ -22,7 +22,7 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS1(UI);
 
 
-BoardModel::BoardModel(AbstractBoard *b, QObject *parent)
+BoardModel_p::BoardModel_p(AbstractBoard *b, QObject *parent)
     :QAbstractTableModel(parent),
       m_board(b)
 {
@@ -32,7 +32,7 @@ BoardModel::BoardModel(AbstractBoard *b, QObject *parent)
             this, SLOT(_piece_moved(const GKChess::MoveData &)));
 }
 
-ISquare const *BoardModel::ConvertIndexToSquare(const QModelIndex &i) const
+ISquare const *BoardModel_p::ConvertIndexToSquare(const QModelIndex &i) const
 {
     ISquare const *ret(0);
     int r = i.row(), c = i.column();
@@ -41,7 +41,7 @@ ISquare const *BoardModel::ConvertIndexToSquare(const QModelIndex &i) const
     return ret;
 }
 
-QModelIndex BoardModel::ConvertSquareToIndex(const ISquare &s) const
+QModelIndex BoardModel_p::ConvertSquareToIndex(const ISquare &s) const
 {
     // No need to check bounds because you cannot create a square
     //  outside of a chess board, so the indexes must be valid.
@@ -49,7 +49,7 @@ QModelIndex BoardModel::ConvertSquareToIndex(const ISquare &s) const
 }
 
 
-int BoardModel::rowCount(const QModelIndex &i) const
+int BoardModel_p::rowCount(const QModelIndex &i) const
 {
     int ret(0);
     if(!i.isValid())
@@ -57,7 +57,7 @@ int BoardModel::rowCount(const QModelIndex &i) const
     return ret;
 }
 
-int BoardModel::columnCount(const QModelIndex &i) const
+int BoardModel_p::columnCount(const QModelIndex &i) const
 {
     int ret(0);
     if(!i.isValid())
@@ -65,7 +65,7 @@ int BoardModel::columnCount(const QModelIndex &i) const
     return ret;
 }
 
-QVariant BoardModel::data(const QModelIndex &i, int role) const
+QVariant BoardModel_p::data(const QModelIndex &i, int role) const
 {
     QVariant ret;
     ISquare const *s = ConvertIndexToSquare(i);
@@ -121,7 +121,7 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
     return ret;
 }
 
-bool BoardModel::setData(const QModelIndex &ind, const QVariant &v, int r)
+bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
 {
     bool ret = false;
     if(ind.isValid())
@@ -179,7 +179,7 @@ bool BoardModel::setData(const QModelIndex &ind, const QVariant &v, int r)
     return ret;
 }
 
-QVariant BoardModel::headerData(int indx, Qt::Orientation o, int role) const
+QVariant BoardModel_p::headerData(int indx, Qt::Orientation o, int role) const
 {
     QVariant ret;
     if(Qt::Horizontal == o)
@@ -213,13 +213,13 @@ QVariant BoardModel::headerData(int indx, Qt::Orientation o, int role) const
     return ret;
 }
 
-void BoardModel::_square_updated(const ISquare &s)
+void BoardModel_p::_square_updated(const ISquare &s)
 {
     QModelIndex i( index(s.GetRow(), s.GetColumn()) );
     emit dataChanged(i, i);
 }
 
-void BoardModel::_piece_moved(const MoveData &md)
+void BoardModel_p::_piece_moved(const MoveData &md)
 {
     QModelIndex i = index(md.Destination->GetRow(), md.Destination->GetColumn());
 
@@ -231,7 +231,7 @@ void BoardModel::_piece_moved(const MoveData &md)
     emit dataChanged(i, i);
 }
 
-Qt::ItemFlags BoardModel::flags(const QModelIndex &ind) const
+Qt::ItemFlags BoardModel_p::flags(const QModelIndex &ind) const
 {
     Qt::ItemFlags ret;
     if(ind.isValid())
@@ -245,12 +245,12 @@ Qt::ItemFlags BoardModel::flags(const QModelIndex &ind) const
 }
 
 
-QStringList BoardModel::mimeTypes() const
+QStringList BoardModel_p::mimeTypes() const
 {
     return QStringList(MIMETYPE_GKCHESS_PIECE);
 }
 
-QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
+QMimeData *BoardModel_p::mimeData(const QModelIndexList &l) const
 {
     QMimeData *ret(0);
     if(1 == l.length())
@@ -274,7 +274,7 @@ QMimeData *BoardModel::mimeData(const QModelIndexList &l) const
     return ret;
 }
 
-bool BoardModel::dropMimeData(const QMimeData *data,
+bool BoardModel_p::dropMimeData(const QMimeData *data,
                               Qt::DropAction action,
                               int row,
                               int column,
@@ -328,13 +328,13 @@ bool BoardModel::dropMimeData(const QMimeData *data,
     return ret;
 }
 
-AbstractBoard::MoveValidationEnum BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
+AbstractBoard::MoveValidationEnum BoardModel_p::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
 {
     return GetBoard().ValidateMove(*ConvertIndexToSquare(s),
                                     *ConvertIndexToSquare(d));
 }
 
-AbstractBoard::MoveValidationEnum BoardModel::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
+AbstractBoard::MoveValidationEnum BoardModel_p::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
 {
     return m_board->Move2(*ConvertIndexToSquare(s),
                           *ConvertIndexToSquare(d),

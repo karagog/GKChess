@@ -28,7 +28,7 @@ class QAnimationGroup;
 namespace GKChess{
     class Piece;
 namespace UI{
-    class BoardModel;
+    class BoardModel_p;
     class IFactory_PieceIcon;
     
 
@@ -77,8 +77,8 @@ public:
     explicit BoardView_p(QWidget *parent = 0);
     ~BoardView_p();
 
-    BoardModel *GetBoardModel() const;
-    void SetBoardModel(BoardModel *);
+    BoardModel_p *GetBoardModel() const;
+    void SetBoardModel(BoardModel_p *);
     void SetIconFactory(IFactory_PieceIcon *);
     IFactory_PieceIcon *GetIconFactory() const{ return i_factory; }
     float GetSquareSize() const{ return m_squareSize; }

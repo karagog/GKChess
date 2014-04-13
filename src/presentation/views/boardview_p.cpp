@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "boardview_p.h"
+#include "boardmodel_p.h"
 #include "gkchess_piece.h"
-#include "gkchess_boardmodel.h"
 #include "gkchess_board.h"
 #include "gkchess_abstractboard.h"
 #include "gkchess_ifactory_pieceicon.h"
@@ -178,11 +178,11 @@ BoardView_p::~BoardView_p()
 {}
 
 
-BoardModel *BoardView_p::GetBoardModel() const
+BoardModel_p *BoardView_p::GetBoardModel() const
 {
-    // We use static cast because we already validated that it's a BoardModel
+    // We use static cast because we already validated that it's a BoardModel_p
     //  when they set the model.
-    return static_cast<BoardModel *>(model());
+    return static_cast<BoardModel_p *>(model());
 }
 
 void BoardView_p::SetIconFactory(IFactory_PieceIcon *i)
@@ -600,7 +600,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
 //    painter.drawRect(temp_rect);
 }
 
-void BoardView_p::SetBoardModel(BoardModel *bm)
+void BoardView_p::SetBoardModel(BoardModel_p *bm)
 {
     ClearSquareHighlighting();
 
@@ -802,13 +802,13 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
     if(ind.isValid())
     {
         QPoint p(ev->pos());
-        Piece target_piece = ind.data(BoardModel::PieceRole).value<Piece>();
+        Piece target_piece = ind.data(BoardModel_p::PieceRole).value<Piece>();
         if(target_piece.IsNull())
             return;
 
         if(m_activeSquare.isValid())
         {
-            Piece active_piece = m_activeSquare.data(BoardModel::PieceRole).value<Piece>();
+            Piece active_piece = m_activeSquare.data(BoardModel_p::PieceRole).value<Piece>();
             m_wasSquareActiveWhenPressed = m_activeSquare == ind;
 
             if(target_piece.GetAllegience() != active_piece.GetAllegience())
@@ -1016,7 +1016,7 @@ void BoardView_p::_update_cursor_at_point(const QPointF &pt)
     else if(get_board_rect().contains(QPoint(pt.x()+horizontalOffset(), pt.y()+verticalOffset())))
     {
         QModelIndex ind = indexAt(pt.toPoint());
-        if(ind.isValid() && !ind.data(BoardModel::PieceRole).isNull())
+        if(ind.isValid() && !ind.data(BoardModel_p::PieceRole).isNull())
             setCursor(Qt::OpenHandCursor);
         else
             setCursor(CURSOR_DEFAULT);

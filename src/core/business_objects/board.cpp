@@ -106,7 +106,7 @@ struct GameState
 };
 
 
-struct g_d_t
+struct d_t
 {
     Vector<Square> squares;
     GameState gamestate;
@@ -117,7 +117,7 @@ struct g_d_t
 };
 
 
-static Map<Piece::PieceTypeEnum, ISquare const *> &__index(g_d_t *d, Piece::AllegienceEnum a)
+static Map<Piece::PieceTypeEnum, ISquare const *> &__index(d_t *d, Piece::AllegienceEnum a)
 {
     return Piece::White == a ? d->index_white : d->index_black;
 }
