@@ -104,7 +104,7 @@ QVariant BoardModel::data(const QModelIndex &i, int role) const
             case ValidMovesRole:
             {
                 QModelIndexList il;
-                Vector<ISquare const *> tmp = GetBoard()->GetValidMovesForSquare(*s);
+                Vector<ISquare const *> tmp = GetBoard().GetValidMovesForSquare(*s);
                 G_FOREACH_CONST(ISquare const *sqr, tmp)
                 {
                     il.append(index(sqr->GetRow(), sqr->GetColumn()));
@@ -330,7 +330,7 @@ bool BoardModel::dropMimeData(const QMimeData *data,
 
 AbstractBoard::MoveValidationEnum BoardModel::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
 {
-    return GetBoard()->ValidateMove(*ConvertIndexToSquare(s),
+    return GetBoard().ValidateMove(*ConvertIndexToSquare(s),
                                     *ConvertIndexToSquare(d));
 }
 

@@ -30,10 +30,6 @@ class IFactory_PieceIcon;
 /** A viewer you can use with the chess board model to display
  *  a chess position in a Qt application.
  * 
- *  The base boardview class takes care of all the basic functions of displaying
- *  a board, but does not allow you to edit it or move pieces (if you want editing then you
- *  need the BoardEdit, and if you want to play a game you need the GameView).
- * 
  *  By default the view first tries to paint the pieces using the icon factory, if given.
  *  If no factory was given then it tries to paint icons provided by the model in the "Qt::DecorationRole".
  *  If there are no icons produced by the model then the view simply paints the unicode chess characters.
@@ -41,9 +37,10 @@ class IFactory_PieceIcon;
 class BoardView :
         public QWidget
 {
-    void *ptr;
+    void *g_d;
 public:
     BoardView(QWidget * = 0);
+    ~BoardView();
 
     BoardModel *GetBoardModel() const;
     void SetBoardModel(BoardModel *);

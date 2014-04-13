@@ -41,104 +41,131 @@ USING_NAMESPACE_GKCHESS1(UI);
 NAMESPACE_GKCHESS1(UI);
 
 
-#define v  reinterpret_cast<BoardView_p *>(ptr)
+struct g_d_t
+{
+    BoardView_p BoardView;
+};
 
 // Converts a square to a QModelIndex
-#define stoi(square_ptr)    v->model() ? \
-    v->model()->index(square_ptr->GetRow(), square_ptr->GetColumn()) : \
+#define stoi(square_ptr)    d->BoardView.model() ? \
+    d->BoardView.model()->index(square_ptr->GetRow(), square_ptr->GetColumn()) : \
     QModelIndex()
 
 
 BoardView::BoardView(QWidget *parent)
-    :QWidget(parent),
-      ptr(new BoardView_p(this))
+    :QWidget(parent)
 {
+    G_D_INIT();
+    G_D;
+
     new QVBoxLayout(this);
-    layout()->addWidget(v);
+    layout()->addWidget(&d->BoardView);
     setContentsMargins(0,0,0,0);
-    v->show();
+    d->BoardView.show();
+}
+
+BoardView::~BoardView()
+{
+    G_D_UNINIT();
 }
 
 void BoardView::SetIconFactory(IFactory_PieceIcon *f)
 {
-    v->SetIconFactory(f);
+    G_D;
+    d->BoardView.SetIconFactory(f);
 }
 
 IFactory_PieceIcon *BoardView::GetIconFactory() const
 {
-    return v->GetIconFactory();
+    G_D;
+    return d->BoardView.GetIconFactory();
 }
 
 float BoardView::GetSquareSize() const
 {
-    return v->GetSquareSize();
+    G_D;
+    return d->BoardView.GetSquareSize();
 }
 void BoardView::SetSquareSize(float s)
 {
-    v->SetSquareSize(s);
+    G_D;
+    d->BoardView.SetSquareSize(s);
 }
 
 QColor BoardView::GetDarkSquareColor() const
 {
-    return v->GetDarkSquareColor();
+    G_D;
+    return d->BoardView.GetDarkSquareColor();
 }
 void BoardView::SetDarkSquareColor(const QColor &c)
 {
-    v->SetDarkSquareColor(c);
+    G_D;
+    d->BoardView.SetDarkSquareColor(c);
 }
 
 QColor BoardView::GetLightSquareColor() const
 {
-    return v->GetLightSquareColor();
+    G_D;
+    return d->BoardView.GetLightSquareColor();
 }
 void BoardView::SetLightSquareColor(const QColor &c)
 {
-    v->SetLightSquareColor(c);
+    G_D;
+    d->BoardView.SetLightSquareColor(c);
 }
 
 QColor BoardView::GetActiveSquareHighlightColor() const
 {
-    return v->GetActiveSquareHighlightColor();
+    G_D;
+    return d->BoardView.GetActiveSquareHighlightColor();
 }
 void BoardView::SetActiveSquareHighlightColor(const QColor &c)
 {
-    v->SetActiveSquareHighlightColor(c);
+    G_D;
+    d->BoardView.SetActiveSquareHighlightColor(c);
 }
 
 void BoardView::HighlightSquare(const ISquare &s, const QColor &c)
 {
-    v->HighlightSquare(stoi((&s)), c);
+    G_D;
+    d->BoardView.HighlightSquare(stoi((&s)), c);
 }
 void BoardView::HighlightSquares(const Vector<ISquare const *> &vec, const QColor &c)
 {
+    G_D;
     QModelIndexList il;
     G_FOREACH_CONST(ISquare const *s, vec)
         il.append(stoi(s));
-    v->HighlightSquares(il, c);
+    d->BoardView.HighlightSquares(il, c);
 }
 
 void BoardView::ClearSquareHighlighting()
 {
-    v->ClearSquareHighlighting();
+    G_D;
+    d->BoardView.ClearSquareHighlighting();
 }
 
 BoardModel *BoardView::GetBoardModel() const
 {
-    return v->GetBoardModel();
+    G_D;
+    return d->BoardView.GetBoardModel();
 }
 
 void BoardView::SetBoardModel(BoardModel *bm)
 {
-    v->SetBoardModel(bm);
+    G_D;
+    d->BoardView.SetBoardModel(bm);
 }
 
 bool BoardView::Editable() const
 {
-    return v->Editable();
+    G_D;
+    return d->BoardView.Editable();
 }
 void BoardView::SetEditable(bool b)
 {
-    v->SetEditable(b);
+    G_D;
+    d->BoardView.SetEditable(b);
 }
 
 

@@ -66,7 +66,7 @@ class BoardView_p :
 
     // Our animation objects
     GUtil::SmartPointer<AbstractBoard> m_animationBoard;
-    GUtil::SmartPointer<QAnimationGroup> m_animationGroup;
+    QAbstractAnimation *m_animation;
 
     // Keeps track of our per-square format options
     GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;
@@ -129,8 +129,10 @@ protected:
     /** This function is called whenever the user attempts to move a piece
         from one index to another.  In the base view this function does nothing,
         but you can override it to do something interesting (like moving a piece!)
+
+        \returns True if the move was successful
     */
-    virtual void attempt_move(const QModelIndex &source, const QModelIndex &dest);
+    virtual bool attempt_move(const QModelIndex &source, const QModelIndex &dest);
 
     /** This is the function you should override when doing your own painting.
      *  Be sure to call the base implementation!
@@ -148,6 +150,7 @@ protected:
     */
     void animate_move(const Piece &,
                       const QPointF &source, const QPointF &dest,
+                      ISquare const *sqr_source,
                       int duration_ms,
                       int easing_curve);
 
@@ -156,9 +159,6 @@ protected:
      *  consistency of animations.
     */
     void animate_snapback(const QPointF &from, const QModelIndex &back_to);
-
-    /** Returns the animation object for direct use by the subclass. */
-    QAnimationGroup *get_animation() const{ return m_animationGroup; }
 
 
     /** \name QAbstractItemView interface
@@ -196,21 +196,6 @@ private slots:
 private:
 
     void _update_cursor_at_point(const QPointF &);
-
-};
-
-
-/** A class that remembers our current animation. */
-class piece_animation_p :
-        public QVariantAnimation
-{
-    Q_OBJECT
-public:
-
-    QModelIndex hidden_index;
-    Piece piece;
-
-    virtual void updateCurrentValue(const QVariant &){}
 
 };
 

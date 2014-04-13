@@ -61,7 +61,7 @@ public:
     explicit BoardModel(AbstractBoard *, QObject *parent = 0);
 
     /** Returns a const reference to the board object. */
-    AbstractBoard const *GetBoard() const{ return m_board; }
+    AbstractBoard const &GetBoard() const{ return *m_board; }
 
 
     /** Returns a reference to the square at the given index.
