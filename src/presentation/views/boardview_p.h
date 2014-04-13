@@ -150,9 +150,15 @@ protected:
     */
     void animate_move(const Piece &,
                       const QPointF &source, const QPointF &dest,
-                      ISquare const *sqr_source,
+                      ISquare const &sqr_source,
                       int duration_ms,
-                      int easing_curve);
+                      QEasingCurve::Type);
+
+    void animate_castle(Piece::AllegienceEnum allegience,
+                        const ISquare &king_src, const ISquare &king_dest,
+                        const ISquare &rook_src, const ISquare &rook_dest,
+                        int duration_ms,
+                        QEasingCurve::Type easing_curve);
 
     /** A function that animates a piece snapping back from any point to the source square.
      *  This is really just a wrapper around animate_move, so it's here for convenience and

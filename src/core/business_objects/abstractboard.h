@@ -48,6 +48,13 @@ public:
     */
     virtual Piece ChoosePromotedPiece(Piece::AllegienceEnum) = 0;
 
+    /** This is used in Chess960 for situations in which it is not clear if you wish to castle
+     *  or simply move your king.
+     *
+     *  \returns True if the player wants to castle
+    */
+    virtual bool CastleYesNo() = 0;
+
 };
 
 
@@ -260,29 +267,29 @@ public:
     virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
     virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
 
-    /** A castle column, 0 based. If this castling move has been executed, or otherwise
-     *  the opportunity ruined, it will be -1
+    /** The castle column on the white king's A-side, 0 based. If this castling move has been executed,
+     *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleWhite1() const = 0;
-    virtual void SetCastleWhite1(int) = 0;
+    virtual int GetCastleWhiteA() const = 0;
+    virtual void SetCastleWhiteA(int) = 0;
 
-    /** A castle column, 0 based. If this castling move has been executed, or otherwise
-     *  the opportunity ruined, it will be -1
+    /** The castle column on the white king's H-side, 0 based. If this castling move has been executed,
+     *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleWhite2() const = 0;
-    virtual void SetCastleWhite2(int) = 0;
+    virtual int GetCastleWhiteH() const = 0;
+    virtual void SetCastleWhiteH(int) = 0;
 
-    /** A castle column, 0 based. If this castling move has been executed, or otherwise
-     *  the opportunity ruined, it will be -1
+    /** The castle column on the black king's A-side, 0 based. If this castling move has been executed,
+     *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleBlack1() const = 0;
-    virtual void SetCastleBlack1(int) = 0;
+    virtual int GetCastleBlackA() const = 0;
+    virtual void SetCastleBlackA(int) = 0;
 
-    /** A castle column, 0 based. If this castling move has been executed, or otherwise
-     *  the opportunity ruined, it will be -1
+    /** The castle column on the black king's H-side, 0 based. If this castling move has been executed,
+     *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleBlack2() const = 0;
-    virtual void SetCastleBlack2(int) = 0;
+    virtual int GetCastleBlackH() const = 0;
+    virtual void SetCastleBlackH(int) = 0;
 
     /** The en passant square, if there is one. If not then this is null. */
     virtual ISquare const *GetEnPassantSquare() const = 0;

@@ -33,7 +33,7 @@ struct PGN_MoveData
         Capture,
 
         /** Indicates a King-side castle (O-O in chess notation). */
-        CastleNormal,
+        CastleHSide,
 
         /** Indicates a Queen-side castle (O-O-O in chess notation). */
         CastleQueenSide,

@@ -26,7 +26,7 @@ PGN_MoveData::PGN_MoveData()
 String PGN_MoveData::ToString() const
 {
     String ret(25);
-    if(Flags.TestFlag(CastleNormal))
+    if(Flags.TestFlag(CastleHSide))
         ret.Append("Castle");
     else if(Flags.TestFlag(CastleQueenSide))
         ret.Append("Castle Queenside");

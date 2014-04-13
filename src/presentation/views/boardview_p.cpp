@@ -29,6 +29,7 @@ limitations under the License.*/
 #include <QApplication>
 #include <QRubberBand>
 #include <QSequentialAnimationGroup>
+#include <QParallelAnimationGroup>
 #include <QVariantAnimation>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
@@ -76,6 +77,9 @@ USING_NAMESPACE_GKCHESS1(UI);
 
 #define ANIM_MOVE_DURATION 0.35
 
+/** Defines the easing function we use to animate piece movements. */
+#define ANIM_MOVE_EASING   QEasingCurve::OutQuad
+
 /** The size of a rect that determines when to start dragging a piece (as a factor of square size). */
 #define DRAG_START_RECT_SIZE 0.35
 
@@ -99,6 +103,12 @@ static QRectF __get_shrunken_rect(const QRectF &r, double factor)
                  factor*r.height());
 }
 
+/** Returns a rect centered at the point with the given size. */
+static QRectF __rect_centered_at(const QPointF &p, double s)
+{
+    return QRectF(p.x()-s/2, p.y()-s/2, s, s);
+}
+
 
 
 
@@ -106,14 +116,35 @@ struct move_animation_t :
         public QVariantAnimation
 {
     Piece piece;
-    ISquare const *source;
 
     void updateCurrentValue(const QVariant &){}
 
-    move_animation_t(const Piece &p, ISquare const *s,QObject *par = 0)
-        :QVariantAnimation(par),piece(p),source(s)
+    move_animation_t(const Piece &p, QObject *par = 0)
+        :QVariantAnimation(par),piece(p)
     {}
+};
 
+class castle_animation_t :
+        public QParallelAnimationGroup
+{
+    Q_OBJECT
+public:
+    move_animation_t *anim_king;
+    move_animation_t *anim_rook;
+
+    castle_animation_t(Piece::AllegienceEnum a, QObject *par = 0)
+        :QParallelAnimationGroup(par),
+          anim_king(new move_animation_t(Piece(Piece::King, a), this)),
+          anim_rook(new move_animation_t(Piece(Piece::Rook, a), this))
+    {
+        addAnimation(anim_king);
+        addAnimation(anim_rook);
+
+        connect(anim_king, SIGNAL(valueChanged(QVariant)), this, SIGNAL(valueChanged()));
+    }
+
+signals:
+    void valueChanged();
 };
 
 
@@ -533,11 +564,18 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
         {
             move_animation_t *anim = dynamic_cast<move_animation_t *>(m_animation);
             QPointF v = anim->currentValue().value<QPointF>();
-            if(!v.isNull()){
-                paint_piece_at(anim->piece,
-                               QRectF(v.x()-GetSquareSize()/2, v.y()-GetSquareSize()/2, GetSquareSize(), GetSquareSize()),
-                               painter);
-            }
+            if(!v.isNull())
+                paint_piece_at(anim->piece, __rect_centered_at(v, GetSquareSize()), painter);
+        }
+        else if(NULL != dynamic_cast<castle_animation_t *>(m_animation))
+        {
+            castle_animation_t *anim = dynamic_cast<castle_animation_t *>(m_animation);
+            QPointF pos_capturer = anim->anim_king->currentValue().value<QPointF>();
+            QPointF pos_capturee = anim->anim_rook->currentValue().value<QPointF>();
+            if(!pos_capturer.isNull())
+                paint_piece_at(anim->anim_king->piece, __rect_centered_at(pos_capturer, GetSquareSize()), painter);
+            if(!pos_capturee.isNull())
+                paint_piece_at(anim->anim_rook->piece, __rect_centered_at(pos_capturee, GetSquareSize()), painter);
         }
     }
 
@@ -639,8 +677,8 @@ void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
     animate_move(*sqr->GetPiece(),
                  from,
                  item_rect(s.column(), s.row()).center(),
-                 sqr,
-                 ANIM_SNAPBACKDURATION * 1000,
+                 *sqr,
+                 1000 * ANIM_SNAPBACKDURATION,
                  //QEasingCurve::InOutQuad
                  //QEasingCurve::InOutCubic
                  //QEasingCurve::InOutQuart
@@ -658,16 +696,16 @@ void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
 
 void BoardView_p::animate_move(const Piece &p,
                                const QPointF &source, const QPointF &dest,
-                               ISquare const *sqr_source,
-                               int dur, int easing_curve)
+                               ISquare const &sqr_source,
+                               int dur, QEasingCurve::Type easing_curve)
 {
     // Make a copy of the board so it doesn't change while we're animating
     m_animationBoard = new Board(GetBoardModel()->GetBoard());
 
     // Remove the source piece from the board because it is being animated
-    m_animationBoard->SetPiece(Piece(), *sqr_source);
+    m_animationBoard->SetPiece(Piece(), sqr_source);
 
-    move_animation_t *anim = new move_animation_t(p, sqr_source, this);
+    move_animation_t *anim = new move_animation_t(p, this);
     m_animation = anim;
     connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
     connect(anim, SIGNAL(finished()), this, SLOT(_animation_finished()));
@@ -678,6 +716,37 @@ void BoardView_p::animate_move(const Piece &p,
     anim->setDuration(dur);
 
     m_animation->start();
+}
+
+void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
+                                 const ISquare &king_src, const ISquare &king_dest,
+                                 const ISquare &rook_src, const ISquare &rook_dest,
+                                 int dur,
+                                 QEasingCurve::Type easing_curve)
+{
+    // Make a copy of the board so it doesn't change while we're animating
+    m_animationBoard = new Board(GetBoardModel()->GetBoard());
+
+    // Remove the king and rook from the board because they are being animated
+    m_animationBoard->SetPiece(Piece(), king_src);
+    m_animationBoard->SetPiece(Piece(), rook_src);
+
+    castle_animation_t *anim = new castle_animation_t(allegience);
+    connect(anim, SIGNAL(valueChanged()), viewport(), SLOT(update()));
+    connect(anim, SIGNAL(finished()), this, SLOT(_animation_finished()));
+
+    anim->anim_king->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
+    anim->anim_king->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
+    anim->anim_king->setEasingCurve(easing_curve);
+    anim->anim_king->setDuration(dur);
+
+    anim->anim_rook->setStartValue(item_rect(rook_src.GetColumn(), rook_src.GetRow()).center());
+    anim->anim_rook->setEndValue(item_rect(rook_dest.GetColumn(), rook_dest.GetRow()).center());
+    anim->anim_rook->setEasingCurve(easing_curve);
+    anim->anim_rook->setDuration(dur);
+
+    m_animation = anim;
+    anim->start();
 }
 
 void BoardView_p::HighlightSquare(const QModelIndex &i, const QColor &c)
@@ -863,38 +932,73 @@ void BoardView_p::mouseDoubleClickEvent(QMouseEvent *ev)
 
 void BoardView_p::_piece_about_to_move(const MoveData &md)
 {
-    if(NULL == m_animation)
+    if(NULL != m_animation)
     {
-        QVariantAnimation *anim;
+        // An animation is currently running, so cancel it and start a new one
+        QAbstractAnimation *anim = m_animation;
+        m_animation = 0;
+        anim->deleteLater();
+        m_animationBoard.Clear();
+    }
 
-        if(!md.PieceCaptured.IsNull())
-        {
-            // Animate capturing a piece
+    if(md.NoCastle != md.CastleType)
+    {
+        // Animate castling
+        if(!m_dragging){
+            AbstractBoard const &board( GetBoardModel()->GetBoard() );
+            Piece::AllegienceEnum allegience = md.PieceMoved.GetAllegience();
+            ISquare const *king_dest;
+            ISquare const *rook_src, *rook_dest;
+            switch(md.CastleType)
+            {
+            case MoveData::CastleHSide:
+                if(Piece::White == allegience){
+                    king_dest = &board.SquareAt(6, 0);
+                    rook_src = &board.SquareAt(board.GetCastleWhiteH(), 0);
+                    rook_dest = &board.SquareAt(5, 0);
+                }
+                else{
+                    king_dest = &board.SquareAt(6, 7);
+                    rook_src = &board.SquareAt(board.GetCastleBlackH(), 7);
+                    rook_dest = &board.SquareAt(5, 7);
+                }
+                break;
+            case MoveData::CastleASide:
+                if(Piece::White == allegience){
+                    king_dest = &board.SquareAt(2, 0);
+                    rook_src = &board.SquareAt(board.GetCastleWhiteA(), 0);
+                    rook_dest = &board.SquareAt(3, 0);
+                }
+                else{
+                    king_dest = &board.SquareAt(2, 7);
+                    rook_src = &board.SquareAt(board.GetCastleBlackA(), 7);
+                    rook_dest = &board.SquareAt(3, 7);
+                }
+                break;
+            default: break;
+            }
+
+            animate_castle(allegience,
+                           *md.Source, *king_dest,
+                           *rook_src, *rook_dest,
+                           ANIM_MOVE_DURATION *1000,
+                           ANIM_MOVE_EASING);
         }
-        else if(md.NoCastle != md.CastleType)
-        {
-            // Animate castling
-        }
-        else if(!md.PiecePromoted.IsNull())
-        {
-            // Animate pawn promotion
-        }
-        else
-        {
-            // Animate regular moving, unless they're dragging
-            if(!m_dragging)
-                animate_move(md.PieceMoved,
-                             item_rect(md.Source->GetColumn(), md.Source->GetRow()).center(),
-                             item_rect(md.Destination->GetColumn(), md.Destination->GetRow()).center(),
-                             md.Source,
-                             ANIM_MOVE_DURATION * 1000,
-                             QEasingCurve::OutQuad);
-        }
+    }
+    else if(!md.PiecePromoted.IsNull())
+    {
+        // Animate pawn promotion
     }
     else
     {
-        // An animation is currently running, so cancel it and start a new one
-
+        // Animate regular moving, unless they're dragging
+        if(!m_dragging)
+            animate_move(md.PieceMoved,
+                         item_rect(md.Source->GetColumn(), md.Source->GetRow()).center(),
+                         item_rect(md.Destination->GetColumn(), md.Destination->GetRow()).center(),
+                         *md.Source,
+                         ANIM_MOVE_DURATION * 1000,
+                         ANIM_MOVE_EASING);
     }
 }
 
@@ -920,3 +1024,6 @@ void BoardView_p::_update_cursor_at_point(const QPointF &pt)
     else
         setCursor(CURSOR_DEFAULT);
 }
+
+
+#include "boardview_p.moc"

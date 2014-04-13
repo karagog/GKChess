@@ -18,6 +18,11 @@ limitations under the License.*/
 #include "pgn_move_data.h"
 USING_NAMESPACE_GUTIL;
 
+
+#define CASTLE_A_KING_DEST  2
+#define CASTLE_H_KING_DEST  6
+
+
 NAMESPACE_GKCHESS;
 
 
@@ -129,6 +134,8 @@ void AbstractBoard::Clear()
 
 void AbstractBoard::FromFEN(const String &s)
 {
+    int king_col_white = -1;
+    int king_col_black = -1;
     String cpy( s.Trimmed() );
     StringList sl( cpy.Split(' ', false) );
     if(6 != sl.Length())
@@ -174,7 +181,17 @@ void AbstractBoard::FromFEN(const String &s)
                 }
                 else
                 {
-                    SetPiece(Piece::FromFEN(c), SquareAt(col, rank));
+                    Piece piece = Piece::FromFEN(c);
+                    SetPiece(piece, SquareAt(col, rank));
+
+                    if(Piece::King == piece.GetType())
+                    {
+                        if(Piece::White == piece.GetAllegience())
+                            king_col_white = col;
+                        else
+                            king_col_black = col;
+                    }
+
                     col++;
                 }
 
@@ -205,10 +222,10 @@ void AbstractBoard::FromFEN(const String &s)
 
     // Then parse the castle info:
     {
-        SetCastleWhite1(-1);
-        SetCastleWhite2(-1);
-        SetCastleBlack1(-1);
-        SetCastleBlack2(-1);
+        SetCastleWhiteA(-1);
+        SetCastleWhiteH(-1);
+        SetCastleBlackA(-1);
+        SetCastleBlackH(-1);
 
         G_FOREACH_CONST(char c, sl[2])
         {
@@ -240,16 +257,16 @@ void AbstractBoard::FromFEN(const String &s)
                 switch(a)
                 {
                 case Piece::White:
-                    if(-1 == GetCastleWhite1())
-                        SetCastleWhite1(file);
+                    if(king_col_white > file)
+                        SetCastleWhiteA(file);
                     else
-                        SetCastleWhite2(file);
+                        SetCastleWhiteH(file);
                     break;
                 case Piece::Black:
-                    if(-1 == GetCastleBlack1())
-                        SetCastleBlack1(file);
+                    if(king_col_black > file)
+                        SetCastleBlackA(file);
                     else
-                        SetCastleBlack2(file);
+                        SetCastleBlackH(file);
                     break;
                 default: break;
                 }
@@ -518,7 +535,32 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
         break;
     case Piece::King:
         if(1 >= col_diff_abs && 1 >= row_diff_abs)
+        {
+            // Normally the king can only move one square in any direction
             technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+        }
+        else if(0 == row_diff)
+        {
+            // The king can move more than one square if he's castling
+            if(Piece::White == p->GetAllegience()){
+                if(s.GetRow() == 0){
+                    if((d.GetColumn() == 2 && GetCastleWhiteA() != -1) ||
+                            (d.GetColumn() == 6 && GetCastleWhiteH() != -1))
+                    {
+                        technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+                    }
+                }
+            }
+            else{
+                if(s.GetRow() == 7){
+                    if((d.GetColumn() == 2 && GetCastleBlackA() != -1) ||
+                            (d.GetColumn() == 6 && GetCastleBlackH() != -1))
+                    {
+                        technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+                    }
+                }
+            }
+        }
         break;
     default:
         // We should not have an unkown piece type
@@ -545,10 +587,10 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
     MoveData ret;
     Piece::AllegienceEnum turn = GetWhoseTurn();
 
-    if(m.Flags.TestFlag(PGN_MoveData::CastleNormal))
-        ret.CastleType = MoveData::CastleNormal;
+    if(m.Flags.TestFlag(PGN_MoveData::CastleHSide))
+        ret.CastleType = MoveData::CastleHSide;
     else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
-        ret.CastleType = MoveData::CastleQueenside;
+        ret.CastleType = MoveData::CastleASide;
     else
     {
         // Validate the inputs
@@ -826,18 +868,27 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
     MoveData ret;
     bool ok = true;
 
-    // Check if there is a piece promotion
-    if(s.GetPiece() && s.GetPiece()->GetType() == Piece::Pawn)
+    if(s.GetPiece())
     {
-        Piece::AllegienceEnum a = s.GetPiece()->GetAllegience();
-        int promotion_rank = Piece::White == a ? 7 : 0;
-        if(promotion_rank == d.GetRow())
+        // Check if there is a piece promotion
+        if(s.GetPiece()->GetType() == Piece::Pawn)
         {
-            ret.PiecePromoted = NULL == uf ? Piece(Piece::Queen, a) : uf->ChoosePromotedPiece(a);
+            Piece::AllegienceEnum a = s.GetPiece()->GetAllegience();
+            int promotion_rank = Piece::White == a ? 7 : 0;
+            if(promotion_rank == d.GetRow())
+            {
+                ret.PiecePromoted = NULL == uf ? Piece(Piece::Queen, a) : uf->ChoosePromotedPiece(a);
 
-            // If the user cancelled then we return a null move data
-            if(ret.PiecePromoted.IsNull())
-                ok = false;
+                // If the user cancelled then we return a null move data
+                if(ret.PiecePromoted.IsNull())
+                    ok = false;
+            }
+        }
+        else if(s.GetPiece()->GetType() == Piece::King)
+        {
+            // Check if there is a castle
+            if(Abs(s.GetColumn() - d.GetColumn()) == 2)
+                ret.CastleType = d.GetColumn() == CASTLE_A_KING_DEST ? MoveData::CastleASide : MoveData::CastleHSide;
         }
     }
 

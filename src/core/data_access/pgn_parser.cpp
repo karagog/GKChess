@@ -195,7 +195,7 @@ bool PGN_Parser::_new_movedata_from_string(PGN_MoveData &m, const String &s)
     if(INT_MAX != m.Text.ToUpper().IndexOf("O-O-O"))
         m.Flags.SetFlag(PGN_MoveData::CastleQueenSide, true);
     else if(INT_MAX != m.Text.ToUpper().IndexOf("O-O"))
-        m.Flags.SetFlag(PGN_MoveData::CastleNormal, true);
+        m.Flags.SetFlag(PGN_MoveData::CastleHSide, true);
     else if(INT_MAX != m.Text.IndexOf("1-0")){
         Data.Result = 1;
         ret = false;

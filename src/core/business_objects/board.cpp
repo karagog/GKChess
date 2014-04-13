@@ -69,10 +69,10 @@ static Square const &__square_at(Square const *sa, int col, int row)
 struct GameState
 {
     Piece::AllegienceEnum WhoseTurn;
-    int CastleWhite1;
-    int CastleWhite2;
-    int CastleBlack1;
-    int CastleBlack2;
+    int CastleWhiteA;
+    int CastleWhiteH;
+    int CastleBlackA;
+    int CastleBlackH;
     ISquare const *EnPassantSquare;
     int HalfMoveClock;
     int FullMoveNumber;
@@ -80,10 +80,10 @@ struct GameState
 
     GameState():
         WhoseTurn(Piece::AnyAllegience),
-        CastleWhite1(-1),
-        CastleWhite2(-1),
-        CastleBlack1(-1),
-        CastleBlack2(-1),
+        CastleWhiteA(-1),
+        CastleWhiteH(-1),
+        CastleBlackA(-1),
+        CastleBlackH(-1),
         EnPassantSquare(0),
         HalfMoveClock(-1),
         FullMoveNumber(-1),
@@ -93,10 +93,10 @@ struct GameState
     /** Constructs the game state object from another abstract board. */
     GameState(const AbstractBoard &o):
         WhoseTurn(o.GetWhoseTurn()),
-        CastleWhite1(o.GetCastleWhite1()),
-        CastleWhite2(o.GetCastleWhite2()),
-        CastleBlack1(o.GetCastleBlack1()),
-        CastleBlack2(o.GetCastleBlack2()),
+        CastleWhiteA(o.GetCastleWhiteA()),
+        CastleWhiteH(o.GetCastleWhiteH()),
+        CastleBlackA(o.GetCastleBlackA()),
+        CastleBlackH(o.GetCastleBlackH()),
         EnPassantSquare(o.GetEnPassantSquare()),
         HalfMoveClock(o.GetHalfMoveClock()),
         FullMoveNumber(o.GetFullMoveNumber()),
@@ -207,28 +207,72 @@ void Board::move_p(const MoveData &md)
     Piece const *piece_dest = dest.GetPiece();
     Map<Piece::PieceTypeEnum, ISquare const *> &index(__index(d, piece_orig->GetAllegience()));
 
-    // Remove the piece at the dest square from the index
-    if(piece_dest){
-        index.Remove(piece_dest->GetType(), &dest);
-    }
-
-    // Update the index for the piece being moved
-    if(piece_orig)
+    if(MoveData::NoCastle == md.CastleType)
     {
-        // If the piece being moved is not the same piece as the source square (corner case)
-        if(*piece_orig != md.PieceMoved)
+        // Remove the piece at the dest square from the index
+        if(piece_dest){
+            index.Remove(piece_dest->GetType(), &dest);
+        }
+
+        // Update the index for the piece being moved
+        if(piece_orig)
         {
-            // This section of code should not execute unless there is a bug in our move logic
-            GASSERT(false);
-            index.Remove(piece_orig->GetType(), &src);
-            __index(d, md.PieceMoved.GetAllegience()).InsertMulti(md.PieceMoved.GetType(), &dest);
+            // If the piece being moved is not the same piece as the source square (corner case)
+            if(*piece_orig != md.PieceMoved)
+            {
+                // This section of code should not execute unless there is a bug in our move logic
+                GASSERT(false);
+                index.Remove(piece_orig->GetType(), &src);
+                __index(d, md.PieceMoved.GetAllegience()).InsertMulti(md.PieceMoved.GetType(), &dest);
+            }
+            else
+                index[piece_orig->GetType()] = &dest;
+        }
+
+        src.SetPiece(Piece());
+        dest.SetPiece(md.PieceMoved);
+    }
+    else
+    {
+        int rook_col_src, rook_col_dest;
+        int rank;
+        if(Piece::White == piece_orig->GetAllegience())
+        {
+            rank = 0;
+            if(MoveData::CastleASide == md.CastleType)
+            {
+                rook_col_src = GetCastleWhiteA();
+                rook_col_dest = 3;
+            }
+            else
+            {
+                rook_col_src = GetCastleWhiteH();
+                rook_col_dest = 5;
+            }
         }
         else
-            index[piece_orig->GetType()] = &dest;
-    }
+        {
+            rank = 7;
+            if(MoveData::CastleASide == md.CastleType)
+            {
+                rook_col_src = GetCastleBlackA();
+                rook_col_dest = 3;
+            }
+            else
+            {
+                rook_col_src = GetCastleBlackH();
+                rook_col_dest = 5;
+            }
+        }
 
-    src.SetPiece(Piece());
-    dest.SetPiece(md.PieceMoved);
+        // Move the rook
+        __square_at(d->squares, rook_col_src, rank).SetPiece(Piece());
+        __square_at(d->squares, rook_col_dest, rank).SetPiece(Piece(Piece::Rook, piece_orig->GetAllegience()));
+
+        // Move the King
+        dest.SetPiece(*piece_orig);
+        src.SetPiece(Piece());
+    }
 }
 
 ISquare const &Board::SquareAt(int col, int row) const
@@ -262,45 +306,45 @@ void Board::SetWhoseTurn(Piece::AllegienceEnum v)
     G_D;
     d->gamestate.WhoseTurn=v;
 }
-int Board::GetCastleWhite1() const
+int Board::GetCastleWhiteA() const
 {
     G_D;
-    return d->gamestate.CastleWhite1;
+    return d->gamestate.CastleWhiteA;
 }
-void Board::SetCastleWhite1(int v)
+void Board::SetCastleWhiteA(int v)
 {
     G_D;
-    d->gamestate.CastleWhite1=v;
+    d->gamestate.CastleWhiteA=v;
 }
-int Board::GetCastleWhite2() const
+int Board::GetCastleWhiteH() const
 {
     G_D;
-    return d->gamestate.CastleWhite2;
+    return d->gamestate.CastleWhiteH;
 }
-void Board::SetCastleWhite2(int v)
+void Board::SetCastleWhiteH(int v)
 {
     G_D;
-    d->gamestate.CastleWhite2=v;
+    d->gamestate.CastleWhiteH=v;
 }
-int Board::GetCastleBlack1() const
+int Board::GetCastleBlackA() const
 {
     G_D;
-    return d->gamestate.CastleBlack1;
+    return d->gamestate.CastleBlackA;
 }
-void Board::SetCastleBlack1(int v)
+void Board::SetCastleBlackA(int v)
 {
     G_D;
-    d->gamestate.CastleBlack1=v;
+    d->gamestate.CastleBlackA=v;
 }
-int Board::GetCastleBlack2() const
+int Board::GetCastleBlackH() const
 {
     G_D;
-    return d->gamestate.CastleBlack2;
+    return d->gamestate.CastleBlackH;
 }
-void Board::SetCastleBlack2(int v)
+void Board::SetCastleBlackH(int v)
 {
     G_D;
-    d->gamestate.CastleBlack2=v;
+    d->gamestate.CastleBlackH=v;
 }
 ISquare const *Board::GetEnPassantSquare() const
 {

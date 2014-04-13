@@ -35,12 +35,16 @@ struct MoveData
     /** The ending square.  If the move was a castle this will be null. */
     ISquare const *Destination;
 
-    /** The type of castle is either 0=No Casle, 1=Castle Normal, -1=Castle Queenside. */
+    /** The type of castle. */
     enum CastleTypeEnum
     {
         NoCastle = 0,
-        CastleNormal = 1,
-        CastleQueenside = -1
+
+        /** In standard chess this indicates a king-side castle. */
+        CastleHSide,
+
+        /** In standard chess this indicates a queen-side castle. */
+        CastleASide
     }
     CastleType;
 

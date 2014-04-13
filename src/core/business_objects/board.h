@@ -51,14 +51,14 @@ public:
 
     virtual Piece::AllegienceEnum GetWhoseTurn() const;
     virtual void SetWhoseTurn(Piece::AllegienceEnum v);
-    virtual int GetCastleWhite1() const;
-    virtual void SetCastleWhite1(int v);
-    virtual int GetCastleWhite2() const;
-    virtual void SetCastleWhite2(int v);
-    virtual int GetCastleBlack1() const;
-    virtual void SetCastleBlack1(int v);
-    virtual int GetCastleBlack2() const;
-    virtual void SetCastleBlack2(int v);
+    virtual int GetCastleWhiteA() const;
+    virtual void SetCastleWhiteA(int v);
+    virtual int GetCastleWhiteH() const;
+    virtual void SetCastleWhiteH(int v);
+    virtual int GetCastleBlackA() const;
+    virtual void SetCastleBlackA(int v);
+    virtual int GetCastleBlackH() const;
+    virtual void SetCastleBlackH(int v);
     virtual ISquare const *GetEnPassantSquare() const;
     virtual void SetEnPassantSquare(ISquare const *v);
     virtual int GetHalfMoveClock() const;
