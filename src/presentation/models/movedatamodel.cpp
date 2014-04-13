@@ -32,7 +32,7 @@ int MoveDataModel::rowCount(const QModelIndex &i) const
     return _get_container_from_index(i)->Moves.Length();
 }
 
-int MoveDataModel::columnCount(const QModelIndex &i) const
+int MoveDataModel::columnCount(const QModelIndex &) const
 {
     return 1;
 }

@@ -66,6 +66,9 @@ struct MoveData
     /** Returns true if this is a null move data (default constructed). */
     bool IsNull() const{ return -1 == PlyNumber; }
 
+    /** Returns whose move this is, according to the ply number. */
+    Piece::AllegienceEnum Whose() const{ return 0 == ((PlyNumber - 1) & 0x1) ? Piece::White : Piece::Black; }
+
     MoveData()
         :PlyNumber(-1),
           Source(0),

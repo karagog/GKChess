@@ -71,6 +71,7 @@ void PGNView::mouseReleaseEvent(QMouseEvent *me)
     QToolTip::showText(QCursor::pos(), textCursor().selectedText());
     
     m_isMousePressed = false;
+    me->accept();
 }
 
 void PGNView::mouseMoveEvent(QMouseEvent *me)
@@ -85,6 +86,7 @@ void PGNView::mouseMoveEvent(QMouseEvent *me)
 void PGNView::mouseDoubleClickEvent(QMouseEvent *me)
 {
     //QTextBrowser::mouseDoubleClickEvent(me);
+    me->accept();
 }
 
 

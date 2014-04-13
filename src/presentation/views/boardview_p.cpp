@@ -344,7 +344,7 @@ int BoardView_p::verticalOffset() const
     return verticalScrollBar()->value();
 }
 
-bool BoardView_p::isIndexHidden(const QModelIndex &index) const
+bool BoardView_p::isIndexHidden(const QModelIndex &) const
 {
     // There are no hidden indices on a chess board
     return false;
@@ -425,7 +425,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
         return;
 
     QStyleOptionViewItem option = viewOptions();
-    QStyle::State state = option.state;
+    //QStyle::State state = option.state;
 
     QBrush background = option.palette.base();
     QPen textPen(option.palette.color(QPalette::Text));
@@ -946,7 +946,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
         // Animate castling
         if(!m_dragging){
             AbstractBoard const &board( GetBoardModel()->GetBoard() );
-            Piece::AllegienceEnum allegience = md.PieceMoved.GetAllegience();
+            Piece::AllegienceEnum allegience = md.Whose();
             ISquare const *king_dest;
             ISquare const *rook_src, *rook_dest;
             switch(md.CastleType)
@@ -1002,7 +1002,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
     }
 }
 
-void BoardView_p::_piece_moved(const MoveData &md)
+void BoardView_p::_piece_moved(const MoveData &)
 {
 
 }

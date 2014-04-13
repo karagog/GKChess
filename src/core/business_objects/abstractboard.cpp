@@ -84,6 +84,55 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
     }
     else
         b.SetEnPassantSquare(0);
+
+    // Update the castle info
+    //    Debugging:
+    int wa = b.GetCastleWhiteA();
+    int wh = b.GetCastleWhiteH();
+    int ba = b.GetCastleBlackA();
+    int bh = b.GetCastleBlackH();
+    if(Piece::White == md.Whose())
+    {
+        if(Piece::King == p.GetType() || MoveData::NoCastle != md.CastleType)
+        {
+            // If the king moved, or he is castling then all castling options are set to null
+            b.SetCastleWhiteA(-1);
+            b.SetCastleWhiteH(-1);
+        }
+        else if(Piece::Rook == p.GetType())
+        {
+            // If a rook moved and castling was available on that side, now it's not
+            if(-1 != b.GetCastleWhiteA()){
+                if(b.GetCastleWhiteA() == md.Source->GetColumn() && 0 == md.Source->GetRow())
+                    b.SetCastleWhiteA(-1);
+            }
+            if(-1 != b.GetCastleWhiteH()){
+                if(b.GetCastleWhiteH() == md.Source->GetColumn() && 0 == md.Source->GetRow())
+                    b.SetCastleWhiteH(-1);
+            }
+        }
+    }
+    else
+    {
+        if(Piece::King == p.GetType() || MoveData::NoCastle != md.CastleType)
+        {
+            // If the king moved, or he is castling then all castling options are set to null
+            b.SetCastleBlackA(-1);
+            b.SetCastleBlackH(-1);
+        }
+        else if(Piece::Rook == p.GetType())
+        {
+            // If a rook moved and castling was available on that side, now it's not
+            if(-1 != b.GetCastleBlackA()){
+                if(b.GetCastleBlackA() == md.Source->GetColumn() && 7 == md.Source->GetRow())
+                    b.SetCastleBlackA(-1);
+            }
+            if(-1 != b.GetCastleBlackH()){
+                if(b.GetCastleBlackH() == md.Source->GetColumn() && 7 == md.Source->GetRow())
+                    b.SetCastleBlackH(-1);
+            }
+        }
+    }
 }
 
 AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
@@ -498,7 +547,7 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
         // non-capture
         if(col_diff == 0)
         {
-            technically_ok = row_diff == 1*sign || (startRank == s.GetRow() && row_diff == 2*sign);
+            technically_ok = !dp && row_diff == 1*sign || (startRank == s.GetRow() && row_diff == 2*sign);
         }
 
         // capture move
@@ -894,7 +943,10 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
 
     if(ok)
     {
-        ret.PlyNumber = 0;
+        ret.PlyNumber = GetFullMoveNumber() * 2 - 1;
+        if(Piece::Black == GetWhoseTurn())
+            ret.PlyNumber++;
+
         ret.Source = &s;
         ret.Destination = &d;
 
