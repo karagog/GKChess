@@ -30,7 +30,7 @@ namespace GKChess{
 namespace UI{
     class BoardModel_p;
     class IFactory_PieceIcon;
-    
+        
 
 /** A private class to implement the board view, because we don't want to expose the
  *  QAbstractItemView interface. This gives us better encapsulation.
@@ -65,8 +65,8 @@ class BoardView_p :
     GUtil::SmartPointer<QRubberBand> m_selectionBand;
 
     // Our animation objects
+    QAnimationGroup *m_animation;
     GUtil::SmartPointer<AbstractBoard> m_animationBoard;
-    QAbstractAnimation *m_animation;
 
     // Keeps track of our per-square format options
     GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;

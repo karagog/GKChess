@@ -111,43 +111,17 @@ static QRectF __rect_centered_at(const QPointF &p, double s)
 
 
 
-
-struct move_animation_t :
-        public QVariantAnimation
+struct piece_animation_t :
+    public QVariantAnimation
 {
     Piece piece;
 
     void updateCurrentValue(const QVariant &){}
 
-    move_animation_t(const Piece &p, QObject *par = 0)
+    piece_animation_t(const Piece &p, QObject *par = 0)
         :QVariantAnimation(par),piece(p)
     {}
 };
-
-class castle_animation_t :
-        public QParallelAnimationGroup
-{
-    Q_OBJECT
-public:
-    move_animation_t *anim_king;
-    move_animation_t *anim_rook;
-
-    castle_animation_t(Piece::AllegienceEnum a, QObject *par = 0)
-        :QParallelAnimationGroup(par),
-          anim_king(new move_animation_t(Piece(Piece::King, a), this)),
-          anim_rook(new move_animation_t(Piece(Piece::Rook, a), this))
-    {
-        addAnimation(anim_king);
-        addAnimation(anim_rook);
-
-        connect(anim_king, SIGNAL(valueChanged(QVariant)), this, SIGNAL(valueChanged()));
-    }
-
-signals:
-    void valueChanged();
-};
-
-
 
 
 
@@ -163,6 +137,7 @@ BoardView_p::BoardView_p(QWidget *parent)
       i_factory(0),
       m_dragging(false),
       m_wasSquareActiveWhenPressed(false),
+      m_animation(0),
       m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this))
 {
     setMouseTracking(true);
@@ -560,22 +535,12 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     // If we're animating a move, paint that now
     if(NULL != m_animation)
     {
-        if(NULL != dynamic_cast<move_animation_t *>(m_animation))
+        for(int a = 0; a < m_animation->animationCount(); ++a)
         {
-            move_animation_t *anim = dynamic_cast<move_animation_t *>(m_animation);
+            piece_animation_t *anim = static_cast<piece_animation_t *>(m_animation->animationAt(a));
             QPointF v = anim->currentValue().value<QPointF>();
             if(!v.isNull())
                 paint_piece_at(anim->piece, __rect_centered_at(v, GetSquareSize()), painter);
-        }
-        else if(NULL != dynamic_cast<castle_animation_t *>(m_animation))
-        {
-            castle_animation_t *anim = dynamic_cast<castle_animation_t *>(m_animation);
-            QPointF pos_capturer = anim->anim_king->currentValue().value<QPointF>();
-            QPointF pos_capturee = anim->anim_rook->currentValue().value<QPointF>();
-            if(!pos_capturer.isNull())
-                paint_piece_at(anim->anim_king->piece, __rect_centered_at(pos_capturer, GetSquareSize()), painter);
-            if(!pos_capturee.isNull())
-                paint_piece_at(anim->anim_rook->piece, __rect_centered_at(pos_capturee, GetSquareSize()), painter);
         }
     }
 
@@ -705,10 +670,12 @@ void BoardView_p::animate_move(const Piece &p,
     // Remove the source piece from the board because it is being animated
     m_animationBoard->SetPiece(Piece(), sqr_source);
 
-    move_animation_t *anim = new move_animation_t(p, this);
-    m_animation = anim;
+    piece_animation_t *anim = new piece_animation_t(p, this);
+    m_animation = new QSequentialAnimationGroup(this);
+    m_animation->addAnimation(anim);
+    
     connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
-    connect(anim, SIGNAL(finished()), this, SLOT(_animation_finished()));
+    connect(m_animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
 
     anim->setStartValue(source);
     anim->setEndValue(dest);
@@ -731,22 +698,25 @@ void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
     m_animationBoard->SetPiece(Piece(), king_src);
     m_animationBoard->SetPiece(Piece(), rook_src);
 
-    castle_animation_t *anim = new castle_animation_t(allegience);
+    m_animation = new QParallelAnimationGroup(this);
+    connect(m_animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
+    
+    piece_animation_t *anim = new piece_animation_t(Piece(Piece::King, allegience), this);
     connect(anim, SIGNAL(valueChanged()), viewport(), SLOT(update()));
-    connect(anim, SIGNAL(finished()), this, SLOT(_animation_finished()));
+    anim->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
+    anim->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
+    anim->setEasingCurve(easing_curve);
+    anim->setDuration(dur);
+    m_animation->addAnimation(anim);
+    
+    anim = new piece_animation_t(Piece(Piece::Rook, allegience), this);
+    anim->setStartValue(item_rect(rook_src.GetColumn(), rook_src.GetRow()).center());
+    anim->setEndValue(item_rect(rook_dest.GetColumn(), rook_dest.GetRow()).center());
+    anim->setEasingCurve(easing_curve);
+    anim->setDuration(dur);
+    m_animation->addAnimation(anim);
 
-    anim->anim_king->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
-    anim->anim_king->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
-    anim->anim_king->setEasingCurve(easing_curve);
-    anim->anim_king->setDuration(dur);
-
-    anim->anim_rook->setStartValue(item_rect(rook_src.GetColumn(), rook_src.GetRow()).center());
-    anim->anim_rook->setEndValue(item_rect(rook_dest.GetColumn(), rook_dest.GetRow()).center());
-    anim->anim_rook->setEasingCurve(easing_curve);
-    anim->anim_rook->setDuration(dur);
-
-    m_animation = anim;
-    anim->start();
+    m_animation->start();
 }
 
 void BoardView_p::HighlightSquare(const QModelIndex &i, const QColor &c)
@@ -836,6 +806,7 @@ void BoardView_p::mouseReleaseEvent(QMouseEvent *ev)
 {
     if(m_activeSquare.isValid())
     {
+        QPointF pt_translated(ev->pos().x() + horizontalOffset(), ev->pos().y() + verticalOffset());
         QModelIndex ind_active = m_activeSquare;
         QModelIndex ind_released = indexAt(ev->pos());
         m_activeSquare = QModelIndex();
@@ -856,7 +827,7 @@ void BoardView_p::mouseReleaseEvent(QMouseEvent *ev)
                 {
                     // If the move was invalid, then snap the piece back to the source if they were dragging
                     if(m_dragging)
-                        animate_snapback(ev->pos(), ind_active);
+                        animate_snapback(pt_translated, ind_active);
                 }
             }
         }
@@ -864,7 +835,7 @@ void BoardView_p::mouseReleaseEvent(QMouseEvent *ev)
         {
             // If they dropped the piece off the board, snap it back to the start location
             if(m_dragging)
-                animate_snapback(ev->pos(), ind_active);
+                animate_snapback(pt_translated, ind_active);
         }
     }
 
