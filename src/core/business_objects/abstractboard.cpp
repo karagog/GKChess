@@ -27,7 +27,8 @@ NAMESPACE_GKCHESS;
 
 
 AbstractBoard::AbstractBoard(QObject *p)
-    :QObject(p)
+    :QObject(p),
+      m_simulating(false)
 {}
 
 AbstractBoard::~AbstractBoard()
@@ -85,12 +86,15 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
     else
         b.SetEnPassantSquare(0);
 
+        
     // Update the castle info
+    
     //    Debugging:
-    int wa = b.GetCastleWhiteA();
-    int wh = b.GetCastleWhiteH();
-    int ba = b.GetCastleBlackA();
-    int bh = b.GetCastleBlackH();
+//    int wa = b.GetCastleWhiteA();
+//    int wh = b.GetCastleWhiteH();
+//    int ba = b.GetCastleBlackA();
+//    int bh = b.GetCastleBlackH();
+
     if(Piece::White == md.Whose())
     {
         if(Piece::King == p.GetType() || MoveData::NoCastle != md.CastleType)
@@ -137,20 +141,29 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
 
 AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 {
-    MoveValidationEnum ret;
+    MoveValidationEnum ret = ValidMove;
 
     if(md.IsNull())
         ret = InvalidInputError;
     else
     {
-        // If you want more moves to be valid you can implement your own liberal validator
-        ret = ValidateMove(*md.Source, *md.Destination);
+        if(!GetSimulationEnabled())
+        {
+            // If you want more moves to be valid you can implement your own liberal validator
+            ret = ValidateMove(*md.Source, *md.Destination);
+        }
 
         if(ValidMove == ret)
         {
-            emit NotifyPieceAboutToBeMoved(md);
-            MoveQuiet(md);
-            emit NotifyPieceMoved(md);
+            if(!GetSimulationEnabled())
+                emit NotifyPieceAboutToBeMoved(md);
+            
+            // Move the piece and update the gamestate
+            move_p(md);
+            __update_gamestate(*this, md);
+            
+            if(!GetSimulationEnabled())
+                emit NotifyPieceMoved(md);
         }
     }
     return ret;
@@ -159,13 +172,6 @@ AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 AbstractBoard::MoveValidationEnum AbstractBoard::Move2(const ISquare &src, const ISquare &dest, IPlayerResponse *pr)
 {
     return Move(GenerateMoveData(src, dest, pr));
-}
-
-void AbstractBoard::MoveQuiet(const MoveData &md)
-{
-    // Move the piece and update the gamestate
-    move_p(md);
-    __update_gamestate(*this, md);
 }
 
 void AbstractBoard::Resign(Piece::AllegienceEnum a)
@@ -960,6 +966,31 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
     }
 
     return ret;
+}
+
+bool AbstractBoard::GetSimulationEnabled() const
+{
+    return m_simulating;
+}
+
+void AbstractBoard::SetSimulationEnabled(bool e)
+{
+    m_simulating = e;
+}
+
+void AbstractBoard::SaveState()
+{
+    m_savedStates.Push(ToFEN());
+}
+
+void AbstractBoard::Restore()
+{
+    int cnt = m_savedStates.Size();
+    if(0 < cnt)
+    {
+        FromFEN(m_savedStates.Top());
+        m_savedStates.Pop();
+    }
 }
 
 

@@ -15,6 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_ABSTRACTBOARD_H
 #define GKCHESS_ABSTRACTBOARD_H
 
+#include "gutil_strings.h"
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
 #include <QObject>
@@ -60,12 +61,21 @@ public:
 
 
 
-/** Describes a chess board interface. */
+/** Describes a chess board interface, with move logic and game state and everything.
+    
+    By default the board automatically emits signals before and after a piece
+    is moved or otherwise placed on the board, so views can be updated. Additionally,
+    the board supports a simulation mode which suppresses all signals and validation for
+    optimum performance.
+*/
 class AbstractBoard :
         public QObject
 {
     Q_OBJECT
     GUTIL_DISABLE_COPY(AbstractBoard);
+    
+    bool m_simulating;
+    GUtil::List<GUtil::String, GUtil::IStack<GUtil::String> > m_savedStates;
 public:
 
 
@@ -176,16 +186,6 @@ public:
     /** Convenience function returns the piece on the given square. */
     Piece const *GetPiece(int column, int row) const;
 
-    /** Executes a move.  The difference between this and Move() is that this one does not
-     *  emit signals and does not validate the moves.
-     *
-     *  This is useful for long simulations where you're not updating a user interface and you
-     *  know all moves are valid.  If this is not the case though, you should generally use Move()
-    */
-    void MoveQuiet(const MoveData &);
-
-
-
 
 
     /** Returns a list of squares occupied by the type of piece specified.
@@ -200,6 +200,25 @@ public:
      *  iterates through the squares and removes their pieces. Override it if you like.
     */
     virtual void Clear();
+    
+    /** Returns true if simulation is enabled. */
+    bool GetSimulationEnabled() const;
+    
+    /** Enables or disables simulation. */
+    void SetSimulationEnabled(bool);
+    
+    /** The board's state is saved onto a stack, which can be restored by
+        calling Restore().  The state includes the positions of all pieces
+        and all gamestate variables.
+        
+        \note For every Save() you should call Restore() when you're done
+    */
+    void SaveState();
+    
+    /** Pops the stack of saved states and restores it onto this board. 
+        If the stack is empty then nothing happens.
+    */
+    void Restore();
 
 
 
