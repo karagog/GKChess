@@ -73,9 +73,7 @@ class AbstractBoard :
 {
     Q_OBJECT
     GUTIL_DISABLE_COPY(AbstractBoard);
-    
-    bool m_simulating;
-    GUtil::List<GUtil::String, GUtil::IStack<GUtil::String> > m_savedStates;
+    void *d;
 public:
 
 

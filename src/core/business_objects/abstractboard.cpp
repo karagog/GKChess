@@ -23,25 +23,44 @@ USING_NAMESPACE_GUTIL;
 #define CASTLE_H_KING_DEST  6
 
 
+struct d_t
+{
+    bool simulating;
+    GUtil::List<GUtil::String, GUtil::IStack<GUtil::String> > saved_states;
+
+    d_t()
+        :simulating(false)
+    {}
+};
+
+
 NAMESPACE_GKCHESS;
 
 
 AbstractBoard::AbstractBoard(QObject *p)
-    :QObject(p),
-      m_simulating(false)
-{}
+    :QObject(p)
+{
+    G_D_INIT();
+}
 
 AbstractBoard::~AbstractBoard()
-{}
+{
+    G_D_UNINIT();
+}
 
 void AbstractBoard::SetPiece(const Piece &p, ISquare const &sqr)
 {
     if(0 <= sqr.GetColumn() && sqr.GetColumn() < ColumnCount() &&
             0 <= sqr.GetRow() && sqr.GetRow() < RowCount())
     {
-        emit NotifySquareAboutToBeUpdated(sqr);
+        G_D;
+        if(!d->simulating)
+            emit NotifySquareAboutToBeUpdated(sqr);
+
         set_piece_p(p, sqr.GetColumn(), sqr.GetRow());
-        emit NotifySquareUpdated(sqr);
+
+        if(!d->simulating)
+            emit NotifySquareUpdated(sqr);
     }
 }
 
@@ -141,13 +160,14 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
 
 AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 {
+    G_D;
     MoveValidationEnum ret = ValidMove;
 
     if(md.IsNull())
         ret = InvalidInputError;
     else
     {
-        if(!GetSimulationEnabled())
+        if(!d->simulating)
         {
             // If you want more moves to be valid you can implement your own liberal validator
             ret = ValidateMove(*md.Source, *md.Destination);
@@ -155,14 +175,14 @@ AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 
         if(ValidMove == ret)
         {
-            if(!GetSimulationEnabled())
+            if(!d->simulating)
                 emit NotifyPieceAboutToBeMoved(md);
             
             // Move the piece and update the gamestate
             move_p(md);
             __update_gamestate(*this, md);
             
-            if(!GetSimulationEnabled())
+            if(!d->simulating)
                 emit NotifyPieceMoved(md);
         }
     }
@@ -553,7 +573,8 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
         // non-capture
         if(col_diff == 0)
         {
-            technically_ok = !dp && row_diff == 1*sign || (startRank == s.GetRow() && row_diff == 2*sign);
+            technically_ok = !dp &&
+                    (row_diff == 1*sign || (startRank == s.GetRow() && row_diff == 2*sign));
         }
 
         // capture move
@@ -970,26 +991,30 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
 
 bool AbstractBoard::GetSimulationEnabled() const
 {
-    return m_simulating;
+    G_D;
+    return d->simulating;
 }
 
 void AbstractBoard::SetSimulationEnabled(bool e)
 {
-    m_simulating = e;
+    G_D;
+    d->simulating = e;
 }
 
 void AbstractBoard::SaveState()
 {
-    m_savedStates.Push(ToFEN());
+    G_D;
+    d->saved_states.Push(ToFEN());
 }
 
 void AbstractBoard::Restore()
 {
-    int cnt = m_savedStates.Size();
+    G_D;
+    int cnt = d->saved_states.Size();
     if(0 < cnt)
     {
-        FromFEN(m_savedStates.Top());
-        m_savedStates.Pop();
+        FromFEN(d->saved_states.Top());
+        d->saved_states.Pop();
     }
 }
 
