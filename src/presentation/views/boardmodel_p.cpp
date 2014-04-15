@@ -17,10 +17,8 @@ limitations under the License.*/
 #include <QFont>
 #include <QMimeData>
 #include <QStringList>
+USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
-
-NAMESPACE_GKCHESS1(UI);
-
 
 BoardModel_p::BoardModel_p(AbstractBoard *b, QObject *parent)
     :QAbstractTableModel(parent),
@@ -103,15 +101,13 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
                 break;
             case ValidMovesRole:
             {
-                QModelIndexList il;
-                Vector<ISquare const *> tmp = GetBoard().GetValidMovesForSquare(*s);
-                G_FOREACH_CONST(ISquare const *sqr, tmp)
-                {
-                    il.append(index(sqr->GetRow(), sqr->GetColumn()));
-                }
-                ret.setValue(il);
-                return ret;
-
+//                QModelIndexList il;
+//                Vector<ISquare const *> tmp = GetBoard().GetValidMovesForSquare(*s);
+//                G_FOREACH_CONST(ISquare const *sqr, tmp)
+//                {
+//                    il.append(index(sqr->GetRow(), sqr->GetColumn()));
+//                }
+//                ret.setValue(il);
             }
                 break;
             default: break;
@@ -247,30 +243,32 @@ Qt::ItemFlags BoardModel_p::flags(const QModelIndex &ind) const
 
 QStringList BoardModel_p::mimeTypes() const
 {
-    return QStringList(MIMETYPE_GKCHESS_PIECE);
+    //return QStringList(MIMETYPE_GKCHESS_PIECE);
+    return QStringList();
 }
 
 QMimeData *BoardModel_p::mimeData(const QModelIndexList &l) const
 {
+    GUTIL_UNUSED(l);
     QMimeData *ret(0);
-    if(1 == l.length())
-    {
-        ISquare const *s = ConvertIndexToSquare(l[0]);
-        if(s)
-        {
-            Piece const *p = s->GetPiece();
-            if(p)
-            {
-                ret = new QMimeData;
-                ret->setData(MIMETYPE_GKCHESS_PIECE,
-                             QString("%1:%2,%3")
-                             .arg(p->ToFEN())
-                             .arg(s->GetColumn())
-                             .arg(s->GetRow())
-                             .toAscii());
-            }
-        }
-    }
+//    if(1 == l.length())
+//    {
+//        ISquare const *s = ConvertIndexToSquare(l[0]);
+//        if(s)
+//        {
+//            Piece const *p = s->GetPiece();
+//            if(p)
+//            {
+//                ret = new QMimeData;
+//                ret->setData(MIMETYPE_GKCHESS_PIECE,
+//                             QString("%1:%2,%3")
+//                             .arg(p->ToFEN())
+//                             .arg(s->GetColumn())
+//                             .arg(s->GetRow())
+//                             .toAscii());
+//            }
+//        }
+//    }
     return ret;
 }
 
@@ -280,50 +278,55 @@ bool BoardModel_p::dropMimeData(const QMimeData *data,
                               int column,
                               const QModelIndex &parent)
 {
+    GUTIL_UNUSED(data);
+    GUTIL_UNUSED(action);
+    GUTIL_UNUSED(row);
+    GUTIL_UNUSED(column);
+    GUTIL_UNUSED(parent);
     bool ret = false;
-    if(data && parent.isValid() && -1 == row && -1 == column)
-    {
-        QByteArray b = data->data(MIMETYPE_GKCHESS_PIECE);
-        QList<QByteArray> l = b.split(':');
-        if(!l.isEmpty() && !l[0].isEmpty())
-        {
-            int s_col(-1), s_row(-1);
-            if(1 < l.length())
-            {
-                // Parse the position information
-                QList<QByteArray> l2 = l[1].split(',');
-                if(2 == l2.length())
-                {
-                    bool ok1 = false, ok2 = false;
-                    int tmp1 = l2[0].toInt(&ok1);
-                    int tmp2 = l2[1].toInt(&ok2);
-                    if(ok1 && ok2 &&
-                            0 <= tmp1 && tmp1 < columnCount() &&
-                            0 <= tmp2 && tmp2 < rowCount())
-                    {
-                        s_col = tmp1;
-                        s_row = tmp2;
-                    }
-                }
-            }
+//    if(data && parent.isValid() && -1 == row && -1 == column)
+//    {
+//        QByteArray b = data->data(MIMETYPE_GKCHESS_PIECE);
+//        QList<QByteArray> l = b.split(':');
+//        if(!l.isEmpty() && !l[0].isEmpty())
+//        {
+//            int s_col(-1), s_row(-1);
+//            if(1 < l.length())
+//            {
+//                // Parse the position information
+//                QList<QByteArray> l2 = l[1].split(',');
+//                if(2 == l2.length())
+//                {
+//                    bool ok1 = false, ok2 = false;
+//                    int tmp1 = l2[0].toInt(&ok1);
+//                    int tmp2 = l2[1].toInt(&ok2);
+//                    if(ok1 && ok2 &&
+//                            0 <= tmp1 && tmp1 < columnCount() &&
+//                            0 <= tmp2 && tmp2 < rowCount())
+//                    {
+//                        s_col = tmp1;
+//                        s_row = tmp2;
+//                    }
+//                }
+//            }
 
-            switch(action)
-            {
-            case Qt::MoveAction:
-                if(1 <= l[0].length() && -1 != s_col && -1 != s_row)
-                {
-                    ret = setData(parent, QString::fromAscii(l[0]), Qt::EditRole);
-                    if(ret)
-                    {
-                        // Clear the source square
-                        setData(index(s_row, s_col), "", Qt::EditRole);
-                    }
-                }
-                break;
-            default: break;
-            }
-        }
-    }
+//            switch(action)
+//            {
+//            case Qt::MoveAction:
+//                if(1 <= l[0].length() && -1 != s_col && -1 != s_row)
+//                {
+//                    ret = setData(parent, QString::fromAscii(l[0]), Qt::EditRole);
+//                    if(ret)
+//                    {
+//                        // Clear the source square
+//                        setData(index(s_row, s_col), "", Qt::EditRole);
+//                    }
+//                }
+//                break;
+//            default: break;
+//            }
+//        }
+//    }
 
     return ret;
 }
@@ -340,6 +343,3 @@ AbstractBoard::MoveValidationEnum BoardModel_p::Move(const QModelIndex &s, const
                           *ConvertIndexToSquare(d),
                           pr);
 }
-
-
-END_NAMESPACE_GKCHESS1;

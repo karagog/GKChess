@@ -22,14 +22,16 @@ limitations under the License.*/
 #include <QAbstractItemView>
 #include <QVariantAnimation>
 
+class BoardModel_p;
+
 class QRubberBand;
 class QAnimationGroup;
 
 namespace GKChess{
     class Piece;
 namespace UI{
-    class BoardModel_p;
     class IFactory_PieceIcon;
+}}
         
 
 /** A private class to implement the board view, because we don't want to expose the
@@ -55,7 +57,7 @@ class BoardView_p :
     QColor m_darkSquareColor;
     QColor m_lightSquareColor;
     QColor m_activeSquareHighlightColor;
-    IFactory_PieceIcon *i_factory;
+    GKChess::UI::IFactory_PieceIcon *i_factory;
 
     // Our current state for user interaction
     QModelIndex m_activeSquare;
@@ -66,7 +68,7 @@ class BoardView_p :
 
     // Our animation objects
     QAnimationGroup *m_animation;
-    GUtil::SmartPointer<AbstractBoard> m_animationBoard;
+    GUtil::SmartPointer<GKChess::AbstractBoard> m_animationBoard;
 
     // Keeps track of our per-square format options
     GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;
@@ -79,8 +81,8 @@ public:
 
     BoardModel_p *GetBoardModel() const;
     void SetBoardModel(BoardModel_p *);
-    void SetIconFactory(IFactory_PieceIcon *);
-    IFactory_PieceIcon *GetIconFactory() const{ return i_factory; }
+    void SetIconFactory(GKChess::UI::IFactory_PieceIcon *);
+    GKChess::UI::IFactory_PieceIcon *GetIconFactory() const{ return i_factory; }
     float GetSquareSize() const{ return m_squareSize; }
     void SetSquareSize(float);
     QColor GetDarkSquareColor() const{ return m_darkSquareColor; }
@@ -142,21 +144,21 @@ protected:
     virtual void paint_board(QPainter &painter, const QRect &update_rect);
 
     /** Paints the piece within the rect. */
-    virtual void paint_piece_at(const Piece &, const QRectF &, QPainter &);
+    virtual void paint_piece_at(const GKChess::Piece &, const QRectF &, QPainter &);
 
     /** Starts an animation of the piece moving from the source point to the dest point
      *  with the given easing curve.  The easing curve responds to the Type enum of
      *  the QEasingCurve.
     */
-    void animate_move(const Piece &,
+    void animate_move(const GKChess::Piece &,
                       const QPointF &source, const QPointF &dest,
-                      ISquare const &sqr_source,
+                      GKChess::ISquare const &sqr_source,
                       int duration_ms,
                       QEasingCurve::Type);
 
-    void animate_castle(Piece::AllegienceEnum allegience,
-                        const ISquare &king_src, const ISquare &king_dest,
-                        const ISquare &rook_src, const ISquare &rook_dest,
+    void animate_castle(GKChess::Piece::AllegienceEnum allegience,
+                        const GKChess::ISquare &king_src, const GKChess::ISquare &king_dest,
+                        const GKChess::ISquare &rook_src, const GKChess::ISquare &rook_dest,
                         int duration_ms,
                         QEasingCurve::Type easing_curve);
 
@@ -204,8 +206,5 @@ private:
     void _update_cursor_at_point(const QPointF &);
 
 };
-
-
-}}
 
 #endif // GKCHESS_BOARDVIEW_P_H

@@ -137,8 +137,8 @@ BoardView_p::BoardView_p(QWidget *parent)
       i_factory(0),
       m_dragging(false),
       m_wasSquareActiveWhenPressed(false),
-      m_animation(0),
-      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this))
+      m_selectionBand(new QRubberBand(QRubberBand::Rectangle, this)),
+      m_animation(0)
 {
     setMouseTracking(true);
 
@@ -702,7 +702,7 @@ void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
     connect(m_animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
     
     piece_animation_t *anim = new piece_animation_t(Piece(Piece::King, allegience), this);
-    connect(anim, SIGNAL(valueChanged()), viewport(), SLOT(update()));
+    connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
     anim->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
     anim->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
     anim->setEasingCurve(easing_curve);
@@ -995,6 +995,3 @@ void BoardView_p::_update_cursor_at_point(const QPointF &pt)
     else
         setCursor(CURSOR_DEFAULT);
 }
-
-
-#include "boardview_p.moc"

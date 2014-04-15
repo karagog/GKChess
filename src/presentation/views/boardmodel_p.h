@@ -24,8 +24,8 @@ limitations under the License.*/
 namespace GKChess{ 
     class ISquare;
     class MoveData;
+}
 
-namespace UI{
 
 
 /** Describes a data model for a chess board. It supports readonly and editable
@@ -48,7 +48,7 @@ class BoardModel_p :
         QColor BackgroundColor;
     };
 
-    AbstractBoard *m_board;
+    GKChess::AbstractBoard *m_board;
 public:
 
     /** You must give the model a reference to a chessboard
@@ -58,25 +58,25 @@ public:
      *  By default there is no game logic, meaning you cannot move any pieces,
      *  only look at the position on the board.
     */
-    explicit BoardModel_p(AbstractBoard *, QObject *parent = 0);
+    explicit BoardModel_p(GKChess::AbstractBoard *, QObject *parent = 0);
 
     /** Returns a const reference to the board object. */
-    AbstractBoard const &GetBoard() const{ return *m_board; }
+    GKChess::AbstractBoard const &GetBoard() const{ return *m_board; }
 
-    AbstractBoard &GetBoard(){ return *m_board; }
+    GKChess::AbstractBoard &GetBoard(){ return *m_board; }
 
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
     */
-    ISquare const *ConvertIndexToSquare(const QModelIndex &) const;
+    GKChess::ISquare const *ConvertIndexToSquare(const QModelIndex &) const;
 
     /** Returns the model index corresponding to the given square. */
-    QModelIndex ConvertSquareToIndex(const ISquare &) const;
+    QModelIndex ConvertSquareToIndex(const GKChess::ISquare &) const;
 
-    AbstractBoard::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
+    GKChess::AbstractBoard::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
 
-    AbstractBoard::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, IPlayerResponse *pr = 0);
+    GKChess::AbstractBoard::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, GKChess::IPlayerResponse *pr = 0);
 
 
     /** Defines the custom data roles implemented by the board model. */
@@ -110,23 +110,6 @@ private slots:
     void _piece_moved(const GKChess::MoveData &);
 
 };
-
-
-}}
-
-
-/** Defines the mimetype used for dragging and dropping pieces. You can use this
- *  to drop pieces onto the board.
- *
- *  The data is an ascii string with the following format:   <piece>:<column>,<row>
- *  Where the piece is a single char used in FEN notation and the column and row are
- *  0-based indices describing the source of the piece. Leave the source info blank
- *  if it describes a new piece.
-*/
-#define MIMETYPE_GKCHESS_PIECE "gkchess/piece"
-
-
-Q_DECLARE_METATYPE(QModelIndexList)
 
 
 #endif // GKCHESS_BOARDMODEL_H
