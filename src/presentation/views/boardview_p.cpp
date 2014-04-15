@@ -694,22 +694,33 @@ void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
     // Make a copy of the board so it doesn't change while we're animating
     m_animationBoard = new Board(GetBoardModel()->GetBoard());
 
-    // Remove the king and rook from the board because they are being animated
+    // Remove the rook and king from the board because they're being animated
     m_animationBoard->SetPiece(Piece(), king_src);
     m_animationBoard->SetPiece(Piece(), rook_src);
 
     m_animation = new QParallelAnimationGroup(this);
     connect(m_animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
     
-    piece_animation_t *anim = new piece_animation_t(Piece(Piece::King, allegience), this);
-    connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
-    anim->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
-    anim->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
-    anim->setEasingCurve(easing_curve);
-    anim->setDuration(dur);
-    m_animation->addAnimation(anim);
-    
+    piece_animation_t *anim;
+
+    if(m_dragging)
+    {
+        // If they dropped the king, put him at the dest while we animate only the rook
+        m_animationBoard->SetPiece(Piece(Piece::King, allegience), king_dest);
+    }
+    else
+    {
+        // Only animate the king moving if they didn't drag-drop him
+        anim = new piece_animation_t(Piece(Piece::King, allegience), this);
+        anim->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
+        anim->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
+        anim->setEasingCurve(easing_curve);
+        anim->setDuration(dur);
+        m_animation->addAnimation(anim);
+    }
+
     anim = new piece_animation_t(Piece(Piece::Rook, allegience), this);
+    connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
     anim->setStartValue(item_rect(rook_src.GetColumn(), rook_src.GetRow()).center());
     anim->setEndValue(item_rect(rook_dest.GetColumn(), rook_dest.GetRow()).center());
     anim->setEasingCurve(easing_curve);
@@ -915,46 +926,44 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
     if(md.NoCastle != md.CastleType)
     {
         // Animate castling
-        if(!m_dragging){
-            AbstractBoard const &board( GetBoardModel()->GetBoard() );
-            Piece::AllegienceEnum allegience = md.Whose();
-            ISquare const *king_dest;
-            ISquare const *rook_src, *rook_dest;
-            switch(md.CastleType)
-            {
-            case MoveData::CastleHSide:
-                if(Piece::White == allegience){
-                    king_dest = &board.SquareAt(6, 0);
-                    rook_src = &board.SquareAt(board.GetCastleWhiteH(), 0);
-                    rook_dest = &board.SquareAt(5, 0);
-                }
-                else{
-                    king_dest = &board.SquareAt(6, 7);
-                    rook_src = &board.SquareAt(board.GetCastleBlackH(), 7);
-                    rook_dest = &board.SquareAt(5, 7);
-                }
-                break;
-            case MoveData::CastleASide:
-                if(Piece::White == allegience){
-                    king_dest = &board.SquareAt(2, 0);
-                    rook_src = &board.SquareAt(board.GetCastleWhiteA(), 0);
-                    rook_dest = &board.SquareAt(3, 0);
-                }
-                else{
-                    king_dest = &board.SquareAt(2, 7);
-                    rook_src = &board.SquareAt(board.GetCastleBlackA(), 7);
-                    rook_dest = &board.SquareAt(3, 7);
-                }
-                break;
-            default: break;
+        AbstractBoard const &board( GetBoardModel()->GetBoard() );
+        Piece::AllegienceEnum allegience = md.Whose();
+        ISquare const *king_dest;
+        ISquare const *rook_src, *rook_dest;
+        switch(md.CastleType)
+        {
+        case MoveData::CastleHSide:
+            if(Piece::White == allegience){
+                king_dest = &board.SquareAt(6, 0);
+                rook_src = &board.SquareAt(board.GetCastleWhiteH(), 0);
+                rook_dest = &board.SquareAt(5, 0);
             }
-
-            animate_castle(allegience,
-                           *md.Source, *king_dest,
-                           *rook_src, *rook_dest,
-                           ANIM_MOVE_DURATION *1000,
-                           ANIM_MOVE_EASING);
+            else{
+                king_dest = &board.SquareAt(6, 7);
+                rook_src = &board.SquareAt(board.GetCastleBlackH(), 7);
+                rook_dest = &board.SquareAt(5, 7);
+            }
+            break;
+        case MoveData::CastleASide:
+            if(Piece::White == allegience){
+                king_dest = &board.SquareAt(2, 0);
+                rook_src = &board.SquareAt(board.GetCastleWhiteA(), 0);
+                rook_dest = &board.SquareAt(3, 0);
+            }
+            else{
+                king_dest = &board.SquareAt(2, 7);
+                rook_src = &board.SquareAt(board.GetCastleBlackA(), 7);
+                rook_dest = &board.SquareAt(3, 7);
+            }
+            break;
+        default: break;
         }
+
+        animate_castle(allegience,
+                       *md.Source, *king_dest,
+                       *rook_src, *rook_dest,
+                       ANIM_MOVE_DURATION *1000,
+                       ANIM_MOVE_EASING);
     }
     else if(!md.PiecePromoted.IsNull())
     {
