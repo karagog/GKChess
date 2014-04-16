@@ -95,6 +95,10 @@ public:
     /** Returns the PGN representation of the piece, which does not have allegience information,
      *  and pawns are an empty string. */
     char const *ToPGN() const;
+    
+    /** Returns the PGN representation of the piece, which does not have allegience information,
+     *  and pawns are an empty string. */
+    static char const *ToPGN(PieceTypeEnum);
 
     /** Returns the piece type from the PGN string. */
     static PieceTypeEnum GetTypeFromPGN(char const *);

@@ -16,6 +16,7 @@ limitations under the License.*/
 #include "piece.h"
 #include "isquare.h"
 #include "pgn_move_data.h"
+#include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
 
 
@@ -526,6 +527,8 @@ void AbstractBoard::SetupNewGame(AbstractBoard::SetupTypeEnum ste)
         FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
         break;
     case SetupChess960:
+        FromFEN(Chess960::GetRandomStartingPosition());
+        break;
     default:
         THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
         break;

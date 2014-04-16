@@ -128,8 +128,13 @@ char Piece::ToFEN() const
 
 char const *Piece::ToPGN() const
 {
+    return ToPGN(GetType());
+}
+
+char const *Piece::ToPGN(Piece::PieceTypeEnum p)
+{
     char const *ret(0);
-    switch(GetType())
+    switch(p)
     {
     case Pawn:
         ret = "";
