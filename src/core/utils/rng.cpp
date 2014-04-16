@@ -17,6 +17,7 @@ limitations under the License.*/
 
 NAMESPACE_GKCHESS;
 
+static GUtil::RNG_Initializer __rng_init;
 
 int RNG::RandInt(int min, int max)
 {

@@ -18,161 +18,165 @@ limitations under the License.*/
 #include "gutil_set.h"
 USING_NAMESPACE_GUTIL;
 
-static SmartPointer<Vector<String> > __chess960_positions;
-
 NAMESPACE_GKCHESS;
 
 
-static void __place_pieces(Set<String> &results, 
-                           Vector<char> &placed_pieces,
-                           IStack<char> &unplaced_pieces,
-                           int &bishop_state,
-                           int &king_index)
+static Vector<int> __get_unused_indices(const Set<int> &inds)
 {
-    // Termination condition:
-    if(0 == unplaced_pieces.Size())
+    Vector<int> ret;
+    ret.ReserveExactly(inds.Size());
+    G_FOREACH_CONST(int i, inds)
+        ret.PushBack(i);
+    return ret;
+}
+
+#define FEN_STARTING_FORMAT_STRING "%s/pppppppp/8/8/8/8/PPPPPPPP/%s w KQkq - 0 1"
+
+static void __place_king_and_rooks(Vector<String> &results,
+                            String &placed_pieces,
+                            Set<int> &unused_indices)
+{
+    Vector<int> ui(__get_unused_indices(unused_indices));
+
+    // There are exactly 3 indices left, and the set sorted them in ascending order
+    placed_pieces[ui[0]] = 'R';
+    placed_pieces[ui[1]] = 'K';
+    placed_pieces[ui[2]] = 'R';
+
+    // Add the current configuration to the results
+    results.PushBack(String::Format(FEN_STARTING_FORMAT_STRING,
+                                    placed_pieces.ToLower().ConstData(),
+                                    placed_pieces.ConstData()));
+
+    placed_pieces[ui[0]] = ' ';
+    placed_pieces[ui[1]] = ' ';
+    placed_pieces[ui[2]] = ' ';
+}
+
+static void __iteratively_place_queen(Vector<String> &results,
+                               String &placed_pieces,
+                               Set<int> &unused_indices)
+{
+    Vector<int> ui(__get_unused_indices(unused_indices));
+    for(int i = 0; i < ui.Length(); ++i)
     {
-        // There are no more pieces to place, so add the pieces to the results
-        String tmp(8);
-        for(int i = 0; i < placed_pieces.Length(); ++i)
-            tmp.Append(placed_pieces[i]);
-        
-        // With this implementation we generate lots of duplicates, so here is where we filter them
-        if(!results.Contains(tmp))
-            results.Insert(tmp);
-            
-        return;
+        unused_indices.RemoveOne(ui[i]);
+
+        placed_pieces[ui[i]] = 'Q';
+        __place_king_and_rooks(results, placed_pieces, unused_indices);
+
+        placed_pieces[ui[i]] = ' ';
+        unused_indices.Insert(ui[i]);
     }
-        
-    // Grab the current piece from the stack
-    char cur_piece = unplaced_pieces.Top();
-    unplaced_pieces.Pop();
-    const int bishop_state_orig = bishop_state;
-    
-    // Try placing the piece in all possible positions
+}
+
+static void __iteratively_place_knights(Vector<String> &results,
+                                 String &placed_pieces,
+                                 Set<int> &unused_indices)
+{
+    Vector<int> ui(__get_unused_indices(unused_indices));
+    for(int i = 0; i < ui.Length(); ++i)
+    {
+        for(int j = i + 1; j < ui.Length(); ++j)
+        {
+            unused_indices.RemoveOne(ui[i]);
+            unused_indices.RemoveOne(ui[j]);
+
+            placed_pieces[ui[i]] = 'N';
+            placed_pieces[ui[j]] = 'N';
+            __iteratively_place_queen(results, placed_pieces, unused_indices);
+
+            placed_pieces[ui[i]] = ' ';
+            placed_pieces[ui[j]] = ' ';
+            unused_indices.Insert(ui[i]);
+            unused_indices.Insert(ui[j]);
+        }
+    }
+}
+
+static void __iteratively_place_bishops(Vector<String> &results,
+                                 String &placed_pieces,
+                                 Set<int> &unused_indices)
+{
+    for(int i = 0; i < 4; ++i)
+    {
+        for(int j = 0; j < 4; ++j)
+        {
+            int ind1 = i * 2;
+            int ind2 = j * 2 + 1;
+            unused_indices.RemoveOne(ind1);
+            unused_indices.RemoveOne(ind2);
+
+            placed_pieces[ind1] = 'B';
+            placed_pieces[ind2] = 'B';
+            __iteratively_place_knights(results, placed_pieces, unused_indices);
+
+            placed_pieces[ind1] = ' ';
+            placed_pieces[ind2] = ' ';
+            unused_indices.Insert(ind1);
+            unused_indices.Insert(ind2);
+        }
+    }
+}
+
+
+
+
+
+
+Vector<String> Chess960::GetAllStartingPositions()
+{
+    Vector<String> ret;
+    ret.ReserveExactly(960);
+
+    // Instantiate temporary variables
+    String pp(' ', 8);
+    Set<int> ui;
     for(int i = 0; i < 8; ++i)
-    {
-        bool place = false;
-        char &target_piece( placed_pieces[i] );
-        
-        // Skip this square if there is already a piece there
-        if(' ' != target_piece)
-            continue;
+        ui.Insert(i);
 
-        // There are rules for the positions of certain pieces
-        switch(cur_piece)
-        {
-        case 'K':
-            // The king can only be placed between cols 1 and 6
-            if(0 < i && i < 7){
-                place = true;
-                king_index = i;
-            }
-            break;
-        case 'R':
-            if('R' == unplaced_pieces.Top() && i < king_index){
-                // If this is the first rook, put it on the left side of the king
-                place = true;
-            }
-            else if('R' != unplaced_pieces.Top() && i > king_index){
-                // If this is the second rook, put it on the right side of the king
-                place = true;
-            }
-            break;
-        case 'B':
-            // If this is the first bishop being placed...
-            if(0 == bishop_state){
-                place = true;
-                bishop_state = 0x2 | (0x1 & i);
-            }
-            
-            // If this is the second bishop being placed, and the first was
-            //  on a light square and this is a dark square...
-            else if((1 == (0x1 & bishop_state)) && 
-                    (0 == (0x1 & i))){
-                place = true;
-            }
-            
-            // If this is the second bishop being placed, and the first
-            //  was on a dark square and this is a light square...
-            else if((0 == (0x1 & bishop_state)) && 
-                    (1 == (0x1 & i))){
-                place = true;
-            }
-            break;
-        case 'N':
-            place = true;
-            break;
-        case 'Q':
-            place = true;
-            break;
-        default: 
-            GASSERT(false);
-        }
-        
-        // If we placed a piece, then recursively call again to place the others
-        if(place)
-        {
-            target_piece = cur_piece;
-            __place_pieces(results, placed_pieces, unplaced_pieces, bishop_state, king_index);
-            
-            // Reset the piece before placing it someplace new
-            target_piece = ' ';
-            bishop_state = bishop_state_orig;
-        }
-    }
-    
-    // Push the piece back on the stack when we're finished
-    unplaced_pieces.Push(cur_piece);
+    __iteratively_place_bishops(ret, pp, ui);
+    return ret;
 }
 
-Vector<String> const &Chess960::GetAllStartingPositions()
+static void __place_piece(String &ret, Vector<int> &unused_indices, char piece)
 {
-    if(!__chess960_positions)
-    {
-        // Generate all positions the first time
-        
-        // Allocate the static memory that holds the position data
-        __chess960_positions = new Vector<String>;
-        __chess960_positions->ReserveExactly(960);
-        
-        // Instantiate temporary variables
-        Set<String> results;
-        Vector<char> pp(' ', 8);
-        Vector<char, IStack<char> > up(8);
-        int king_index;
-        int bishop_state = 0;
-        
-        // These are all the pieces that need to be placed (the order matters)
-        up.Push('Q');
-        up.Push('N');
-        up.Push('N');
-        up.Push('B');
-        up.Push('B');
-        up.Push('R');
-        up.Push('R');
-        up.Push('K');
-        
-        // Call the recursive function that places the pieces in all configurations
-        __place_pieces(results, pp, up, bishop_state, king_index);
-        
-        // Now iterate through the results and generate the FEN strings
-        G_FOREACH_CONST(const String &s, results)
-        {
-            __chess960_positions->PushBack(
-                String::Format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w KQkq - 0 1",
-                    s.ToLower().ConstData(), s.ConstData())
-            );
-        }
-    }
-    
-    return *__chess960_positions;
+    int i = RNG::RandInt(0, unused_indices.Length() - 1);
+    ret[unused_indices[i]] = piece;
+    unused_indices.RemoveAt(i);
 }
 
-String const &Chess960::GetRandomStartingPosition()
+String Chess960::GetRandomStartingPosition()
 {
-    Vector<String> const &vec(GetAllStartingPositions());
-    return vec[RNG::RandInt(0, vec.Length() - 1)];
+    // We will generate one on the fly
+    String ret(' ', 8);
+    Vector<int> unused_indices(8);
+    for(int i = 0; i < 8; ++i)
+        unused_indices.PushBack(i);
+
+    // First place the bishops
+    int ind1 = RNG::RandInt(0, unused_indices.Length() / 2 - 1) * 2;
+    int ind2 = RNG::RandInt(0, unused_indices.Length() / 2 - 1) * 2 + 1;
+    ret[unused_indices[ind1]] = 'B';
+    ret[unused_indices[ind2]] = 'B';
+    unused_indices.RemoveOne(Max(ind1, ind2));
+    unused_indices.RemoveOne(Min(ind1, ind2));
+
+    // Then place the knights
+    __place_piece(ret, unused_indices, 'N');
+    __place_piece(ret, unused_indices, 'N');
+
+    // Then place the queen
+    __place_piece(ret, unused_indices, 'Q');
+
+    // Then there are three spots left and our rooks have to be on either side of our king
+    ret[unused_indices[0]] = 'R';
+    ret[unused_indices[1]] = 'K';
+    ret[unused_indices[2]] = 'R';
+
+    return String::Format(FEN_STARTING_FORMAT_STRING,
+                         ret.ToLower().ConstData(),
+                         ret.ConstData());
 }
 
 

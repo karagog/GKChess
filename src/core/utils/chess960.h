@@ -27,18 +27,16 @@ class Chess960
 public:
 
     /** Returns a list of all possible starting positions for Chess960 in X-FEN notation.
-        The first time you call this it will take some time to generate the
-        positions, but afterwards they will be cached in a static variable.
         
-        \note The order of the return list is technically undefined, but in
-        reality they will be sorted alphanumerically.
+        The order of the return list is undefined, but it is deterministic.
     */
-    static GUtil::Vector<GUtil::String> const &GetAllStartingPositions();
+    static GUtil::Vector<GUtil::String> GetAllStartingPositions();
     
     /** Returns a random Chess960 starting position.
-        \note Each position is guaranteed to be equally likely.
+
+        Each position is guaranteed to be equally likely.
     */
-    static GUtil::String const &GetRandomStartingPosition();
+    static GUtil::String GetRandomStartingPosition();
     
 };
 
