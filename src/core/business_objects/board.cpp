@@ -141,13 +141,28 @@ Board::Board(const AbstractBoard &o)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot copy from different sized board");
 
     _init();
+    G_D;
 
     // copy the contents of the other board's squares
     for(int c = 0; c < ColumnCount(); ++c){
-        for(int r = 0; r < RowCount(); ++r){
-            square_at(c, r) = o.SquareAt(c, r);
+        for(int r = 0; r < RowCount(); ++r)
+        {
+            ISquare &this_sqr(square_at(c, r));
+            ISquare const &other_sqr(o.SquareAt(c, r));
+            Piece const *p = other_sqr.GetPiece();
+
+            // copy the square
+            this_sqr = other_sqr;
+
+            // Add any pieces to our index
+            if(p){
+                __index(d, p->GetAllegience())
+                        .InsertMulti(p->GetType(), &this_sqr);
+            }
         }
     }
+
+    // Initialize the index
 }
 
 void Board::_init()
