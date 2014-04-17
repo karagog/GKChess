@@ -14,7 +14,6 @@ limitations under the License.*/
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "gkchess_boardmodel.h"
 #include "gkchess_pgn_parser.h"
 #include <QFile>
 #include <QColorDialog>
@@ -33,11 +32,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->sldr_squareSize->setValue(ui->boardView->GetSquareSize());
 
-    m_gameLogic.SetupNewGame(m_board);
+    m_board.SetupNewGame();
+    //m_board.SetupNewGame(Board::SetupChess960);
 
-    ui->boardView->SetBoardModel(new BoardModel(&m_board, this));
+    ui->boardView->SetBoard(&m_board);
     ui->boardView->SetIconFactory(&m_iconFactory);
-    ui->boardView->GetBoardModel()->SetGameLogic(&m_gameLogic);
+    ui->boardView->SetShowThreatCounts(true);
     //ui->boardView->SetEditable(false);
 
     connect(&m_board, SIGNAL(NotifySquareUpdated(const GKChess::ISquare &)),

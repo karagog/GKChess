@@ -131,6 +131,7 @@ BoardView_p::BoardView_p(QWidget *parent)
     :QAbstractItemView(parent),
       m_squareSize(DEFAULT_SQUARE_SIZE),
       m_editable(true),
+      m_showThreatCounts(false),
       m_darkSquareColor(Qt::gray),
       m_lightSquareColor(Qt::white),
       m_activeSquareHighlightColor(Qt::yellow),
@@ -452,6 +453,12 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             {
                 // Color the light squares
                 painter.fillRect(tmp, m_lightSquareColor);
+            }
+            
+            // If we are showing threat counts, paint that now:
+            if(GetShowThreatCounts())
+            {
+                painter.drawText(tmp, Qt::AlignCenter, QString("%1").arg(cur_sqr.GetThreatCount(Piece::White)));
             }
 
             // Paint the pieces
@@ -984,7 +991,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
 
 void BoardView_p::_piece_moved(const MoveData &)
 {
-
+    // Do nothing after a piece moves
 }
 
 void BoardView_p::_update_cursor_at_point(const QPointF &pt)
@@ -1003,4 +1010,10 @@ void BoardView_p::_update_cursor_at_point(const QPointF &pt)
     }
     else
         setCursor(CURSOR_DEFAULT);
+}
+
+void BoardView_p::SetShowThreatCounts(bool b)
+{
+    m_showThreatCounts = b;
+    viewport()->update();
 }

@@ -77,6 +77,7 @@ protected:
     */
     virtual void set_piece_p(const Piece &, int, int);
     virtual void move_p(const MoveData &);
+    virtual ISquare &square_at(int, int);
     /** \} */
 
 

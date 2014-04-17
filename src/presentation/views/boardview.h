@@ -85,6 +85,12 @@ public:
 
     /** Controls whether the view will allow the user to edit the board, such as moving pieces. */
     void SetEditable(bool);
+    
+    /** Controls whether the view will show threat counts on each square. */
+    void SetShowThreatCounts(bool);
+    
+    /** Returns true if the view is showing threat counts. */
+    bool GetShowThreatCounts() const;
 
 };
 

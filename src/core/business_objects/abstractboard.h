@@ -187,7 +187,11 @@ public:
 
 
     /** Returns a list of squares occupied by the type of piece specified.
+     *  
      *  The list will be empty if there are no such pieces on the board.
+     *
+     *  To find the locations of all pieces for a given allegience, pass
+     *  a piece with no type but with the allegience you're interested in.
      *
      *  This lookup should be done at least as good as O(log(N)) time, where N is the
      *  number of different types of pieces.
@@ -217,6 +221,9 @@ public:
         If the stack is empty then nothing happens.
     */
     void Restore();
+    
+    /** Causes the board to update the threat counts for all squares. */
+    virtual void UpdateThreatCounts();
 
 
 
@@ -357,6 +364,14 @@ protected:
 
     /** You must implement setting pieces on the board, but don't emit any signals. */
     virtual void set_piece_p(const Piece &, int col, int row) = 0;
+    
+    /** Returns a modifiable reference to the square at the given row and column. */
+    virtual ISquare &square_at(int col, int row) = 0;
+    
+    
+private:
+
+    void _set_all_threat_counts(int);
 
 };
 

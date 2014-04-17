@@ -37,29 +37,33 @@ class Square : public ISquare
     Piece m_piece;
     int m_column;
     int m_row;
+    int m_threatsWhite, m_threatsBlack;
 public:
 
     Square(int c, int r):
         m_column(c),
-        m_row(r)
+        m_row(r),
+        m_threatsWhite(-1),
+        m_threatsBlack(-1)
     {}
     int GetColumn() const{ return m_column; }
     int GetRow() const{ return m_row; }
     Piece const *GetPiece() const{ return m_piece.GetType() == Piece::NoPiece ? 0 : &m_piece; }
-
-    /** This function is not part of the interface, but it's necessary anyways */
     void SetPiece(const Piece &p){ m_piece = p; }
+    int GetThreatCount(Piece::AllegienceEnum a) const{ 
+        return Piece::White == a ? m_threatsWhite : m_threatsBlack; 
+    }
+    void SetThreatCount(Piece::AllegienceEnum a, int c){
+        if(Piece::White == a)
+            m_threatsWhite = c;
+        else
+            m_threatsBlack = c;
+    }
 };
 
 
 /** This function maps a 1-D array into a 2-D array. */
 static Square &__square_at(Square *sa, int col, int row)
-{
-    return sa[__map_2d_indices_to_1d(col, row)];
-}
-
-/** This function maps a 1-D array into a 2-D array. */
-static Square const &__square_at(Square const *sa, int col, int row)
 {
     return sa[__map_2d_indices_to_1d(col, row)];
 }
@@ -139,9 +143,7 @@ Board::Board(const AbstractBoard &o)
 
     for(int c = 0; c < ColumnCount(); ++c){
         for(int r = 0; r < RowCount(); ++r){
-            Piece const *p = o.GetPiece(c, r);
-            if(p)
-                set_piece_p(*p, c, r);
+            square_at(c, r) = o.SquareAt(c, r);
         }
     }
 }
@@ -281,16 +283,56 @@ ISquare const &Board::SquareAt(int col, int row) const
     return __square_at(d->squares, col, row);
 }
 
+ISquare &Board::square_at(int col, int row)
+{
+    G_D;
+    return __square_at(d->squares, col, row);
+}
+
 Vector<ISquare const *> Board::FindPieces(const Piece &pc) const
 {
     G_D;
-    Vector<ISquare const *> ret( __index(d, pc.GetAllegience()).Values(pc.GetType()) );
+    Vector<ISquare const *> ret;
+    if(Piece::NoPiece == pc.GetType())
+    {
+        if(Piece::AnyAllegience == pc.GetAllegience())
+        {
+            // Append all pieces to the list
+            for(typename Map<Piece::PieceTypeEnum, ISquare const *>::const_iterator iter = d->index_white.begin();
+                iter != d->index_white.end(); ++iter)
+            {
+                G_FOREACH_CONST(ISquare const *sqr, iter->Values())
+                    ret.PushBack(sqr);
+            }
+            
+            for(typename Map<Piece::PieceTypeEnum, ISquare const *>::const_iterator iter = d->index_black.begin();
+                iter != d->index_black.end(); ++iter)
+            {
+                G_FOREACH_CONST(ISquare const *sqr, iter->Values())
+                    ret.PushBack(sqr);
+            }
+        }
+        else
+        {
+            // Append only pieces of the given allegience to the list
+            for(typename Map<Piece::PieceTypeEnum, ISquare const *>::const_iterator iter = __index(d, pc.GetAllegience()).begin();
+                iter != __index(d, pc.GetAllegience()).end(); ++iter)
+            {
+                G_FOREACH_CONST(ISquare const *sqr, iter->Values())
+                    ret.PushBack(sqr);
+            }
+        }
+    }
+    else
+    {
+        ret = __index(d, pc.GetAllegience()).Values(pc.GetType());
+    }
 
     // To help debug, make sure all the returned pieces are the correct type
     for(GINT32 i = 0; i < ret.Length(); ++i){
         Piece const *p = ret[i]->GetPiece();
         GUTIL_UNUSED(p);
-        GASSERT(p && pc.GetType() == p->GetType() && pc.GetAllegience() == p->GetAllegience());
+        GASSERT(p && (Piece::NoPiece == pc.GetType() || pc.GetType() == p->GetType()) && pc.GetAllegience() == p->GetAllegience());
     }
 
     return ret;

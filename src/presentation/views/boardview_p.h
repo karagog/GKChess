@@ -52,6 +52,7 @@ class BoardView_p :
 
     // Behavioral parameters
     bool m_editable;
+    bool m_showThreatCounts;
 
     // for painting
     QColor m_darkSquareColor;
@@ -96,6 +97,8 @@ public:
     void ClearSquareHighlighting();
     bool Editable() const{ return m_editable; }
     void SetEditable(bool b){ m_editable = b; }
+    void SetShowThreatCounts(bool);
+    bool GetShowThreatCounts() const{ return m_showThreatCounts; }
 
 
     /** \name QAbstractItemView interface

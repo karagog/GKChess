@@ -15,12 +15,9 @@ limitations under the License.*/
 #ifndef GKCHESS_ISQUARE_H
 #define GKCHESS_ISQUARE_H
 
-#include "gkchess_globals.h"
+#include "gkchess_piece.h"
 
 NAMESPACE_GKCHESS;
-
-
-class Piece;
 
 
 /** Describes one square of the chess board.
@@ -45,6 +42,17 @@ public:
     /** Returns the piece on the square. If there is no piece, then a null pointer is returned.
     */
     virtual Piece const *GetPiece() const = 0;
+    
+    /** Sets the piece on the square. */
+    virtual void SetPiece(const Piece &) = 0;
+    
+    /** Returns the number of threats on this square by the given allegience. 
+        It may return -1, indicating that the threat count hasn't been computed.
+    */
+    virtual int GetThreatCount(Piece::AllegienceEnum) const = 0;
+    
+    /** Sets the threat count for the square for the given allegience. */
+    virtual void SetThreatCount(Piece::AllegienceEnum, int) = 0;
 
     /** Compares squares based on their row and column.
      *  You should implement an equality comparer in the most efficient way for your

@@ -180,5 +180,17 @@ void BoardView::SetEditable(bool b)
     d->BoardView.SetEditable(b);
 }
 
+void BoardView::SetShowThreatCounts(bool b)
+{
+    G_D;
+    d->BoardView.SetShowThreatCounts(b);
+}
+    
+bool BoardView::GetShowThreatCounts() const
+{
+    G_D;
+    return d->BoardView.GetShowThreatCounts();
+}
+
 
 END_NAMESPACE_GKCHESS1;

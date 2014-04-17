@@ -183,6 +183,9 @@ AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
             move_p(md);
             __update_gamestate(*this, md);
             
+            // Invalidate all threat counts after the move
+            UpdateThreatCounts();
+            
             if(!d->simulating)
                 emit NotifyPieceMoved(md);
         }
@@ -533,6 +536,8 @@ void AbstractBoard::SetupNewGame(AbstractBoard::SetupTypeEnum ste)
         THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
         break;
     }
+    
+    UpdateThreatCounts();
 }
 
 AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, const ISquare &d) const
@@ -1018,6 +1023,152 @@ void AbstractBoard::Restore()
     {
         FromFEN(d->saved_states.Top());
         d->saved_states.Pop();
+    }
+}
+
+static void __append_if_within_bounds(Vector<ISquare const *> &ret, const AbstractBoard &b, int col, int row)
+{
+    if(0 <= col && col < b.ColumnCount() && 0 <= row && row < b.RowCount())
+        ret.PushBack(&b.SquareAt(col, row));
+}
+
+static void __get_threatened_squares_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int col_inc, int row_inc, Piece::AllegienceEnum a, int max_distance = -1)
+{
+    int col = s.GetColumn() + col_inc;
+    int row = s.GetRow() + row_inc;
+    bool break_after = false;
+    int distance = 1;
+    while((-1 == max_distance || distance <= max_distance) && 
+           0 <= col && col < b.ColumnCount() &&
+           0 <= row && row < b.RowCount())
+    {
+        ISquare const *cur_sqr = &b.SquareAt(col, row);
+        Piece const *p = cur_sqr->GetPiece();
+        if(p)
+        {
+            if(p->GetAllegience() == a)
+                // Bishops cannot see through their own pieces
+                break;
+            else
+            {
+                // Bishops cannot see past a piece they can capture
+                break_after = true;
+            }
+        }
+        
+        ret.PushBack(cur_sqr);
+    
+        if(break_after)
+            break;
+    
+        col += col_inc;
+        row += row_inc;
+        ++distance;
+    }
+}
+
+static void __get_threatened_squares_bishop_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
+{
+    __get_threatened_squares_helper(ret, b, s, 1, 1, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 1, -1, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, -1, 1, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, -1, -1, a, max_distance);
+}
+
+static void __get_threatened_squares_rook_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
+{
+    __get_threatened_squares_helper(ret, b, s, 0, 1, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 0, -1, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 1, 0, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, -1, 0, a, max_distance);
+}
+
+static void __get_threatened_squares_queen_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
+{
+    // Queen is a combination of a rook and a bishop
+    __get_threatened_squares_bishop_helper(ret, b, s, a, max_distance);
+    __get_threatened_squares_rook_helper(ret, b, s, a, max_distance);
+}
+
+// Returns the squares that a piece with given type on the given square can capture
+static Vector<ISquare const *> __get_threatened_squares(const AbstractBoard &b, const Piece &p, const ISquare &s)
+{
+    Vector<ISquare const *> ret;
+    switch(p.GetType())
+    {
+    case Piece::Pawn:
+    {
+        // A pawn threatens the two squares diagonally in front of it
+        int rank = s.GetRow() + __allegience_to_rank_increment(p.GetAllegience());
+        if(0 < rank && rank < 7)
+        {
+            int col = s.GetColumn() - 1;
+            if(0 <= col)
+                ret.PushBack(&b.SquareAt(col, rank));
+            
+            col = s.GetColumn() + 1;
+            if(7 >= col)
+                ret.PushBack(&b.SquareAt(col, rank));
+        }
+    }
+        break;
+    case Piece::Knight:
+        __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() + 2);
+        __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() - 2);
+        __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() + 2);
+        __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() - 2);
+        __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() + 1);
+        __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() - 1);
+        __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() + 1);
+        __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() - 1);
+        break;
+    case Piece::Bishop:
+        __get_threatened_squares_bishop_helper(ret, b, s, p.GetAllegience());
+        break;
+    case Piece::Rook:
+        __get_threatened_squares_rook_helper(ret, b, s, p.GetAllegience());
+        break;
+    case Piece::Queen:
+        __get_threatened_squares_queen_helper(ret, b, s, p.GetAllegience());
+        break;
+    case Piece::King:
+        // A king threatens like a queen but with max distance 1
+        __get_threatened_squares_queen_helper(ret, b, s, p.GetAllegience(), 1);
+        break;
+    default:break;
+    }
+    return ret;
+}
+
+void AbstractBoard::UpdateThreatCounts()
+{
+    // Set all threats to 0 and then increment them as we find threats
+    _set_all_threat_counts(0);
+    
+    Vector<ISquare const *> all_pieces(FindPieces(Piece()));
+    G_FOREACH(ISquare const *s_c, all_pieces)
+    {
+        Piece const *p = s_c->GetPiece();
+        if(!p)
+            continue;
+            
+        Vector<ISquare const *> squares(__get_threatened_squares(*this, p->GetType(), *s_c));
+        G_FOREACH_CONST(ISquare const *s_c, squares){
+            ISquare &s = square_at(s_c->GetColumn(), s_c->GetRow());
+            s.SetThreatCount(p->GetAllegience(), s.GetThreatCount(p->GetAllegience()) + 1);
+        }
+    }
+}
+
+void AbstractBoard::_set_all_threat_counts(int c)
+{
+    for(int i = 0; i < ColumnCount(); ++i)
+    {
+        for(int j = 0; j < RowCount(); ++j)
+        {
+            square_at(i, j).SetThreatCount(Piece::White, c);
+            square_at(i, j).SetThreatCount(Piece::Black, c);
+        }
     }
 }
 
