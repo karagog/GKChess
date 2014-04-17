@@ -46,6 +46,7 @@ public:
         m_threatsWhite(-1),
         m_threatsBlack(-1)
     {}
+    
     int GetColumn() const{ return m_column; }
     int GetRow() const{ return m_row; }
     Piece const *GetPiece() const{ return m_piece.GetType() == Piece::NoPiece ? 0 : &m_piece; }
@@ -141,6 +142,7 @@ Board::Board(const AbstractBoard &o)
 
     _init();
 
+    // copy the contents of the other board's squares
     for(int c = 0; c < ColumnCount(); ++c){
         for(int r = 0; r < RowCount(); ++r){
             square_at(c, r) = o.SquareAt(c, r);
@@ -153,7 +155,7 @@ void Board::_init()
     G_D_INIT();
     G_D;
 
-    // Instantiate all the squares
+    // Instantiate all the squares and initialize their row/column data
     d->squares.ReserveExactly(NUM_COLS * NUM_ROWS);
     for(int c = 0; c < ColumnCount(); ++c)
         for(int r = 0; r < RowCount(); ++r)
@@ -185,7 +187,7 @@ int Board::RowCount() const
 void Board::set_piece_p(const Piece &p, int col, int row)
 {
     G_D;
-    Square &sqr(__square_at(d->squares, col, row));
+    ISquare &sqr(square_at(col, row));
     Piece const *piece_orig = sqr.GetPiece();
 
     // Remove the old piece from the index
@@ -202,8 +204,8 @@ void Board::set_piece_p(const Piece &p, int col, int row)
 void Board::move_p(const MoveData &md)
 {
     G_D;
-    Square &src(__square_at(d->squares, md.Source->GetColumn(), md.Source->GetRow()));
-    Square &dest(__square_at(d->squares, md.Destination->GetColumn(), md.Destination->GetRow()));
+    ISquare &src(square_at(md.Source->GetColumn(), md.Source->GetRow()));
+    ISquare &dest(square_at(md.Destination->GetColumn(), md.Destination->GetRow()));
 
     Piece const *piece_orig = src.GetPiece();
     Piece const *piece_dest = dest.GetPiece();
@@ -220,15 +222,11 @@ void Board::move_p(const MoveData &md)
         if(piece_orig)
         {
             // If the piece being moved is not the same piece as the source square (corner case)
-            if(*piece_orig != md.PieceMoved)
-            {
-                // This section of code should not execute unless there is a bug in our move logic
+            if(*piece_orig == md.PieceMoved)
+                index.At(piece_orig->GetType(), &src) = &dest;
+            else{
                 GASSERT(false);
-                index.Remove(piece_orig->GetType(), &src);
-                __index(d, md.PieceMoved.GetAllegience()).InsertMulti(md.PieceMoved.GetType(), &dest);
             }
-            else
-                index[piece_orig->GetType()] = &dest;
         }
 
         src.SetPiece(Piece());
@@ -268,8 +266,8 @@ void Board::move_p(const MoveData &md)
         }
 
         // Move the rook
-        __square_at(d->squares, rook_col_src, rank).SetPiece(Piece());
-        __square_at(d->squares, rook_col_dest, rank).SetPiece(Piece(Piece::Rook, piece_orig->GetAllegience()));
+        square_at(rook_col_src, rank).SetPiece(Piece());
+        square_at(rook_col_dest, rank).SetPiece(Piece(Piece::Rook, piece_orig->GetAllegience()));
 
         // Move the King
         dest.SetPiece(*piece_orig);

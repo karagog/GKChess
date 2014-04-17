@@ -72,6 +72,17 @@ public:
                 GetRow() != other.GetRow();
     }
 
+    /** Copies the square's data, except the row and column. */
+    ISquare &operator = (const ISquare &o){
+        Piece pc;
+        if(o.GetPiece())
+            pc = *o.GetPiece();
+        
+        SetPiece(pc);
+        SetThreatCount(Piece::White, o.GetThreatCount(Piece::White));
+        SetThreatCount(Piece::Black, o.GetThreatCount(Piece::Black));
+        return *this;
+    }
 
     /** \} */
 
