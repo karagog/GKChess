@@ -20,7 +20,7 @@ NAMESPACE_GKCHESS;
 
 Piece::Piece()
     :_p_Type(NoPiece),
-      _p_Allegience(White)
+      _p_Allegience(AnyAllegience)
 {}
 
 Piece::Piece(PieceTypeEnum pt, AllegienceEnum a)

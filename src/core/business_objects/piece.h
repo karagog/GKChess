@@ -59,7 +59,7 @@ public:
     Piece();
     
     /** Constructs a piece with the given allegience and type. */
-    Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
+    explicit Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
 
     bool operator == (const Piece &o) const{
         return GetAllegience() == o.GetAllegience() &&

@@ -414,7 +414,7 @@ String AbstractBoard::ToFEN() const
 /** Converts an allegience into a positive or negative 1, so we know what direction is forward. */
 static int __allegience_to_rank_increment(Piece::AllegienceEnum a)
 {
-    return Piece::White == a ? -1 : 1;
+    return Piece::White == a ? 1 : -1;
 }
 
 int __cmp_with_zero(int n)
@@ -745,7 +745,7 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                         ISquare const *s = possible_sources[i];
 
                         if((1 == Abs(s->GetColumn() - ret.Destination->GetColumn())) &&
-                                s->GetRow() == ret.Destination->GetRow() + __allegience_to_rank_increment(turn))
+                                s->GetRow() == ret.Destination->GetRow() - __allegience_to_rank_increment(turn))
                         {
                             if(-1 != tmp_source_column)
                             {
@@ -774,7 +774,7 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                 else
                 {
                     // If the pawn is not capturing, it must be in the same file
-                    int r = ret.Destination->GetRow() + __allegience_to_rank_increment(turn);
+                    int r = ret.Destination->GetRow() - __allegience_to_rank_increment(turn);
                     if(0 > r || r > 7)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
@@ -782,7 +782,7 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                     if(NULL == s->GetPiece())
                     {
                         // The pawn can move two squares on the first move
-                        r = s->GetRow() + __allegience_to_rank_increment(turn);
+                        r = s->GetRow() - __allegience_to_rank_increment(turn);
                         if((turn == Piece::White && 1 != r) || (turn == Piece::Black && 6 != r) ||
                                 NULL == (s = &SquareAt(ret.Destination->GetColumn(), r))->GetPiece())
                             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
@@ -1152,7 +1152,7 @@ void AbstractBoard::UpdateThreatCounts()
         if(!p)
             continue;
             
-        Vector<ISquare const *> squares(__get_threatened_squares(*this, p->GetType(), *s_c));
+        Vector<ISquare const *> squares(__get_threatened_squares(*this, *p, *s_c));
         G_FOREACH_CONST(ISquare const *s_c, squares){
             ISquare &s = square_at(s_c->GetColumn(), s_c->GetRow());
             s.SetThreatCount(p->GetAllegience(), s.GetThreatCount(p->GetAllegience()) + 1);

@@ -90,6 +90,12 @@ USING_NAMESPACE_GKCHESS1(UI);
 */
 #define PIECE_SIZE_FACTOR  0.825
 
+/** The threat count indicators will be this factor of the square size. */
+#define THREAT_COUNT_SIZE_FACTOR  0.2
+
+/** The distance between the edge of the square and the threat count text, as a factor of square size. */
+#define THREAT_COUNT_MARGIN_FACTOR  0.025
+
 /** The default cursor to use. */
 #define CURSOR_DEFAULT Qt::ArrowCursor
 
@@ -430,7 +436,10 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     QFont font_indices = painter.font();
     font_indices.setPixelSize(GetSquareSize() * 0.25);
 
-    painter.setFont(font_indices);
+    QFont font_threatCount = painter.font();
+    font_threatCount.setPixelSize(GetSquareSize() * THREAT_COUNT_SIZE_FACTOR);
+
+    painter.setFont(font_threatCount);
 
     // If we are animating, then we paint the animation board
     AbstractBoard const *board = m_animationBoard.IsNull() ? &GetBoardModel()->GetBoard() : m_animationBoard.Data();
@@ -458,7 +467,17 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             // If we are showing threat counts, paint that now:
             if(GetShowThreatCounts())
             {
-                painter.drawText(tmp, Qt::AlignCenter, QString("%1").arg(cur_sqr.GetThreatCount(Piece::White)));
+                QRectF threat_rect(tmp.x(), tmp.y(),
+                                   tmp.width() * THREAT_COUNT_SIZE_FACTOR,
+                                   tmp.height() * THREAT_COUNT_SIZE_FACTOR);
+                painter.drawText(threat_rect.translated(THREAT_COUNT_MARGIN_FACTOR*GetSquareSize(),
+                                                        THREAT_COUNT_MARGIN_FACTOR*GetSquareSize()),
+                                 Qt::AlignCenter,
+                                 QString("%1").arg(cur_sqr.GetThreatCount(Piece::White)));
+                painter.drawText(threat_rect.translated(tmp.width()*(1 - THREAT_COUNT_SIZE_FACTOR)-THREAT_COUNT_MARGIN_FACTOR*GetSquareSize(),
+                                                        THREAT_COUNT_MARGIN_FACTOR*GetSquareSize()),
+                                 Qt::AlignCenter,
+                                 QString("%1").arg(cur_sqr.GetThreatCount(Piece::Black)));
             }
 
             // Paint the pieces
@@ -473,6 +492,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
 
     // paint the vertical borders and indices
     {
+        painter.setFont(font_indices);
         float file_width = get_board_rect().width() / num_cols;
         QPointF p1(get_board_rect().topLeft());
         QPointF p2(p1.x(), p1.y() + get_board_rect().height());
