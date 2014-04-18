@@ -1046,14 +1046,8 @@ static void __get_threatened_squares_helper(Vector<ISquare const *> &ret, const 
         Piece const *p = cur_sqr->GetPiece();
         if(p)
         {
-            if(p->GetAllegience() == a)
-                // Bishops cannot see through their own pieces
-                break;
-            else
-            {
-                // Bishops cannot see past a piece they can capture
-                break_after = true;
-            }
+            // You can threaten the piece, but not go beyond it
+            break_after = true;
         }
         
         ret.PushBack(cur_sqr);
@@ -1065,6 +1059,18 @@ static void __get_threatened_squares_helper(Vector<ISquare const *> &ret, const 
         row += row_inc;
         ++distance;
     }
+}
+
+static void __get_threatened_squares_knight_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s)
+{
+    __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() + 2);
+    __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() - 2);
+    __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() + 2);
+    __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() - 2);
+    __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() + 1);
+    __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() - 1);
+    __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() + 1);
+    __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() - 1);
 }
 
 static void __get_threatened_squares_bishop_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
@@ -1113,14 +1119,7 @@ static Vector<ISquare const *> __get_threatened_squares(const AbstractBoard &b, 
     }
         break;
     case Piece::Knight:
-        __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() + 2);
-        __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() - 2);
-        __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() + 2);
-        __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() - 2);
-        __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() + 1);
-        __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() - 1);
-        __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() + 1);
-        __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() - 1);
+        __get_threatened_squares_knight_helper(ret, b, s);
         break;
     case Piece::Bishop:
         __get_threatened_squares_bishop_helper(ret, b, s, p.GetAllegience());
