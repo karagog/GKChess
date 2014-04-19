@@ -38,7 +38,7 @@ static QString __get_new_temp_icon_dir()
                 .arg(QUuid::createUuid()));
 }
 
-static QString __get_filename_for_piece(const Piece &p)
+static QString __get_filename_for_piece(Piece const &p)
 {
     return QString("%1%2.png")
             .arg(p.GetAllegience() == Piece::White ? "w" : "b")
@@ -156,7 +156,7 @@ void ColoredPieceIconFactory::_validate_template_icons()
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The icon factory did not find all the necessary templates");
 }
 
-QIcon ColoredPieceIconFactory::GetIcon(const Piece &p)
+QIcon ColoredPieceIconFactory::GetIcon(Piece const &p)
 {
     QIcon ret;
     typename Map<int, QIcon>::iterator i(index.Search(p.UnicodeValue()));
@@ -177,7 +177,7 @@ void ColoredPieceIconFactory::ChangeColors(const QColor &col_light, const QColor
     something_to_do.wakeOne();
 }
 
-static void __generate_icon(const Piece &p, const QColor &color, const QString &dir_templates, const QString &dir_gen)
+static void __generate_icon(Piece const &p, const QColor &color, const QString &dir_templates, const QString &dir_gen)
 {
     QImage template_image(QDir::toNativeSeparators(QString("%1/%2.png")
                                                    .arg(dir_templates)

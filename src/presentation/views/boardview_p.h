@@ -155,13 +155,13 @@ protected:
     */
     void animate_move(const GKChess::Piece &,
                       const QPointF &source, const QPointF &dest,
-                      GKChess::ISquare const &sqr_source,
+                      GKChess::Square const &sqr_source,
                       int duration_ms,
                       QEasingCurve::Type);
 
     void animate_castle(GKChess::Piece::AllegienceEnum allegience,
-                        const GKChess::ISquare &king_src, const GKChess::ISquare &king_dest,
-                        const GKChess::ISquare &rook_src, const GKChess::ISquare &rook_dest,
+                        const GKChess::Square &king_src, const GKChess::Square &king_dest,
+                        const GKChess::Square &rook_src, const GKChess::Square &rook_dest,
                         int duration_ms,
                         QEasingCurve::Type easing_curve);
 

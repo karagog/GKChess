@@ -14,7 +14,7 @@ limitations under the License.*/
 
 #include "abstractboard.h"
 #include "piece.h"
-#include "isquare.h"
+#include "square.h"
 #include "pgn_move_data.h"
 #include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
@@ -23,54 +23,35 @@ USING_NAMESPACE_GUTIL;
 #define CASTLE_A_KING_DEST  2
 #define CASTLE_H_KING_DEST  6
 
-
-struct d_t
-{
-    bool simulating;
-    GUtil::List<GUtil::String, GUtil::IStack<GUtil::String> > saved_states;
-
-    d_t()
-        :simulating(false)
-    {}
-};
-
-
 NAMESPACE_GKCHESS;
 
 
-AbstractBoard::AbstractBoard(QObject *p)
-    :QObject(p)
-{
-    G_D_INIT();
-}
+AbstractBoard::AbstractBoard()
+    :_p_WhoseTurn(Piece::AnyAllegience),
+      _p_CastleWhiteA(-1),
+      _p_CastleWhiteH(-1),
+      _p_CastleBlackA(-1),
+      _p_CastleBlackH(-1),
+      _p_EnPassantSquare(0),
+      _p_HalfMoveClock(0),
+      _p_FullMoveNumber(1),
+      _p_Result(Undecided)
+{}
 
 AbstractBoard::~AbstractBoard()
+{}
+
+void AbstractBoard::SetPiece(Piece const &p, Square const &s)
 {
-    G_D_UNINIT();
+    square_at(s.GetColumn(), s.GetRow()).SetPiece(p);
 }
 
-void AbstractBoard::SetPiece(const Piece &p, ISquare const &sqr)
-{
-    if(0 <= sqr.GetColumn() && sqr.GetColumn() < ColumnCount() &&
-            0 <= sqr.GetRow() && sqr.GetRow() < RowCount())
-    {
-        G_D;
-        if(!d->simulating)
-            emit NotifySquareAboutToBeUpdated(sqr);
-
-        set_piece_p(p, sqr.GetColumn(), sqr.GetRow());
-
-        if(!d->simulating)
-            emit NotifySquareUpdated(sqr);
-    }
-}
-
-Piece const *AbstractBoard::GetPiece(int column, int row) const
+Piece const &AbstractBoard::GetPiece(int column, int row) const
 {
     return SquareAt(column, row).GetPiece();
 }
 
-static void __update_gamestate(AbstractBoard &b, const MoveData &md)
+void AbstractBoard::_update_gamestate(const MoveData &md)
 {
     int inc;
     Piece::AllegienceEnum next_turn;
@@ -81,63 +62,63 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
 
     // Update the half-move clock
     if(Piece::Pawn != p.GetType() && md.PieceCaptured.IsNull())
-        b.SetHalfMoveClock(b.GetHalfMoveClock() + 1);
+        SetHalfMoveClock(GetHalfMoveClock() + 1);
     else
-        b.SetHalfMoveClock(0);
+        SetHalfMoveClock(0);
 
     if(p.GetAllegience() == Piece::Black)
     {
-        b.SetFullMoveNumber(b.GetFullMoveNumber() + 1);
+        SetFullMoveNumber(GetFullMoveNumber() + 1);
         next_turn = Piece::White;
         inc = -1;
     }
     else
     {
-        b.SetWhoseTurn(Piece::Black);
+        SetWhoseTurn(Piece::Black);
         next_turn = Piece::Black;
         inc = 1;
     }
-    b.SetWhoseTurn(next_turn);
+    SetWhoseTurn(next_turn);
 
     // Set the en-passant square
     if(p.GetType() == Piece::Pawn)
     {
         int row_diff_abs = Abs(md.Destination->GetRow() - md.Source->GetRow());
         if(2 == row_diff_abs)
-            b.SetEnPassantSquare(&b.SquareAt(md.Source->GetColumn(), md.Source->GetRow() + inc));
+            SetEnPassantSquare(&SquareAt(md.Source->GetColumn(), md.Source->GetRow() + inc));
         else
-            b.SetEnPassantSquare(0);
+            SetEnPassantSquare(0);
     }
     else
-        b.SetEnPassantSquare(0);
+        SetEnPassantSquare(0);
 
-        
+
     // Update the castle info
-    
+
     //    Debugging:
-//    int wa = b.GetCastleWhiteA();
-//    int wh = b.GetCastleWhiteH();
-//    int ba = b.GetCastleBlackA();
-//    int bh = b.GetCastleBlackH();
+//    int wa = GetCastleWhiteA();
+//    int wh = GetCastleWhiteH();
+//    int ba = GetCastleBlackA();
+//    int bh = GetCastleBlackH();
 
     if(Piece::White == md.Whose())
     {
         if(Piece::King == p.GetType() || MoveData::NoCastle != md.CastleType)
         {
             // If the king moved, or he is castling then all castling options are set to null
-            b.SetCastleWhiteA(-1);
-            b.SetCastleWhiteH(-1);
+            SetCastleWhiteA(-1);
+            SetCastleWhiteH(-1);
         }
         else if(Piece::Rook == p.GetType())
         {
             // If a rook moved and castling was available on that side, now it's not
-            if(-1 != b.GetCastleWhiteA()){
-                if(b.GetCastleWhiteA() == md.Source->GetColumn() && 0 == md.Source->GetRow())
-                    b.SetCastleWhiteA(-1);
+            if(-1 != GetCastleWhiteA()){
+                if(GetCastleWhiteA() == md.Source->GetColumn() && 0 == md.Source->GetRow())
+                    SetCastleWhiteA(-1);
             }
-            if(-1 != b.GetCastleWhiteH()){
-                if(b.GetCastleWhiteH() == md.Source->GetColumn() && 0 == md.Source->GetRow())
-                    b.SetCastleWhiteH(-1);
+            if(-1 != GetCastleWhiteH()){
+                if(GetCastleWhiteH() == md.Source->GetColumn() && 0 == md.Source->GetRow())
+                    SetCastleWhiteH(-1);
             }
         }
     }
@@ -146,67 +127,111 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
         if(Piece::King == p.GetType() || MoveData::NoCastle != md.CastleType)
         {
             // If the king moved, or he is castling then all castling options are set to null
-            b.SetCastleBlackA(-1);
-            b.SetCastleBlackH(-1);
+            SetCastleBlackA(-1);
+            SetCastleBlackH(-1);
         }
         else if(Piece::Rook == p.GetType())
         {
             // If a rook moved and castling was available on that side, now it's not
-            if(-1 != b.GetCastleBlackA()){
-                if(b.GetCastleBlackA() == md.Source->GetColumn() && 7 == md.Source->GetRow())
-                    b.SetCastleBlackA(-1);
+            if(-1 != GetCastleBlackA()){
+                if(GetCastleBlackA() == md.Source->GetColumn() && 7 == md.Source->GetRow())
+                    SetCastleBlackA(-1);
             }
-            if(-1 != b.GetCastleBlackH()){
-                if(b.GetCastleBlackH() == md.Source->GetColumn() && 7 == md.Source->GetRow())
-                    b.SetCastleBlackH(-1);
+            if(-1 != GetCastleBlackH()){
+                if(GetCastleBlackH() == md.Source->GetColumn() && 7 == md.Source->GetRow())
+                    SetCastleBlackH(-1);
             }
         }
     }
 }
 
+void AbstractBoard::move_p(const MoveData &md)
+{
+    Square &src(square_at(md.Source->GetColumn(), md.Source->GetRow()));
+    Square &dest(square_at(md.Destination->GetColumn(), md.Destination->GetRow()));
+
+    Piece const &piece_orig = src.GetPiece();
+
+    if(MoveData::NoCastle == md.CastleType)
+    {
+        SetPiece(Piece(), src);
+        SetPiece(md.PieceMoved, dest);
+    }
+    else
+    {
+        int rook_col_src, rook_col_dest;
+        int rank;
+        if(Piece::White == piece_orig.GetAllegience())
+        {
+            rank = 0;
+            if(MoveData::CastleASide == md.CastleType)
+            {
+                rook_col_src = GetCastleWhiteA();
+                rook_col_dest = 3;
+            }
+            else
+            {
+                rook_col_src = GetCastleWhiteH();
+                rook_col_dest = 5;
+            }
+        }
+        else
+        {
+            rank = 7;
+            if(MoveData::CastleASide == md.CastleType)
+            {
+                rook_col_src = GetCastleBlackA();
+                rook_col_dest = 3;
+            }
+            else
+            {
+                rook_col_src = GetCastleBlackH();
+                rook_col_dest = 5;
+            }
+        }
+
+        // Move the rook
+        SetPiece(Piece(), square_at(rook_col_src, rank));
+        SetPiece(Piece(Piece::Rook, piece_orig.GetAllegience()), square_at(rook_col_dest, rank));
+
+        // Move the King
+        SetPiece(piece_orig, dest);
+        SetPiece(Piece(), src);
+    }
+
+    _update_gamestate(md);
+}
+
 AbstractBoard::MoveValidationEnum AbstractBoard::Move(const MoveData &md)
 {
-    G_D;
     MoveValidationEnum ret = ValidMove;
 
     if(md.IsNull())
         ret = InvalidInputError;
     else
     {
-        if(!d->simulating)
-        {
-            // If you want more moves to be valid you can implement your own liberal validator
-            ret = ValidateMove(*md.Source, *md.Destination);
-        }
+        ret = ValidateMove(*md.Source, *md.Destination);
 
         if(ValidMove == ret)
         {
-            if(!d->simulating)
-                emit NotifyPieceAboutToBeMoved(md);
-            
             // Move the piece and update the gamestate
             move_p(md);
-            __update_gamestate(*this, md);
-            
+
             // Invalidate all threat counts after the move
             UpdateThreatCounts();
-            
-            if(!d->simulating)
-                emit NotifyPieceMoved(md);
         }
     }
     return ret;
 }
 
-AbstractBoard::MoveValidationEnum AbstractBoard::Move2(const ISquare &src, const ISquare &dest, IPlayerResponse *pr)
+AbstractBoard::MoveValidationEnum AbstractBoard::Move2(const Square &src, const Square &dest, IPlayerResponse *pr)
 {
     return Move(GenerateMoveData(src, dest, pr));
 }
 
-void AbstractBoard::Resign(Piece::AllegienceEnum a)
+void AbstractBoard::Resign(Piece::AllegienceEnum)
 {
     THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
-    emit NotifyResignation(a);
 }
 
 void AbstractBoard::Clear()
@@ -406,6 +431,8 @@ void AbstractBoard::FromFEN(const String &s)
 
             SetEnPassantSquare(&SquareAt(f - 'a', rnk - '1'));
         }
+        else
+            SetEnPassantSquare(0);
     }
 
 
@@ -451,10 +478,10 @@ static GUtil::String __get_castle_string_for_allegience(const AbstractBoard &b,
             bool no_outer_rook = true;
             for(int i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
             {
-                ISquare const &sqr = b.SquareAt(i, rank);
+                Square const &sqr = b.SquareAt(i, rank);
                 if(sqr.GetPiece() &&
-                        sqr.GetPiece()->GetType() == Piece::Rook &&
-                        sqr.GetPiece()->GetAllegience() == a){
+                        sqr.GetPiece().GetType() == Piece::Rook &&
+                        sqr.GetPiece().GetAllegience() == a){
                     no_outer_rook = false;
                     break;
                 }
@@ -469,10 +496,10 @@ static GUtil::String __get_castle_string_for_allegience(const AbstractBoard &b,
             bool no_outer_rook = true;
             for(int i = castle_file_a_side - 1; i >= 0; --i)
             {
-                ISquare const &sqr = b.SquareAt(i, rank);
+                Square const &sqr = b.SquareAt(i, rank);
                 if(sqr.GetPiece() &&
-                        sqr.GetPiece()->GetType() == Piece::Rook &&
-                        sqr.GetPiece()->GetAllegience() == a){
+                        sqr.GetPiece().GetType() == Piece::Rook &&
+                        sqr.GetPiece().GetAllegience() == a){
                     no_outer_rook = false;
                     break;
                 }
@@ -494,7 +521,7 @@ String AbstractBoard::ToFEN() const
         int empty_cnt = 0;
         for(int c = 0; c < ColumnCount(); ++c)
         {
-            ISquare const &cur = SquareAt(c, r);
+            Square const &cur = SquareAt(c, r);
             if(cur.GetPiece())
             {
                 if(0 < empty_cnt)
@@ -503,7 +530,7 @@ String AbstractBoard::ToFEN() const
                     empty_cnt = 0;
                 }
 
-                ret.Append(cur.GetPiece()->ToFEN());
+                ret.Append(cur.GetPiece().ToFEN());
             }
             else
             {
@@ -582,10 +609,10 @@ int __cmp_with_zero(int n)
 // This function assumes that source and destination are in a straight line away from each
 //  other, horizontally, vertically or diagonally. Any other inputs will probably seg fault.
 // It is this way intentionally as an optimization to make it as fast as possible.
-static bool __is_path_blocked(AbstractBoard const &b, ISquare const &s, ISquare const &d, Piece::AllegienceEnum a)
+static bool __is_path_blocked(AbstractBoard const &b, Square const &s, Square const &d, Piece::AllegienceEnum a)
 {
     bool ret = false;
-    ISquare const *cur = &s;
+    Square const *cur = &s;
     int cmp_res_col = __cmp_with_zero(d.GetColumn() - cur->GetColumn());
     int cmp_res_row = __cmp_with_zero(d.GetRow() - cur->GetRow());
 
@@ -593,13 +620,13 @@ static bool __is_path_blocked(AbstractBoard const &b, ISquare const &s, ISquare 
     {
         cur = &b.SquareAt(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
 
-        Piece const *p = cur->GetPiece();
+        Piece const &p = cur->GetPiece();
         if(cur == &d)
         {
             // The destination square is only blocked if there is a piece that belongs
             //  to the same allegience as the piece being moved.
             if(p)
-                ret = a == p->GetAllegience();
+                ret = a == p.GetAllegience();
             break;
         }
         else if(p)
@@ -612,8 +639,8 @@ static bool __is_path_blocked(AbstractBoard const &b, ISquare const &s, ISquare 
 }
 
 static bool __is_move_valid_for_bishop(AbstractBoard const &b,
-                                       ISquare const *s,
-                                       ISquare const *d,
+                                       Square const *s,
+                                       Square const *d,
                                        Piece::AllegienceEnum a)
 {
     int col_diff_abs = Abs(s->GetColumn() - d->GetColumn());
@@ -623,8 +650,8 @@ static bool __is_move_valid_for_bishop(AbstractBoard const &b,
 }
 
 static bool __is_move_valid_for_knight(AbstractBoard const &b,
-                                       ISquare const *s,
-                                       ISquare const *d,
+                                       Square const *s,
+                                       Square const *d,
                                        Piece::AllegienceEnum a)
 {
     GUTIL_UNUSED(b);
@@ -636,8 +663,8 @@ static bool __is_move_valid_for_knight(AbstractBoard const &b,
 }
 
 static bool __is_move_valid_for_rook(AbstractBoard const &b,
-                                     ISquare const *s,
-                                     ISquare const *d,
+                                     Square const *s,
+                                     Square const *d,
                                      Piece::AllegienceEnum a)
 {
     int col_diff = s->GetColumn() - d->GetColumn();
@@ -649,8 +676,8 @@ static bool __is_move_valid_for_rook(AbstractBoard const &b,
 }
 
 static bool __is_move_valid_for_queen(AbstractBoard const &b,
-                                      ISquare const *s,
-                                      ISquare const *d,
+                                      Square const *s,
+                                      Square const *d,
                                       Piece::AllegienceEnum a)
 {
     int col_diff_abs = Abs(s->GetColumn() - d->GetColumn());
@@ -662,8 +689,8 @@ static bool __is_move_valid_for_queen(AbstractBoard const &b,
 }
 
 static bool __is_move_valid_for_king(AbstractBoard const &b,
-                                     ISquare const *s,
-                                     ISquare const *d,
+                                     Square const *s,
+                                     Square const *d,
                                      Piece::AllegienceEnum a)
 {
     GUTIL_UNUSED(b);
@@ -688,22 +715,22 @@ void AbstractBoard::SetupNewGame(AbstractBoard::SetupTypeEnum ste)
         THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
         break;
     }
-    
+
     UpdateThreatCounts();
 }
 
-AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, const ISquare &d) const
+AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const Square &s, const Square &d) const
 {
-    Piece const *p(s.GetPiece());
-    Piece const *dp(d.GetPiece());
-    if(NULL == p)
+    Piece const &p(s.GetPiece());
+    Piece const &dp(d.GetPiece());
+    if(!p)
         return InvalidEmptySquare;
 
 
     // Validate the low-level technical aspects of the move, ignoring threats to the king
 
     // Only the player whose turn it is can move pieces
-    if(p->GetAllegience() != GetWhoseTurn())
+    if(p.GetAllegience() != GetWhoseTurn())
         return InvalidTechnical;
 
     // A piece cannot stay in the same place if it is moving
@@ -715,13 +742,13 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
     int row_diff = d.GetRow() - s.GetRow();
     int col_diff_abs = Abs(col_diff);
     int row_diff_abs = Abs(row_diff);
-    switch(p->GetType())
+    switch(p.GetType())
     {
     case Piece::Pawn:
     {
         int sign;
         int startRank;
-        if(Piece::White == p->GetAllegience()){
+        if(Piece::White == p.GetAllegience()){
             sign = 1;
             startRank = 1;
         }
@@ -746,7 +773,7 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
                     row_diff == 1*sign && 1 == col_diff_abs &&
 
                     // there must be a captured piece of the other color on the dest square
-                    ((dp && dp->GetAllegience() != p->GetAllegience()) ||
+                    ((dp && dp.GetAllegience() != p.GetAllegience()) ||
 
                      //  or the square being captured to must be an en passant square
                      (GetEnPassantSquare() && d == *GetEnPassantSquare()));
@@ -755,35 +782,35 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
         break;
     case Piece::Bishop:
         if(col_diff_abs == row_diff_abs)
-            technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
         break;
     case Piece::Knight:
-        technically_ok = __is_move_valid_for_knight(*this, &s, &d, p->GetAllegience()) &&
-                (!dp || dp->GetAllegience() == Piece::Black);
+        technically_ok = __is_move_valid_for_knight(*this, &s, &d, p.GetAllegience()) &&
+                (!dp || dp.GetAllegience() == Piece::Black);
         break;
     case Piece::Rook:
         if(0 == col_diff_abs || 0 == row_diff_abs)
-            technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
         break;
     case Piece::Queen:
         if(0 == col_diff_abs || 0 == row_diff_abs || col_diff_abs == row_diff_abs)
-            technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
         break;
     case Piece::King:
         if(1 >= col_diff_abs && 1 >= row_diff_abs)
         {
             // Normally the king can only move one square in any direction
-            technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+            technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
         }
         else if(0 == row_diff)
         {
             // The king can move more than one square if he's castling
-            if(Piece::White == p->GetAllegience()){
+            if(Piece::White == p.GetAllegience()){
                 if(s.GetRow() == 0){
                     if((d.GetColumn() == 2 && GetCastleWhiteA() != -1) ||
                             (d.GetColumn() == 6 && GetCastleWhiteH() != -1))
                     {
-                        technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+                        technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
                     }
                 }
             }
@@ -792,7 +819,7 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
                     if((d.GetColumn() == 2 && GetCastleBlackA() != -1) ||
                             (d.GetColumn() == 6 && GetCastleBlackH() != -1))
                     {
-                        technically_ok = !__is_path_blocked(*this, s, d, p->GetAllegience());
+                        technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
                     }
                 }
             }
@@ -806,15 +833,15 @@ AbstractBoard::MoveValidationEnum AbstractBoard::ValidateMove(const ISquare &s, 
     if(!technically_ok)
         return InvalidTechnical;
 
-    if(d.GetPiece() && d.GetPiece()->GetAllegience() == p->GetAllegience())
+    if(d.GetPiece() && d.GetPiece().GetAllegience() == p.GetAllegience())
         return InvalidTechnical;
 
     return ValidMove;
 }
 
-Vector<ISquare const *> AbstractBoard::GetValidMovesForSquare(const ISquare &) const
+Vector<Square const *> AbstractBoard::GetValidMovesForSquare(const Square &) const
 {
-    Vector<ISquare const *> ret;
+    Vector<Square const *> ret;
     return ret;
 }
 
@@ -841,13 +868,13 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
 
 
         // Get the destination square (this is always given)
-        ISquare const *dest = &SquareAt(m.DestFile - 'a', m.DestRank - 1);
+        Square const *dest = &SquareAt(m.DestFile - 'a', m.DestRank - 1);
         ret.Destination = dest;
 
         if(m.Flags.TestFlag(PGN_MoveData::Capture))
         {
-            if(dest->GetPiece() && dest->GetPiece()->GetAllegience() != turn)
-                ret.PieceCaptured = *dest->GetPiece();
+            if(dest->GetPiece() && dest->GetPiece().GetAllegience() != turn)
+                ret.PieceCaptured = dest->GetPiece();
             else
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid piece to capture at the destination square");
         }
@@ -857,14 +884,14 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
         int tmp_source_column = 0 == m.SourceFile ? -1 : m.SourceFile - 'a';
         if(m.SourceFile != 0 && m.SourceRank != 0)
         {
-            ISquare const *s = &SquareAt(tmp_source_column, m.SourceRank - 1);
+            Square const *s = &SquareAt(tmp_source_column, m.SourceRank - 1);
 
             // Do a sanity check on the square they specified
-            if(NULL == s->GetPiece())
+            if(!s->GetPiece())
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "No piece on the square");
-            if(s->GetPiece()->GetAllegience() != turn)
+            if(s->GetPiece().GetAllegience() != turn)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "It is not your turn");
-            if(s->GetPiece()->GetType() != m.PieceMoved)
+            if(s->GetPiece().GetType() != m.PieceMoved)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "The piece on that square is different than the piece you said to move");
 
             ret.Source = s;
@@ -888,13 +915,13 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                             1 != Abs(tmp_source_column - ret.Destination->GetColumn()))
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file for pawn capture");
 
-                    Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                    Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                     if(0 == possible_sources.Length())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "There are no pieces of that type to move");
 
                     for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                     {
-                        ISquare const *s = possible_sources[i];
+                        Square const *s = possible_sources[i];
 
                         if((1 == Abs(s->GetColumn() - ret.Destination->GetColumn())) &&
                                 s->GetRow() == ret.Destination->GetRow() - __allegience_to_rank_increment(turn))
@@ -930,21 +957,21 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                     if(0 > r || r > 7)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-                    ISquare const *s = &SquareAt(ret.Destination->GetColumn(), r);
-                    if(NULL == s->GetPiece())
+                    Square const *s = &SquareAt(ret.Destination->GetColumn(), r);
+                    if(!s->GetPiece())
                     {
                         // The pawn can move two squares on the first move
                         r = s->GetRow() - __allegience_to_rank_increment(turn);
                         if((turn == Piece::White && 1 != r) || (turn == Piece::Black && 6 != r) ||
-                                NULL == (s = &SquareAt(ret.Destination->GetColumn(), r))->GetPiece())
+                                !(s = &SquareAt(ret.Destination->GetColumn(), r))->GetPiece())
                             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
                     }
 
-                    if(s->GetPiece()->GetAllegience() != turn ||
-                            s->GetPiece()->GetType() != Piece::Pawn)
+                    if(s->GetPiece().GetAllegience() != turn ||
+                            s->GetPiece().GetType() != Piece::Pawn)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-                    if(NULL != ret.Destination->GetPiece())
+                    if(!ret.Destination->GetPiece())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Destination square occupied");
 
                     ret.Source = s;
@@ -955,10 +982,10 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
             {
                 // Knights are easy, because they cannot be blocked. If they are in range of
                 //  the square then it is a valid move.
-                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    ISquare const *s = possible_sources[i];
+                    Square const *s = possible_sources[i];
 
                     if(__is_move_valid_for_knight(*this, s, ret.Destination, turn))
                     {
@@ -982,10 +1009,10 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::Bishop:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    ISquare const *s = possible_sources[i];
+                    Square const *s = possible_sources[i];
 
                     if(__is_move_valid_for_bishop(*this, s, ret.Destination, turn))
                     {
@@ -1009,10 +1036,10 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::Rook:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    ISquare const *s = possible_sources[i];
+                    Square const *s = possible_sources[i];
 
                     if(__is_move_valid_for_rook(*this, s, ret.Destination, turn))
                     {
@@ -1036,10 +1063,10 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::Queen:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
-                    ISquare const *s = possible_sources[i];
+                    Square const *s = possible_sources[i];
 
                     if(__is_move_valid_for_queen(*this, s, ret.Destination, turn))
                     {
@@ -1063,12 +1090,12 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::King:
             {
-                Vector<ISquare const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
 
                 // There can only be one king
                 GASSERT(1 == possible_sources.Length());
 
-                ISquare const *s = possible_sources[0];
+                Square const *s = possible_sources[0];
                 if(__is_move_valid_for_king(*this, s, ret.Destination, turn))
                     ret.Source = s;
             }
@@ -1081,7 +1108,7 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
         if(NULL == ret.Source)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-        ret.PieceMoved = *SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
+        ret.PieceMoved = SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
         GASSERT(NULL != ret.PieceMoved);
 
         // Add a promoted piece, if necessary
@@ -1097,8 +1124,8 @@ MoveData AbstractBoard::GenerateMoveData(const PGN_MoveData &m) const
     return ret;
 }
 
-MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
-                                         const ISquare &d,
+MoveData AbstractBoard::GenerateMoveData(const Square &s,
+                                         const Square &d,
                                          IPlayerResponse *uf) const
 {
     MoveData ret;
@@ -1107,9 +1134,9 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
     if(s.GetPiece())
     {
         // Check if there is a piece promotion
-        if(s.GetPiece()->GetType() == Piece::Pawn)
+        if(s.GetPiece().GetType() == Piece::Pawn)
         {
-            Piece::AllegienceEnum a = s.GetPiece()->GetAllegience();
+            Piece::AllegienceEnum a = s.GetPiece().GetAllegience();
             int promotion_rank = Piece::White == a ? 7 : 0;
             if(promotion_rank == d.GetRow())
             {
@@ -1120,7 +1147,7 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
                     ok = false;
             }
         }
-        else if(s.GetPiece()->GetType() == Piece::King)
+        else if(s.GetPiece().GetType() == Piece::King)
         {
             // Check if there is a castle
             if(Abs(s.GetColumn() - d.GetColumn()) == 2)
@@ -1138,10 +1165,10 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
         ret.Destination = &d;
 
         if(s.GetPiece())
-            ret.PieceMoved = *s.GetPiece();
+            ret.PieceMoved = s.GetPiece();
 
         if(d.GetPiece())
-            ret.PieceCaptured = *d.GetPiece();
+            ret.PieceCaptured = d.GetPiece();
 
         //ret.CurrentPosition_FEN = b.ToFEN();
     }
@@ -1149,71 +1176,42 @@ MoveData AbstractBoard::GenerateMoveData(const ISquare &s,
     return ret;
 }
 
-bool AbstractBoard::GetSimulationEnabled() const
-{
-    G_D;
-    return d->simulating;
-}
-
-void AbstractBoard::SetSimulationEnabled(bool e)
-{
-    G_D;
-    d->simulating = e;
-}
-
-void AbstractBoard::SaveState()
-{
-    G_D;
-    d->saved_states.Push(ToFEN());
-}
-
-void AbstractBoard::Restore()
-{
-    G_D;
-    int cnt = d->saved_states.Size();
-    if(0 < cnt)
-    {
-        FromFEN(d->saved_states.Top());
-        d->saved_states.Pop();
-    }
-}
-
-static void __append_if_within_bounds(Vector<ISquare const *> &ret, const AbstractBoard &b, int col, int row)
+static void __append_if_within_bounds(Vector<Square const *> &ret, const AbstractBoard &b, int col, int row)
 {
     if(0 <= col && col < b.ColumnCount() && 0 <= row && row < b.RowCount())
         ret.PushBack(&b.SquareAt(col, row));
 }
 
-static void __get_threatened_squares_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int col_inc, int row_inc, int max_distance = -1)
+static void __get_threatened_squares_helper(Vector<Square const *> &ret, const AbstractBoard &b, const Square &s, int col_inc, int row_inc, int max_distance = -1)
 {
     int col = s.GetColumn() + col_inc;
     int row = s.GetRow() + row_inc;
     bool break_after = false;
     int distance = 1;
-    while((-1 == max_distance || distance <= max_distance) && 
+    while((-1 == max_distance || distance <= max_distance) &&
            0 <= col && col < b.ColumnCount() &&
            0 <= row && row < b.RowCount())
     {
-        ISquare const *cur_sqr = &b.SquareAt(col, row);
-        Piece const *p = cur_sqr->GetPiece();
+        Square const *cur_sqr = &b.SquareAt(col, row);
+        Piece const &p = cur_sqr->GetPiece();
         if(p)
         {
             // You can threaten the piece, but not go beyond it
             break_after = true;
         }
-        
+
         ret.PushBack(cur_sqr);
-    
+
         if(break_after)
             break;
-    
+
         col += col_inc;
         row += row_inc;
         ++distance;
     }
 }
 
-static void __get_threatened_squares_knight_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s)
+static void __get_threatened_squares_knight_helper(Vector<Square const *> &ret, const AbstractBoard &b, const Square &s)
 {
     __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() + 2);
     __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() - 2);
@@ -1225,7 +1223,7 @@ static void __get_threatened_squares_knight_helper(Vector<ISquare const *> &ret,
     __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() - 1);
 }
 
-static void __get_threatened_squares_bishop_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int max_distance = -1)
+static void __get_threatened_squares_bishop_helper(Vector<Square const *> &ret, const AbstractBoard &b, const Square &s, int max_distance = -1)
 {
     __get_threatened_squares_helper(ret, b, s, 1, 1, max_distance);
     __get_threatened_squares_helper(ret, b, s, 1, -1, max_distance);
@@ -1233,7 +1231,7 @@ static void __get_threatened_squares_bishop_helper(Vector<ISquare const *> &ret,
     __get_threatened_squares_helper(ret, b, s, -1, -1, max_distance);
 }
 
-static void __get_threatened_squares_rook_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int max_distance = -1)
+static void __get_threatened_squares_rook_helper(Vector<Square const *> &ret, const AbstractBoard &b, const Square &s, int max_distance = -1)
 {
     __get_threatened_squares_helper(ret, b, s, 0, 1, max_distance);
     __get_threatened_squares_helper(ret, b, s, 0, -1, max_distance);
@@ -1241,7 +1239,7 @@ static void __get_threatened_squares_rook_helper(Vector<ISquare const *> &ret, c
     __get_threatened_squares_helper(ret, b, s, -1, 0, max_distance);
 }
 
-static void __get_threatened_squares_queen_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int max_distance = -1)
+static void __get_threatened_squares_queen_helper(Vector<Square const *> &ret, const AbstractBoard &b, const Square &s, int max_distance = -1)
 {
     // Queen is a combination of a rook and a bishop
     __get_threatened_squares_bishop_helper(ret, b, s, max_distance);
@@ -1249,9 +1247,9 @@ static void __get_threatened_squares_queen_helper(Vector<ISquare const *> &ret, 
 }
 
 // Returns the squares that a piece with given type on the given square can capture
-static Vector<ISquare const *> __get_threatened_squares(const AbstractBoard &b, const Piece &p, const ISquare &s)
+static Vector<Square const *> __get_threatened_squares(const AbstractBoard &b, Piece const &p, const Square &s)
 {
-    Vector<ISquare const *> ret;
+    Vector<Square const *> ret;
     switch(p.GetType())
     {
     case Piece::Pawn:
@@ -1263,7 +1261,7 @@ static Vector<ISquare const *> __get_threatened_squares(const AbstractBoard &b, 
             int col = s.GetColumn() - 1;
             if(0 <= col)
                 ret.PushBack(&b.SquareAt(col, rank));
-            
+
             col = s.GetColumn() + 1;
             if(7 >= col)
                 ret.PushBack(&b.SquareAt(col, rank));
@@ -1295,18 +1293,18 @@ void AbstractBoard::UpdateThreatCounts()
 {
     // Set all threats to 0 and then increment them as we find threats
     _set_all_threat_counts(0);
-    
-    Vector<ISquare const *> all_pieces(FindPieces(Piece()));
-    G_FOREACH(ISquare const *s_c, all_pieces)
+
+    Vector<Square const *> all_pieces(FindPieces(Piece()));
+    G_FOREACH(Square const *s_c, all_pieces)
     {
-        Piece const *p = s_c->GetPiece();
+        Piece const &p = s_c->GetPiece();
         if(!p)
             continue;
-            
-        Vector<ISquare const *> squares(__get_threatened_squares(*this, *p, *s_c));
-        G_FOREACH_CONST(ISquare const *s_c, squares){
-            ISquare &s = square_at(s_c->GetColumn(), s_c->GetRow());
-            s.SetThreatCount(p->GetAllegience(), s.GetThreatCount(p->GetAllegience()) + 1);
+
+        Vector<Square const *> squares(__get_threatened_squares(*this, p, *s_c));
+        G_FOREACH_CONST(Square const *s_c, squares){
+            Square &s = square_at(s_c->GetColumn(), s_c->GetRow());
+            s.SetThreatCount(p.GetAllegience(), s.GetThreatCount(p.GetAllegience()) + 1);
         }
     }
 }

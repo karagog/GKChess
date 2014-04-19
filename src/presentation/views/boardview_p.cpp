@@ -18,7 +18,7 @@ limitations under the License.*/
 #include "gkchess_board.h"
 #include "gkchess_abstractboard.h"
 #include "gkchess_ifactory_pieceicon.h"
-#include "gkchess_isquare.h"
+#include "gkchess_square.h"
 #include "gkchess_uiglobals.h"
 #include "gutil_paintutils.h"
 #include <QPaintEvent>
@@ -124,7 +124,7 @@ struct piece_animation_t :
 
     void updateCurrentValue(const QVariant &){}
 
-    piece_animation_t(const Piece &p, QObject *par = 0)
+    piece_animation_t(Piece const &p, QObject *par = 0)
         :QVariantAnimation(par),piece(p)
     {}
 };
@@ -243,6 +243,7 @@ void BoardView_p::currentChanged(const QModelIndex &, const QModelIndex &)
 void BoardView_p::_animation_finished()
 {
     m_animationBoard.Clear();
+    //m_animationBoard.Relinquish();
 
     m_animation->deleteLater();
     m_animation = 0;
@@ -362,7 +363,7 @@ void BoardView_p::resizeEvent(QResizeEvent *)
     updateGeometries();
 }
 
-void BoardView_p::paint_piece_at(const Piece &piece, const QRectF &r, QPainter &p)
+void BoardView_p::paint_piece_at(Piece const &piece, const QRectF &r, QPainter &p)
 {
     GASSERT(ind.isValid());
 
@@ -450,7 +451,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     {
         for(int r = 0; r < num_rows; ++r)
         {
-            ISquare const &cur_sqr(board->SquareAt(c, r));
+            Square const &cur_sqr(board->SquareAt(c, r));
             QRectF tmp = item_rect(c, r);
 
             if((c & 0x1) == (r & 0x1))
@@ -463,7 +464,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
                 // Color the light squares
                 painter.fillRect(tmp, m_lightSquareColor);
             }
-            
+
             // If we are showing threat counts, paint that now:
             if(GetShowThreatCounts())
             {
@@ -481,11 +482,11 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             }
 
             // Paint the pieces
-            Piece const *pc = cur_sqr.GetPiece();
-            if(NULL != pc && (!m_dragging || (m_activeSquare.column() != c ||
-                                              m_activeSquare.row() != r)))
+            Piece const &pc = cur_sqr.GetPiece();
+            if(pc && (!m_dragging || (m_activeSquare.column() != c ||
+                                      m_activeSquare.row() != r)))
             {
-                paint_piece_at(*pc, tmp, painter);
+                paint_piece_at(pc, tmp, painter);
             }
         }
     }
@@ -548,7 +549,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
         iter != m_formatOpts.end();
         ++iter)
     {
-        ISquare const *sqr = GetBoardModel()->ConvertIndexToSquare(iter->Key());
+        Square const *sqr = GetBoardModel()->ConvertIndexToSquare(iter->Key());
 
         QRectF cur_rect = item_rect(sqr->GetColumn(), sqr->GetRow());
         QPainterPath path;
@@ -576,14 +577,14 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     if(m_dragging && m_activeSquare.isValid())
     {
         QPoint cur_pos = mapFromGlobal(QCursor::pos());
-        Piece const *active_piece = GetBoardModel()->ConvertIndexToSquare(m_activeSquare)->GetPiece();
+        Piece const &active_piece = GetBoardModel()->ConvertIndexToSquare(m_activeSquare)->GetPiece();
 
         QRectF r(cur_pos.x() - GetSquareSize()/2 + horizontalOffset(),
                  cur_pos.y() - GetSquareSize()/2 + verticalOffset(),
                  GetSquareSize(), GetSquareSize());
 
         if(active_piece)
-            paint_piece_at(*active_piece, r, painter);
+            paint_piece_at(active_piece, r, painter);
     }
 
     // Any debug drawing?
@@ -665,8 +666,8 @@ bool BoardView_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 
 void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
 {
-    ISquare const *sqr = GetBoardModel()->ConvertIndexToSquare(s);
-    animate_move(*sqr->GetPiece(),
+    Square const *sqr = GetBoardModel()->ConvertIndexToSquare(s);
+    animate_move(sqr->GetPiece(),
                  from,
                  item_rect(s.column(), s.row()).center(),
                  *sqr,
@@ -686,9 +687,9 @@ void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
                  );
 }
 
-void BoardView_p::animate_move(const Piece &p,
+void BoardView_p::animate_move(Piece const &p,
                                const QPointF &source, const QPointF &dest,
-                               ISquare const &sqr_source,
+                               Square const &sqr_source,
                                int dur, QEasingCurve::Type easing_curve)
 {
     // Make a copy of the board so it doesn't change while we're animating
@@ -700,7 +701,7 @@ void BoardView_p::animate_move(const Piece &p,
     piece_animation_t *anim = new piece_animation_t(p, this);
     m_animation = new QSequentialAnimationGroup(this);
     m_animation->addAnimation(anim);
-    
+
     connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
     connect(m_animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
 
@@ -713,8 +714,8 @@ void BoardView_p::animate_move(const Piece &p,
 }
 
 void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
-                                 const ISquare &king_src, const ISquare &king_dest,
-                                 const ISquare &rook_src, const ISquare &rook_dest,
+                                 const Square &king_src, const Square &king_dest,
+                                 const Square &rook_src, const Square &rook_dest,
                                  int dur,
                                  QEasingCurve::Type easing_curve)
 {
@@ -727,7 +728,7 @@ void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
 
     m_animation = new QParallelAnimationGroup(this);
     connect(m_animation, SIGNAL(finished()), this, SLOT(_animation_finished()));
-    
+
     piece_animation_t *anim;
 
     if(m_dragging)
@@ -955,8 +956,8 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
         // Animate castling
         AbstractBoard const &board( GetBoardModel()->GetBoard() );
         Piece::AllegienceEnum allegience = md.Whose();
-        ISquare const *king_dest;
-        ISquare const *rook_src, *rook_dest;
+        Square const *king_dest;
+        Square const *rook_src, *rook_dest;
         switch(md.CastleType)
         {
         case MoveData::CastleHSide:

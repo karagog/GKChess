@@ -20,7 +20,7 @@ limitations under the License.*/
 
 NAMESPACE_GKCHESS;
 
-class ISquare;
+class Square;
 
 
 /** Holds all the information we need to do a move on a AbstractBoard object. */
@@ -30,10 +30,10 @@ struct MoveData
     int PlyNumber;
 
     /** The starting square.  If the move was a castle this will be null. */
-    ISquare const *Source;
+    Square const *Source;
 
     /** The ending square.  If the move was a castle this will be null. */
-    ISquare const *Destination;
+    Square const *Destination;
 
     /** The type of castle. */
     enum CastleTypeEnum

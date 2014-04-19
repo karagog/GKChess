@@ -19,8 +19,8 @@ limitations under the License.*/
 #include <QWidget>
 
 namespace GKChess{
-    class ISquare;
-    class AbstractBoard;
+    class Square;
+    class ObservableBoard;
 namespace UI{
 
 class IFactory_PieceIcon;
@@ -28,7 +28,7 @@ class IFactory_PieceIcon;
 
 /** A viewer you can use with the chess board model to display
  *  a chess position in a Qt application.
- * 
+ *
  *  By default the view first tries to paint the pieces using the icon factory, if given.
  *  If no factory was given then it tries to paint icons provided by the model in the "Qt::DecorationRole".
  *  If there are no icons produced by the model then the view simply paints the unicode chess characters.
@@ -42,13 +42,13 @@ public:
     ~BoardView();
 
     /** Returns the board used by this view. */
-    AbstractBoard const *GetBoard() const;
+    ObservableBoard const *GetBoard() const;
 
     /** Returns the board used by this view. */
-    AbstractBoard *GetBoard();
+    ObservableBoard *GetBoard();
 
     /** Sets the board for the view.  The view does not own the board, only plays with it. */
-    void SetBoard(AbstractBoard *);
+    void SetBoard(ObservableBoard *);
 
     /** Tells the view to use the given icon factory, which overrides
         icons returned by the model.  Pass NULL to clear the icon factory.
@@ -72,10 +72,10 @@ public:
     void SetActiveSquareHighlightColor(const QColor &);
 
     /** Causes the square to be highlighted. */
-    void HighlightSquare(const ISquare &, const QColor &);
+    void HighlightSquare(const Square &, const QColor &);
 
     /** Causes all the squares to be highlighted. */
-    void HighlightSquares(const GUtil::Vector<ISquare const *> &, const QColor &);
+    void HighlightSquares(const GUtil::Vector<Square const *> &, const QColor &);
 
     /** Removes all highlighting from the board. */
     void ClearSquareHighlighting();
@@ -85,10 +85,10 @@ public:
 
     /** Controls whether the view will allow the user to edit the board, such as moving pieces. */
     void SetEditable(bool);
-    
+
     /** Controls whether the view will show threat counts on each square. */
     void SetShowThreatCounts(bool);
-    
+
     /** Returns true if the view is showing threat counts. */
     bool GetShowThreatCounts() const;
 

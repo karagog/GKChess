@@ -18,11 +18,10 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
-#include <QObject>
 
 // Even though we don't need this to compile, we include it anyways for completeness of this
 //  class interface.
-#include "gkchess_isquare.h"
+#include "gkchess_square.h"
 
 namespace GKChess{
 
@@ -62,18 +61,14 @@ public:
 
 
 /** Describes a chess board interface, with move logic and game state and everything.
-    
+
     By default the board automatically emits signals before and after a piece
     is moved or otherwise placed on the board, so views can be updated. Additionally,
     the board supports a simulation mode which suppresses all signals and validation for
     optimum performance.
 */
-class AbstractBoard :
-        public QObject
+class AbstractBoard
 {
-    Q_OBJECT
-    GUTIL_DISABLE_COPY(AbstractBoard);
-    void *d;
 public:
 
 
@@ -152,7 +147,7 @@ public:
     /** Constructs an abstract board with the given game logic.  If null,
      *  we will default to the standard chess logic.
     */
-    AbstractBoard(QObject * = 0);
+    AbstractBoard();
 
     /** You can be deleted by this interface. */
     virtual ~AbstractBoard();
@@ -163,13 +158,13 @@ public:
         implementations, but it is left virtual in case you want to optimize it
         for your board implementation.
     */
-    virtual void FromFEN(const GUtil::String &);
+    void FromFEN(const GUtil::String &);
 
     /** Serializes the board object into a FEN string.
         \note The default implementation should work for all board implementations,
         but it is left virtual in case you want to customize/optimize it.
     */
-    virtual GUtil::String ToFEN() const;
+    GUtil::String ToFEN() const;
 
     /** Sets a piece on the square. If the square was occupied then
      *  it will simply be replaced by the new one. If you pass Piece::NoPiece
@@ -179,15 +174,15 @@ public:
      *
      *  \warning It is not the responsibility of this class to check inputs for valid bounds
     */
-    void SetPiece(const Piece &, ISquare const &);
+    virtual void SetPiece(Piece const &, Square const &);
 
     /** Convenience function returns the piece on the given square. */
-    Piece const *GetPiece(int column, int row) const;
+    Piece const &GetPiece(int column, int row) const;
 
 
 
     /** Returns a list of squares occupied by the type of piece specified.
-     *  
+     *
      *  The list will be empty if there are no such pieces on the board.
      *
      *  To find the locations of all pieces for a given allegience, pass
@@ -196,32 +191,13 @@ public:
      *  This lookup should be done at least as good as O(log(N)) time, where N is the
      *  number of different types of pieces.
     */
-    virtual GUtil::Vector<ISquare const *> FindPieces(const Piece &) const = 0;
+    virtual GUtil::Vector<Square const *> FindPieces(Piece const &) const = 0;
 
     /** This function has a basic implementation provided for convenience, which merely
      *  iterates through the squares and removes their pieces. Override it if you like.
     */
     virtual void Clear();
-    
-    /** Returns true if simulation is enabled. */
-    bool GetSimulationEnabled() const;
-    
-    /** Enables or disables simulation. */
-    void SetSimulationEnabled(bool);
-    
-    /** The board's state is saved onto a stack, which can be restored by
-        calling Restore().  The state includes the positions of all pieces
-        and all gamestate variables.
-        
-        \note For every Save() you should call Restore() when you're done
-    */
-    void SaveState();
-    
-    /** Pops the stack of saved states and restores it onto this board. 
-        If the stack is empty then nothing happens.
-    */
-    void Restore();
-    
+
     /** Causes the board to update the threat counts for all squares. */
     virtual void UpdateThreatCounts();
 
@@ -242,7 +218,7 @@ public:
      * \warning It is not the responsibility of this class to check inputs for valid bounds
      *  \sa RowCount(), ColumnCount()
     */
-    virtual ISquare const &SquareAt(int column, int row) const = 0;
+    virtual Square const &SquareAt(int column, int row) const = 0;
 
     /** Creates a MoveData object from a source and dest square input.
      *  You must supply a user feedback object, so the game logic knows how the
@@ -255,16 +231,16 @@ public:
      *  \returns A move data object, which is always populated except in the case of a
      *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
     */
-    virtual MoveData GenerateMoveData(const ISquare &, const ISquare &, IPlayerResponse *) const;
+    virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse *) const;
 
     /** Creates a MoveData object from a PGN MoveData object. */
     virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
 
     /** Validates the move. */
-    virtual MoveValidationEnum ValidateMove(const ISquare &, const ISquare &) const;
+    virtual MoveValidationEnum ValidateMove(const Square &, const Square &) const;
 
     /** Returns a list of valid squares that the piece on the given square can move to. */
-    virtual GUtil::Vector<ISquare const *> GetValidMovesForSquare(const ISquare &) const;
+    virtual GUtil::Vector<Square const *> GetValidMovesForSquare(const Square &) const;
 
     /** Executes the move described by the move data object and advances the game state.
      *
@@ -274,7 +250,7 @@ public:
     MoveValidationEnum Move(const MoveData &);
 
     /** A convenience function generates move data, validates and executes the move. */
-    MoveValidationEnum Move2(const ISquare &src, const ISquare &dest, IPlayerResponse *pr = 0);
+    MoveValidationEnum Move2(const Square &src, const Square &dest, IPlayerResponse *pr = 0);
 
     /** Indicate that the given side wants to resign. */
     virtual void Resign(Piece::AllegienceEnum);
@@ -288,89 +264,58 @@ public:
     */
 
     /** Whose turn it is. */
-    virtual Piece::AllegienceEnum GetWhoseTurn() const = 0;
-    virtual void SetWhoseTurn(Piece::AllegienceEnum) = 0;
+    PROPERTY(WhoseTurn, Piece::AllegienceEnum);
+
 
     /** The castle column on the white king's A-side, 0 based. If this castling move has been executed,
      *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleWhiteA() const = 0;
-    virtual void SetCastleWhiteA(int) = 0;
+    PROPERTY(CastleWhiteA, int);
 
     /** The castle column on the white king's H-side, 0 based. If this castling move has been executed,
      *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleWhiteH() const = 0;
-    virtual void SetCastleWhiteH(int) = 0;
+    PROPERTY(CastleWhiteH, int);
 
     /** The castle column on the black king's A-side, 0 based. If this castling move has been executed,
      *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleBlackA() const = 0;
-    virtual void SetCastleBlackA(int) = 0;
+    PROPERTY(CastleBlackA, int);
 
     /** The castle column on the black king's H-side, 0 based. If this castling move has been executed,
      *  or was otherwise spoiled, it will be -1.
     */
-    virtual int GetCastleBlackH() const = 0;
-    virtual void SetCastleBlackH(int) = 0;
+    PROPERTY(CastleBlackH, int);
 
     /** The en passant square, if there is one. If not then this is null. */
-    virtual ISquare const *GetEnPassantSquare() const = 0;
-    virtual void SetEnPassantSquare(ISquare const *) = 0;
+    PROPERTY(EnPassantSquare, SquarePointerConst);
 
     /** The current number of half-moves since the last capture or pawn advance.
      *  This is used for determining a draw from lack of progress.
     */
-    virtual int GetHalfMoveClock() const = 0;
-    virtual void SetHalfMoveClock(int) = 0;
+    PROPERTY(HalfMoveClock, int);
 
     /** Returns the current full move number. */
-    virtual int GetFullMoveNumber() const = 0;
-    virtual void SetFullMoveNumber(int) = 0;
+    PROPERTY(FullMoveNumber, int);
 
     /** Returns the result of the game, or Undedided if it's not over yet. */
-    virtual ResultTypeEnum GetResult() const = 0;
-    virtual void SetResult(ResultTypeEnum) = 0;
+    PROPERTY(Result, ResultTypeEnum);
 
     /** \} */
 
 
-signals:
-
-    /** This signal is emitted to notify whenever a square is about to be updated with SetPiece(). */
-    void NotifySquareAboutToBeUpdated(const GKChess::ISquare &);
-
-    /** This signal is emitted to notify whenever a square has been updated with SetPiece(). */
-    void NotifySquareUpdated(const GKChess::ISquare &);
-
-
-    /** This signal is emitted whenever a piece is about to be moved with the Move() function. */
-    void NotifyPieceAboutToBeMoved(const GKChess::MoveData &);
-
-    /** This signal is emitted whenever a piece is moved with the Move() function. */
-    void NotifyPieceMoved(const GKChess::MoveData &);
-
-    /** This signal is emitted after a side resigns. */
-    void NotifyResignation(Piece::AllegienceEnum);
-
-
 protected:
 
-    /** You must implement moving pieces, but don't emit any signals.  The move has already
-     *  been validated at this point.
-    */
-    virtual void move_p(const MoveData &) = 0;
+    /** This is called when a piece is moved. */
+    virtual void move_p(const MoveData &);
 
-    /** You must implement setting pieces on the board, but don't emit any signals. */
-    virtual void set_piece_p(const Piece &, int col, int row) = 0;
-    
     /** Returns a modifiable reference to the square at the given row and column. */
-    virtual ISquare &square_at(int col, int row) = 0;
-    
-    
+    virtual Square &square_at(int col, int row) = 0;
+
+
 private:
 
+    void _update_gamestate(const MoveData &);
     void _set_all_threat_counts(int);
 
 };

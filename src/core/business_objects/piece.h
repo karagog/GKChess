@@ -57,19 +57,27 @@ public:
 
     /** Constructs an empty piece (type NoPiece). */
     Piece();
-    
+
     /** Constructs a piece with the given allegience and type. */
     explicit Piece(PieceTypeEnum, AllegienceEnum = AnyAllegience);
 
-    bool operator == (const Piece &o) const{
+    bool operator == (Piece const &o) const{
         return GetAllegience() == o.GetAllegience() &&
                 GetType() == o.GetType();
     }
-    bool operator != (const Piece &o) const{
+    bool operator != (Piece const &o) const{
         return GetAllegience() != o.GetAllegience() ||
                 GetType() != o.GetType();
     }
-    
+
+    /** A less-than operator so you can index by the piece type. */
+    bool operator < (Piece const &o){
+        return GetAllegience() < o.GetAllegience() || GetType() < o.GetType();
+    }
+
+    /** Casts to a boolean, which is true if the piece is not null. */
+    operator bool () const{ return !IsNull(); }
+
     virtual ~Piece();
 
     /** Returns the type of the piece. */
@@ -88,14 +96,14 @@ public:
      *  that supports unicode characters.
     */
     int UnicodeValue() const;
-    
+
     /** Returns the UTF-8 multi-byte representation of the piece. */
     GUtil::String GetUtf8Char() const;
-    
+
     /** Returns the PGN representation of the piece, which does not have allegience information,
      *  and pawns are an empty string. */
     char const *ToPGN() const;
-    
+
     /** Returns the PGN representation of the piece, which does not have allegience information,
      *  and pawns are an empty string. */
     static char const *ToPGN(PieceTypeEnum);

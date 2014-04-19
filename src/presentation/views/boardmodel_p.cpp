@@ -13,33 +13,33 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "boardmodel_p.h"
-#include "gkchess_isquare.h"
+#include "gkchess_square.h"
 #include <QFont>
 #include <QMimeData>
 #include <QStringList>
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
 
-BoardModel_p::BoardModel_p(AbstractBoard *b, QObject *parent)
+BoardModel_p::BoardModel_p(ObservableBoard *b, QObject *parent)
     :QAbstractTableModel(parent),
       m_board(b)
 {
-    connect(b, SIGNAL(NotifySquareUpdated(const GKChess::ISquare &)),
-            this, SLOT(_square_updated(const GKChess::ISquare &)));
+    connect(b, SIGNAL(NotifySquareUpdated(const GKChess::Square &)),
+            this, SLOT(_square_updated(const GKChess::Square &)));
     connect(b, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
             this, SLOT(_piece_moved(const GKChess::MoveData &)));
 }
 
-ISquare const *BoardModel_p::ConvertIndexToSquare(const QModelIndex &i) const
+Square const *BoardModel_p::ConvertIndexToSquare(const QModelIndex &i) const
 {
-    ISquare const *ret(0);
+    Square const *ret(0);
     int r = i.row(), c = i.column();
     if(i.isValid() && this == i.model())
         ret = &m_board->SquareAt(c, r);
     return ret;
 }
 
-QModelIndex BoardModel_p::ConvertSquareToIndex(const ISquare &s) const
+QModelIndex BoardModel_p::ConvertSquareToIndex(const Square &s) const
 {
     // No need to check bounds because you cannot create a square
     //  outside of a chess board, so the indexes must be valid.
@@ -66,25 +66,25 @@ int BoardModel_p::columnCount(const QModelIndex &i) const
 QVariant BoardModel_p::data(const QModelIndex &i, int role) const
 {
     QVariant ret;
-    ISquare const *s = ConvertIndexToSquare(i);
+    Square const *s = ConvertIndexToSquare(i);
     if(s)
     {
-        Piece const *p = s->GetPiece();
+        Piece const &p = s->GetPiece();
         if(Qt::UserRole > role)
         {
             switch((Qt::ItemDataRole)role)
             {
             case Qt::DisplayRole:
                 if(p)
-                    ret = QString(QChar(p->UnicodeValue()));
+                    ret = QString(QChar(p.UnicodeValue()));
                 break;
             case Qt::EditRole:
                 if(p)
-                    ret = QString(QChar(p->ToFEN()));
+                    ret = QString(QChar(p.ToFEN()));
                 break;
             case Qt::ToolTipRole:
                 if(p)
-                    ret = p->ToString(true).ToQString();
+                    ret = p.ToString(true).ToQString();
                 break;
             case Qt::DecorationRole:
                 break;
@@ -97,13 +97,13 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
             {
             case PieceRole:
                 if(p)
-                    ret.setValue(*p);
+                    ret.setValue(p);
                 break;
             case ValidMovesRole:
             {
 //                QModelIndexList il;
-//                Vector<ISquare const *> tmp = GetBoard().GetValidMovesForSquare(*s);
-//                G_FOREACH_CONST(ISquare const *sqr, tmp)
+//                Vector<Square const *> tmp = GetBoard().GetValidMovesForSquare(*s);
+//                G_FOREACH_CONST(Square const *sqr, tmp)
 //                {
 //                    il.append(index(sqr->GetRow(), sqr->GetColumn()));
 //                }
@@ -122,8 +122,8 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
     bool ret = false;
     if(ind.isValid())
     {
-        ISquare const *sqr = ConvertIndexToSquare(ind);
-        Piece const *cur_piece = sqr->GetPiece();
+        Square const *sqr = ConvertIndexToSquare(ind);
+        Piece const &cur_piece = sqr->GetPiece();
         if(Qt::UserRole <= r)
         {
             switch((CustomDataRoleEnum)r)
@@ -150,7 +150,7 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
                 if(s.length() == 0)
                 {
                     // Clear the square
-                    if(NULL != cur_piece)
+                    if(cur_piece)
                     {
                         m_board->SetPiece(Piece(), *sqr);
                         ret = true;
@@ -160,7 +160,7 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
                 {
                     // Set a piece if it's valid and different
                     Piece p = Piece::FromFEN(s[0].toAscii());
-                    if(!p.IsNull() && (NULL == cur_piece || p != *cur_piece))
+                    if(!p.IsNull() && (!cur_piece || p != cur_piece))
                     {
                         m_board->SetPiece(p, *sqr);
                         ret = true;
@@ -209,7 +209,7 @@ QVariant BoardModel_p::headerData(int indx, Qt::Orientation o, int role) const
     return ret;
 }
 
-void BoardModel_p::_square_updated(const ISquare &s)
+void BoardModel_p::_square_updated(const Square &s)
 {
     QModelIndex i( index(s.GetRow(), s.GetColumn()) );
     emit dataChanged(i, i);
@@ -253,16 +253,16 @@ QMimeData *BoardModel_p::mimeData(const QModelIndexList &l) const
     QMimeData *ret(0);
 //    if(1 == l.length())
 //    {
-//        ISquare const *s = ConvertIndexToSquare(l[0]);
+//        Square const *s = ConvertIndexToSquare(l[0]);
 //        if(s)
 //        {
-//            Piece const *p = s->GetPiece();
+//            Piece const &p = s->GetPiece();
 //            if(p)
 //            {
 //                ret = new QMimeData;
 //                ret->setData(MIMETYPE_GKCHESS_PIECE,
 //                             QString("%1:%2,%3")
-//                             .arg(p->ToFEN())
+//                             .arg(p.ToFEN())
 //                             .arg(s->GetColumn())
 //                             .arg(s->GetRow())
 //                             .toAscii());

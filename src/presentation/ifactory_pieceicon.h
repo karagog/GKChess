@@ -37,7 +37,7 @@ public:
     explicit IFactory_PieceIcon(QObject *p = 0):QObject(p){}
 
     /** Returns a QIcon that corresponds to the given piece. */
-    virtual QIcon GetIcon(const Piece &) = 0;
+    virtual QIcon GetIcon(Piece const &) = 0;
 
 
 signals:

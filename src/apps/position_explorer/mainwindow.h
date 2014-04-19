@@ -28,7 +28,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     Ui::MainWindow *ui;
-    GKChess::Board m_board;
+    GKChess::ObservableBoard m_board;
 
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 

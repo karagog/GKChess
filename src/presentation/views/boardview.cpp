@@ -15,10 +15,11 @@ limitations under the License.*/
 #include "boardview.h"
 #include "boardview_p.h"
 #include "boardmodel_p.h"
+#include "gkchess_board.h"
 #include "gkchess_piece.h"
 #include "gkchess_abstractboard.h"
 #include "gkchess_ifactory_pieceicon.h"
-#include "gkchess_isquare.h"
+#include "gkchess_square.h"
 #include "gkchess_uiglobals.h"
 #include "gutil_map.h"
 #include "gutil_paintutils.h"
@@ -125,16 +126,16 @@ void BoardView::SetActiveSquareHighlightColor(const QColor &c)
     d->BoardView.SetActiveSquareHighlightColor(c);
 }
 
-void BoardView::HighlightSquare(const ISquare &s, const QColor &c)
+void BoardView::HighlightSquare(const Square &s, const QColor &c)
 {
     G_D;
     d->BoardView.HighlightSquare(stoi((&s)), c);
 }
-void BoardView::HighlightSquares(const Vector<ISquare const *> &vec, const QColor &c)
+void BoardView::HighlightSquares(const Vector<SquarePointerConst> &vec, const QColor &c)
 {
     G_D;
     QModelIndexList il;
-    G_FOREACH_CONST(ISquare const *s, vec)
+    G_FOREACH_CONST(SquarePointerConst s, vec)
         il.append(stoi(s));
     d->BoardView.HighlightSquares(il, c);
 }
@@ -145,19 +146,19 @@ void BoardView::ClearSquareHighlighting()
     d->BoardView.ClearSquareHighlighting();
 }
 
-AbstractBoard const *BoardView::GetBoard() const
+ObservableBoard const *BoardView::GetBoard() const
 {
     G_D;
     return &d->BoardView.GetBoardModel()->GetBoard();
 }
 
-AbstractBoard *BoardView::GetBoard()
+ObservableBoard *BoardView::GetBoard()
 {
     G_D;
     return &d->BoardView.GetBoardModel()->GetBoard();
 }
 
-void BoardView::SetBoard(AbstractBoard *b)
+void BoardView::SetBoard(ObservableBoard *b)
 {
     G_D;
     BoardModel_p *bm_old(d->BoardView.GetBoardModel());
@@ -185,7 +186,7 @@ void BoardView::SetShowThreatCounts(bool b)
     G_D;
     d->BoardView.SetShowThreatCounts(b);
 }
-    
+
 bool BoardView::GetShowThreatCounts() const
 {
     G_D;

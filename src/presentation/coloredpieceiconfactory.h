@@ -83,7 +83,7 @@ public:
     /** \name IFactory_PieceIcon interface
      *  \{
     */
-    virtual QIcon GetIcon(const Piece &);
+    virtual QIcon GetIcon(Piece const &);
     /** \} */
 
 

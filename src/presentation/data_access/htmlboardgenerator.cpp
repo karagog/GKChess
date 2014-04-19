@@ -15,7 +15,7 @@ limitations under the License.*/
 #include "htmlboardgenerator.h"
 #include "gkchess_piece.h"
 #include "gkchess_abstractboard.h"
-#include "gkchess_isquare.h"
+#include "gkchess_square.h"
 #include <QXmlStreamWriter>
 
 NAMESPACE_GKCHESS;
@@ -38,7 +38,7 @@ static QString __generate_row_style(const HtmlBoardGenerator::HtmlFormattingOpti
     return "vertical-align:bottom;";
 }
 
-static QColor __get_square_color(ISquare const &s, const HtmlBoardGenerator::HtmlFormattingOptions &f)
+static QColor __get_square_color(Square const &s, const HtmlBoardGenerator::HtmlFormattingOptions &f)
 {
     QColor ret;
     if(s.IsDarkSquare())
@@ -49,7 +49,7 @@ static QColor __get_square_color(ISquare const &s, const HtmlBoardGenerator::Htm
 }
 
 
-static QString __generate_cell_style(const ISquare &s, const HtmlBoardGenerator::HtmlFormattingOptions &f)
+static QString __generate_cell_style(const Square &s, const HtmlBoardGenerator::HtmlFormattingOptions &f)
 {
     return QString("width:%1pt;"
                    "height:%2pt;"
@@ -64,7 +64,7 @@ static QString __generate_cell_style(const ISquare &s, const HtmlBoardGenerator:
             .arg(0x00FFFFFF & __get_square_color(s, f).rgb(), 6, 16, QChar('0'));
 }
 
-static QString __generate_piece_style(const Piece &, const HtmlBoardGenerator::HtmlFormattingOptions &f)
+static QString __generate_piece_style(Piece const &, const HtmlBoardGenerator::HtmlFormattingOptions &f)
 {
     return QString("font-size:%1pt;"
                    "color:#%2")
@@ -111,18 +111,18 @@ QString HtmlBoardGenerator::GenerateHtml(const AbstractBoard &b, const HtmlForma
             // Iterate through the columns and write each cell
             for(int j = 0; j < b.ColumnCount(); ++j)
             {
-                ISquare const &s( b.SquareAt(j, i) );
+                Square const &s( b.SquareAt(j, i) );
 
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", __generate_cell_style(s, f));
 
                 // Put a piece in the square if there is one
-                Piece const *p = s.GetPiece();
+                Piece const &p = s.GetPiece();
                 if(p)
                 {
                     sw.writeStartElement("span");
-                    sw.writeAttribute("style", __generate_piece_style(*p, f));
-                    sw.writeEntityReference(QString("#%1").arg(p->UnicodeValue()));
+                    sw.writeAttribute("style", __generate_piece_style(p, f));
+                    sw.writeEntityReference(QString("#%1").arg(p.UnicodeValue()));
                     sw.writeEndElement(); //span
                 }
                 else

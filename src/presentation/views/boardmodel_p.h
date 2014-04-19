@@ -17,12 +17,12 @@ limitations under the License.*/
 
 #include "gutil_map.h"
 #include "gkchess_piece.h"
-#include "gkchess_abstractboard.h"
+#include "gkchess_board.h"
 #include <QColor>
 #include <QAbstractTableModel>
 
-namespace GKChess{ 
-    class ISquare;
+namespace GKChess{
+    class Square;
     class MoveData;
 }
 
@@ -48,7 +48,7 @@ class BoardModel_p :
         QColor BackgroundColor;
     };
 
-    GKChess::AbstractBoard *m_board;
+    GKChess::ObservableBoard *m_board;
 public:
 
     /** You must give the model a reference to a chessboard
@@ -58,21 +58,21 @@ public:
      *  By default there is no game logic, meaning you cannot move any pieces,
      *  only look at the position on the board.
     */
-    explicit BoardModel_p(GKChess::AbstractBoard *, QObject *parent = 0);
+    explicit BoardModel_p(GKChess::ObservableBoard *, QObject *parent = 0);
 
     /** Returns a const reference to the board object. */
-    GKChess::AbstractBoard const &GetBoard() const{ return *m_board; }
+    GKChess::ObservableBoard const &GetBoard() const{ return *m_board; }
 
-    GKChess::AbstractBoard &GetBoard(){ return *m_board; }
+    GKChess::ObservableBoard &GetBoard(){ return *m_board; }
 
 
     /** Returns a reference to the square at the given index.
      *  It will return 0 on errors.
     */
-    GKChess::ISquare const *ConvertIndexToSquare(const QModelIndex &) const;
+    GKChess::Square const *ConvertIndexToSquare(const QModelIndex &) const;
 
     /** Returns the model index corresponding to the given square. */
-    QModelIndex ConvertSquareToIndex(const GKChess::ISquare &) const;
+    QModelIndex ConvertSquareToIndex(const GKChess::Square &) const;
 
     GKChess::AbstractBoard::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
 
@@ -106,7 +106,7 @@ public:
 
 private slots:
 
-    void _square_updated(const GKChess::ISquare &);
+    void _square_updated(const GKChess::Square &);
     void _piece_moved(const GKChess::MoveData &);
 
 };
