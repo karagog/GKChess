@@ -28,12 +28,12 @@ NAMESPACE_GKCHESS;
 */
 class PGN_Player
 {
-    AbstractBoard *m_board;
+    Board *m_board;
     GUtil::SmartPointer<PGN_Parser::Data_t> m_pgnData;
 public:
 
     /** Constructs a PGN player with the given game logic.  It will not take ownership. */
-    PGN_Player(AbstractBoard *);
+    PGN_Player(Board *);
 
     /** Parses the PGN data from the given string. */
     void LoadFromString(const GUtil::String &);
@@ -54,10 +54,10 @@ public:
     void Previous();
 
     /** Returns the game board object used by the PGN player. */
-    const AbstractBoard &GetBoard() const{ return *m_board; }
+    const Board &GetBoard() const{ return *m_board; }
 
     /** Returns the game board object used by the PGN player. */
-    AbstractBoard &GetBoard(){ return *m_board; }
+    Board &GetBoard(){ return *m_board; }
 
     /** Returns the moves from the file.  This will be null if data has not been loaded. */
     PGN_Parser::Data_t const *GetPGNData() const{ return m_pgnData; }

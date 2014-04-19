@@ -14,13 +14,13 @@ limitations under the License.*/
 
 #include "pgn_player.h"
 #include "gutil_file.h"
-#include "abstractboard.h"
+#include "board.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
 
-PGN_Player::PGN_Player(AbstractBoard *b)
+PGN_Player::PGN_Player(Board *b)
     :m_board(b)
 {}
 

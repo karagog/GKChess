@@ -21,7 +21,7 @@ limitations under the License.*/
 NAMESPACE_GKCHESS;
 
 
-class AbstractBoard;
+class Board;
 
 
 /** Parses a PGN string and gives you the move text and tags.
@@ -46,7 +46,7 @@ public:
         /** Stores the initial position given in the PGN file, in the SetUp tag in X-FEN notation.
          *  If the board is null, then you can assume the standard chess starting position.
         */
-        GUtil::SmartPointer<AbstractBoard> InitialPosition;
+        GUtil::SmartPointer<Board> InitialPosition;
         
         /** All the move data. */
         GUtil::Vector<PGN_MoveData> Moves;

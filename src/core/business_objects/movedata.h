@@ -23,7 +23,7 @@ NAMESPACE_GKCHESS;
 class Square;
 
 
-/** Holds all the information we need to do a move on a AbstractBoard object. */
+/** Holds all the information we need to do a move on a Board object. */
 struct MoveData
 {
     /** The half-move number for the move. */

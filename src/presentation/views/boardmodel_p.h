@@ -74,9 +74,9 @@ public:
     /** Returns the model index corresponding to the given square. */
     QModelIndex ConvertSquareToIndex(const GKChess::Square &) const;
 
-    GKChess::AbstractBoard::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
+    GKChess::Board::MoveValidationEnum ValidateMove(const QModelIndex &, const QModelIndex &) const;
 
-    GKChess::AbstractBoard::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, GKChess::IPlayerResponse *pr = 0);
+    GKChess::Board::MoveValidationEnum Move(const QModelIndex &, const QModelIndex &, GKChess::IPlayerResponse *pr = 0);
 
 
     /** Defines the custom data roles implemented by the board model. */

@@ -16,7 +16,7 @@ limitations under the License.*/
 #include "boardmodel_p.h"
 #include "gkchess_piece.h"
 #include "gkchess_board.h"
-#include "gkchess_abstractboard.h"
+#include "gkchess_board.h"
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_square.h"
 #include "gkchess_uiglobals.h"
@@ -443,7 +443,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     painter.setFont(font_threatCount);
 
     // If we are animating, then we paint the animation board
-    AbstractBoard const *board = m_animationBoard.IsNull() ? &GetBoardModel()->GetBoard() : m_animationBoard.Data();
+    Board const *board = m_animationBoard.IsNull() ? &GetBoardModel()->GetBoard() : m_animationBoard.Data();
     int num_cols = board->ColumnCount();
     int num_rows = board->RowCount();
 
@@ -661,7 +661,7 @@ void BoardView_p::wheelEvent(QWheelEvent *ev)
 
 bool BoardView_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
-    return AbstractBoard::ValidMove == GetBoardModel()->Move(s, d);
+    return Board::ValidMove == GetBoardModel()->Move(s, d);
 }
 
 void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
@@ -915,7 +915,7 @@ void BoardView_p::mouseMoveEvent(QMouseEvent *ev)
         QModelIndex ind = indexAt(ev->pos());
         if(ind.isValid() && ind != m_activeSquare)
             HighlightSquare(ind,
-                            AbstractBoard::ValidMove == GetBoardModel()->ValidateMove(m_activeSquare, ind) ?
+                            Board::ValidMove == GetBoardModel()->ValidateMove(m_activeSquare, ind) ?
                                 Qt::green : Qt::red);
     }
 
@@ -954,7 +954,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
     if(md.NoCastle != md.CastleType)
     {
         // Animate castling
-        AbstractBoard const &board( GetBoardModel()->GetBoard() );
+        Board const &board( GetBoardModel()->GetBoard() );
         Piece::AllegienceEnum allegience = md.Whose();
         Square const *king_dest;
         Square const *rook_src, *rook_dest;

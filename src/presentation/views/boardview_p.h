@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_P_H
 #define GKCHESS_BOARDVIEW_P_H
 
-#include "gkchess_abstractboard.h"
+#include "gkchess_board.h"
 #include "gutil_smartpointer.h"
 #include "gutil_vector.h"
 #include "gutil_map.h"
@@ -69,7 +69,7 @@ class BoardView_p :
 
     // Our animation objects
     QAnimationGroup *m_animation;
-    GUtil::SmartPointer<GKChess::AbstractBoard> m_animationBoard;
+    GUtil::SmartPointer<GKChess::Board> m_animationBoard;
 
     // Keeps track of our per-square format options
     GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;

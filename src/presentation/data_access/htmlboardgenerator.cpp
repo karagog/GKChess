@@ -14,7 +14,7 @@ limitations under the License.*/
 
 #include "htmlboardgenerator.h"
 #include "gkchess_piece.h"
-#include "gkchess_abstractboard.h"
+#include "gkchess_board.h"
 #include "gkchess_square.h"
 #include <QXmlStreamWriter>
 
@@ -83,7 +83,7 @@ HtmlBoardGenerator::HtmlFormattingOptions::HtmlFormattingOptions()
       IndexSize(15)
 {}
 
-QString HtmlBoardGenerator::GenerateHtml(const AbstractBoard &b, const HtmlFormattingOptions &f)
+QString HtmlBoardGenerator::GenerateHtml(const Board &b, const HtmlFormattingOptions &f)
 {
     QString html;
     if(b.ColumnCount() > 0 && b.RowCount() > 0)

@@ -331,13 +331,13 @@ bool BoardModel_p::dropMimeData(const QMimeData *data,
     return ret;
 }
 
-AbstractBoard::MoveValidationEnum BoardModel_p::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
+Board::MoveValidationEnum BoardModel_p::ValidateMove(const QModelIndex &s, const QModelIndex &d) const
 {
     return GetBoard().ValidateMove(*ConvertIndexToSquare(s),
                                     *ConvertIndexToSquare(d));
 }
 
-AbstractBoard::MoveValidationEnum BoardModel_p::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
+Board::MoveValidationEnum BoardModel_p::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
 {
     return m_board->Move2(*ConvertIndexToSquare(s),
                           *ConvertIndexToSquare(d),

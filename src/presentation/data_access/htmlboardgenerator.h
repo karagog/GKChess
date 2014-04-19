@@ -22,7 +22,7 @@ limitations under the License.*/
 NAMESPACE_GKCHESS;
 
 
-class AbstractBoard;
+class Board;
 
 class HtmlBoardGenerator
 {
@@ -62,7 +62,7 @@ public:
     /** Returns an HTML table of the chess board with the given formatting options.
      *  You can then display this in a web browser.
     */
-    static QString GenerateHtml(const AbstractBoard &,
+    static QString GenerateHtml(const Board &,
                                 const HtmlFormattingOptions & = HtmlFormattingOptions());
 
 };

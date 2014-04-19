@@ -16,7 +16,7 @@ limitations under the License.*/
 #define GKCHESS_MOVEDATAMODEL_H
 
 #include "gkchess_pgn_move_data.h"
-#include "gkchess_abstractboard.h"
+#include "gkchess_board.h"
 #include "gutil_vector.h"
 #include <QAbstractItemModel>
 

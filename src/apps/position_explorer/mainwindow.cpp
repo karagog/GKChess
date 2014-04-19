@@ -20,12 +20,17 @@ USING_NAMESPACE_GKCHESS;
 MainWindow::MainWindow(QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),
+      m_board(),
+      //m_board(10),
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
 
-    m_board.SetupNewGame(AbstractBoard::SetupStandardChess);
-    //m_board.SetupNewGame(AbstractBoard::SetupChess960);
+    m_board.SetupNewGame(Board::SetupStandardChess);
+    //m_board.SetupNewGame(Board::SetupChess960);
+
+    // For testing 10-column boards:
+    //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
