@@ -57,7 +57,6 @@ public:
     Square const &SquareAt(int col, int row) const;
     virtual void SetPiece(Piece const &p, const Square &s);
     GUtil::Vector<Square const *> FindPieces(Piece const &pc) const;
-
     /** \}*/
 
 

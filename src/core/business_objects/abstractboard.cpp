@@ -255,7 +255,7 @@ void AbstractBoard::FromFEN(const String &s)
     // First parse the position text:
     {
         StringList sl2( sl[0].Split('/', false) );
-        if(8 != sl2.Length())
+        if(RowCount() != sl2.Length())
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN position text requires 8 fields separated by /");
 
         backRank_white = sl2[7];
@@ -265,6 +265,7 @@ void AbstractBoard::FromFEN(const String &s)
         for(int i = 0; i < sl2.Length(); ++i)
         {
             int col = 0;
+            int rank = 7 - i;
             typename String::const_iterator iter(sl2[i].begin());
             typename String::const_iterator next(iter + 1);
 
@@ -274,7 +275,6 @@ void AbstractBoard::FromFEN(const String &s)
                 ++iter)
             {
                 int num(-1);
-                int rank = 7 - i;
                 char c = *iter.Current();
                 char n = (next == sl2[i].end() ? 0 : *next.Current());
                 if(String::IsNumber(c))
