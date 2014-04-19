@@ -8,7 +8,9 @@ TOP_DIR = ../..
 DESTDIR = $$TOP_DIR/lib
 TARGET = GKChessUI
 
-DEFINES += GUTIL_CORE_QT_ADAPTERS
+DEFINES += \
+    DEBUG \
+    GUTIL_CORE_QT_ADAPTERS
 
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \

@@ -292,6 +292,7 @@ void Board::move_p(const MoveData &md)
     }
 
     _update_gamestate(md);
+    UpdateThreatCounts();
 }
 
 Board::MoveValidationEnum Board::Move(const MoveData &md)
@@ -308,9 +309,6 @@ Board::MoveValidationEnum Board::Move(const MoveData &md)
         {
             // Move the piece and update the gamestate
             move_p(md);
-
-            // Invalidate all threat counts after the move
-            UpdateThreatCounts();
         }
     }
     return ret;
@@ -928,6 +926,15 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
     if(d.GetPiece() && d.GetPiece().GetAllegience() == p.GetAllegience())
         return InvalidTechnical;
 
+    // Now check if the king is safe, otherwise it's an invalid move
+    {
+        // Copy this board to simulate the move, and see if we're in check.
+        Board cpy(*this);
+        cpy.move_p(cpy.GenerateMoveData(s, d));
+        if(cpy.IsInCheck(p.GetAllegience()))
+            return InvalidCheck;
+    }
+
     return ValidMove;
 }
 
@@ -1201,7 +1208,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
         ret.PieceMoved = SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
-        GASSERT(NULL != ret.PieceMoved);
+        GASSERT(ret.PieceMoved);
 
         // Add a promoted piece, if necessary
         if(Piece::Pawn != m.PiecePromoted)
@@ -1217,8 +1224,8 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
 }
 
 MoveData Board::GenerateMoveData(const Square &s,
-                                         const Square &d,
-                                         IPlayerResponse *uf) const
+                                 const Square &d,
+                                 IPlayerResponse *uf) const
 {
     MoveData ret;
     bool ok = true;
@@ -1454,6 +1461,28 @@ Vector<Square const *> Board::FindPieces(Piece const &pc) const
     }
     return ret;
 }
+
+bool Board::IsInCheck(Piece::AllegienceEnum a) const
+{
+    bool ret = false;
+    Piece king(Piece::King, a);
+    Vector<Square const *> king_loc = FindPieces(king);
+    if(1 == king_loc.Length())
+    {
+        if(0 < king_loc[0]->GetThreatCount(king.GetOppositeAllegience()))
+            ret = true;
+    }
+    return ret;
+}
+
+
+
+
+
+
+
+
+
 
 
 

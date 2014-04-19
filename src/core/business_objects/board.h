@@ -20,7 +20,7 @@ limitations under the License.*/
 #include "gkchess_movedata.h"
 #include "gutil_map.h"
 
-// Even though we don't need this to compile, we include it anyways for completeness of this
+// Even though we don't need this to compile the header, we include it anyways for completeness of this
 //  class interface.
 #include "gkchess_square.h"
 
@@ -236,7 +236,7 @@ public:
      *  \returns A move data object, which is always populated except in the case of a
      *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
     */
-    virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse *) const;
+    virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse * = 0) const;
 
     /** Creates a MoveData object from a PGN MoveData object. */
     virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
@@ -261,6 +261,8 @@ public:
     void Resign(Piece::AllegienceEnum);
 
 
+    /** Returns true if there are currently threats on the given allegience's king. */
+    bool IsInCheck(Piece::AllegienceEnum) const;
 
 
     /** \name Game State

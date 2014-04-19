@@ -87,6 +87,16 @@ String Piece::ToString(bool wa) const
     return ret;
 }
 
+Piece::AllegienceEnum Piece::GetOppositeAllegience() const
+{
+    AllegienceEnum ret(AnyAllegience);
+    if(Piece::White == GetAllegience())
+        ret = Piece::Black;
+    else if(Piece::Black == GetAllegience())
+        ret = Piece::White;
+    return ret;
+}
+
 int Piece::UnicodeValue() const
 {
     return (int)GetAllegience() + GetType();

@@ -243,7 +243,6 @@ void BoardView_p::currentChanged(const QModelIndex &, const QModelIndex &)
 void BoardView_p::_animation_finished()
 {
     m_animationBoard.Clear();
-    //m_animationBoard.Relinquish();
 
     m_animation->deleteLater();
     m_animation = 0;
@@ -270,7 +269,6 @@ QModelIndex BoardView_p::indexAt(const QPoint &p) const
         float y = get_board_rect().y() + get_board_rect().height() - p_t.y();
 
         GASSERT(model());
-        GASSERT(0 < x && 0 < y);
 
         // We want to have a margin within each square that doesn't select it
         int row = y/GetSquareSize();
@@ -365,8 +363,6 @@ void BoardView_p::resizeEvent(QResizeEvent *)
 
 void BoardView_p::paint_piece_at(Piece const &piece, const QRectF &r, QPainter &p)
 {
-    GASSERT(ind.isValid());
-
     if(piece.IsNull())
         return;
 
@@ -802,8 +798,6 @@ QRectF BoardView_p::get_board_rect() const
 
 void BoardView_p::mousePressEvent(QMouseEvent *ev)
 {
-    GASSERT(m_dragOffset.isNull());
-
     if(!Editable() ||  NULL != m_animation)
         return;
 

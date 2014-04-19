@@ -71,7 +71,7 @@ public:
     }
 
     /** A less-than operator so you can index by the piece type. */
-    bool operator < (Piece const &o){
+    bool operator < (Piece const &o) const{
         return GetAllegience() < o.GetAllegience() || GetType() < o.GetType();
     }
 
@@ -85,6 +85,8 @@ public:
 
     /** Returns the allegience of the piece. */
     READONLY_PROPERTY(Allegience, AllegienceEnum);
+
+    AllegienceEnum GetOppositeAllegience() const;
 
     /** Returns true if this piece has no type. */
     bool IsNull() const{ return NoPiece == GetType(); }
