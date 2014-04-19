@@ -26,7 +26,7 @@ NAMESPACE_GKCHESS;
 */
 class Square
 {
-    template<GUINT32 NUM_COLS> friend class Board_Imp;
+    friend class Board;
 
     // For fast lookups this is implemented as quickly queryable data types
     const GUINT8 m_column, m_row;

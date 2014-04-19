@@ -13,37 +13,162 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "board.h"
+USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
 
-Board::Board()
-{}
+/** Maps col-row indices to a 1-dimensional index. */
+static int __map_2d_indices_to_1d(GUINT32 col, GUINT32 row)
+{
+    return (col << 3) | row;
+}
+
+
+
+Board::Board(int num_cols)
+    :m_columnCount(num_cols)
+{
+    _init();
+}
+
+Board::Board(const Board &o)
+    :m_columnCount(o.ColumnCount())
+{
+    _copy_construct(o);
+}
 
 Board::Board(const AbstractBoard &o)
-    :Board_Imp<8>(o)
-{}
+    :m_columnCount(o.ColumnCount())
+{
+    _copy_construct(o);
+}
 
 Board &Board::operator = (const AbstractBoard &o)
 {
-    return static_cast<Board &>(Board_Imp<8>::operator = (o));
+    _copy_construct(o);
+    return *this;
+}
+
+void Board::_init()
+{
+    // Initialize all the squares in the array
+    m_squares = (Square *)malloc(ColumnCount() * RowCount() * sizeof(Square));
+    for(int c = 0; c < ColumnCount(); ++c)
+        for(int r = 0; r < RowCount(); ++r)
+            new(&square_at(c, r)) Square(c, r);
+}
+
+void Board::_copy_construct(const AbstractBoard &o)
+{
+    if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
+        THROW_NEW_GUTIL_EXCEPTION2(GUtil::Exception, "Board size mismatch");
+    _init();
+    _copy_board(o);
+    _init_index();
+}
+
+void Board::_copy_board(const AbstractBoard &o)
+{
+    for(int c = 0; c < ColumnCount(); ++c)
+    {
+        for(int r = 0; r < RowCount(); ++r)
+        {
+            square_at(c, r) = o.SquareAt(c, r);
+        }
+    }
+}
+
+void Board::_init_index()
+{
+    m_index.Clear();
+    for(int c = 0; c < ColumnCount(); ++c)
+    {
+        for(int r = 0; r < RowCount(); ++r)
+        {
+            const Square &cur = SquareAt(c, r);
+            if(cur.GetPiece())
+                m_index.InsertMulti(cur.GetPiece(), &cur);
+        }
+    }
 }
 
 Board::~Board()
-{}
+{
+    free(m_squares);
+}
+
+int Board::ColumnCount() const
+{
+    return m_columnCount;
+}
+
+int Board::RowCount() const
+{
+    return 8;
+}
+
+Square const &Board::SquareAt(int col, int row) const
+{
+    return m_squares[__map_2d_indices_to_1d(col, row)];
+}
+
+Square &Board::square_at(int c, int r)
+{
+    return m_squares[__map_2d_indices_to_1d(c, r)];
+}
+
+void Board::SetPiece(Piece const &p, const Square &s)
+{
+    Piece orig = s.GetPiece();
+    AbstractBoard::SetPiece(p, s);
+
+    // Remove the old piece from the index
+    if(!orig.IsNull())
+        m_index.Remove(orig, &s);
+    // Add the new piece to the index
+    if(!p.IsNull())
+        m_index.InsertMulti(p, &s);
+}
+
+Vector<Square const *> Board::FindPieces(Piece const &pc) const
+{
+    Vector<Square const *> ret;
+    if(Piece::NoPiece == pc.GetType()){
+        if(Piece::AnyAllegience == pc.GetAllegience()){
+            // Append all pieces to the list
+            for(typename Map<Piece, SquarePointerConst>::const_iterator iter = m_index.begin();
+                iter != m_index.end(); ++iter){
+                G_FOREACH_CONST(Square const *sqr, iter->Values())
+                    ret.PushBack(sqr);
+            }
+        }
+        else{
+            // Append only pieces of the given allegience to the list
+            for(typename Map<Piece, Square const *>::const_iterator iter = m_index.begin();
+                iter != m_index.end(); ++iter){
+                if(iter->Key().GetAllegience() == pc.GetAllegience()){
+                    G_FOREACH_CONST(Square const *sqr, iter->Values())
+                        ret.PushBack(sqr);
+                }
+            }
+        }
+    }
+    else{
+        ret = m_index.Values(pc);
+    }
+    return ret;
+}
 
 
-IObservableBoard::IObservableBoard(QObject *p)
-    :QObject(p)
-{}
 
-
-ObservableBoard::ObservableBoard(QObject *p)
-    :IObservableBoard(p)
+ObservableBoard::ObservableBoard(int num_cols, QObject *p)
+    :QObject(p),
+      Board(num_cols)
 {}
 
 ObservableBoard::ObservableBoard(const AbstractBoard &o)
-    :IObservableBoard(0),
+    :QObject(0),
       Board(o)
 {}
 

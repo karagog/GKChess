@@ -24,8 +24,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    //m_board.SetupNewGame(AbstractBoard::SetupStandardChess);
-    m_board.SetupNewGame(AbstractBoard::SetupChess960);
+    m_board.SetupNewGame(AbstractBoard::SetupStandardChess);
+    //m_board.SetupNewGame(AbstractBoard::SetupChess960);
 
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
