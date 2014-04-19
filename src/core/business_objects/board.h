@@ -51,11 +51,8 @@ public:
     }
 
     Board_Imp &operator = (const AbstractBoard &o){
-        if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
-            THROW_NEW_GUTIL_EXCEPTION2(GUtil::Exception, "Board size mismatch");
-        _copy_board(o);
-        m_index.Clear();
-        _init_index();
+        _copy_construct(o);
+        return *this;
     }
 
     virtual ~Board_Imp(){
@@ -157,6 +154,7 @@ private:
     }
 
     void _init_index(){
+        m_index.Clear();
         for(int c = 0; c < ColumnCount(); ++c){
             for(int r = 0; r < RowCount(); ++r){
                 const Square &cur = SquareAt(c, r);
@@ -182,10 +180,10 @@ class Board :
         public Board_Imp<8>
 {
 public:
-    Board(){}
-    Board(const AbstractBoard &o) :Board_Imp<8>(o) {}
-    Board &operator = (const AbstractBoard &o){ Board_Imp<8>::operator = (o); return *this;}
-    virtual ~Board(){}
+    Board();
+    Board(const AbstractBoard &);
+    Board &operator = (const AbstractBoard &);
+    virtual ~Board();
 };
 
 
@@ -196,7 +194,8 @@ class IObservableBoard :
 {
     Q_OBJECT
 public:
-    IObservableBoard(QObject *p = 0) :QObject(p) {}
+
+    IObservableBoard(QObject * = 0);
 
 signals:
 
@@ -228,15 +227,17 @@ class ObservableBoard :
     Q_OBJECT
 public:
 
-    ObservableBoard(QObject *p = 0):IObservableBoard(p){}
-    ObservableBoard(const AbstractBoard &o) :IObservableBoard(0), Board(o) {}
-    ObservableBoard &operator = (const AbstractBoard &o){ Board::operator = (o); return *this;}
-    virtual ~ObservableBoard(){}
+    ObservableBoard(QObject * = 0);
+    ObservableBoard(const AbstractBoard &);
+    ObservableBoard &operator = (const AbstractBoard &);
+    virtual ~ObservableBoard();
 
+    /** Emits the proper signals when a piece is changed. */
     void SetPiece(Piece const &p, Square const &s);
 
 protected:
 
+    /** Emits the proper signals when a piece is moved. */
     void move_p(const MoveData &);
 
 };

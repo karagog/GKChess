@@ -17,6 +17,44 @@ limitations under the License.*/
 NAMESPACE_GKCHESS;
 
 
+Board::Board()
+{}
+
+Board::Board(const AbstractBoard &o)
+    :Board_Imp<8>(o)
+{}
+
+Board &Board::operator = (const AbstractBoard &o)
+{
+    return static_cast<Board &>(Board_Imp<8>::operator = (o));
+}
+
+Board::~Board()
+{}
+
+
+IObservableBoard::IObservableBoard(QObject *p)
+    :QObject(p)
+{}
+
+
+ObservableBoard::ObservableBoard(QObject *p)
+    :IObservableBoard(p)
+{}
+
+ObservableBoard::ObservableBoard(const AbstractBoard &o)
+    :IObservableBoard(0),
+      Board(o)
+{}
+
+ObservableBoard &ObservableBoard::operator = (const AbstractBoard &o)
+{
+    return static_cast<ObservableBoard &>(Board::operator = (o));
+}
+
+ObservableBoard::~ObservableBoard()
+{}
+
 void ObservableBoard::SetPiece(const Piece &p, const Square &s)
 {
     emit NotifySquareAboutToBeUpdated(s);
