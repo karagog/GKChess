@@ -79,7 +79,12 @@ static void __update_gamestate(AbstractBoard &b, const MoveData &md)
     if(md.IsNull() || p.IsNull())
         return;
 
-    b.SetHalfMoveClock(b.GetHalfMoveClock() + 1);
+    // Update the half-move clock
+    if(Piece::Pawn != p.GetType() && md.PieceCaptured.IsNull())
+        b.SetHalfMoveClock(b.GetHalfMoveClock() + 1);
+    else
+        b.SetHalfMoveClock(0);
+
     if(p.GetAllegience() == Piece::Black)
     {
         b.SetFullMoveNumber(b.GetFullMoveNumber() + 1);
