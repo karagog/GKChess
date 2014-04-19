@@ -118,7 +118,7 @@ QString HtmlBoardGenerator::GenerateHtml(const Board &b, const HtmlFormattingOpt
 
                 // Put a piece in the square if there is one
                 Piece const &p = s.GetPiece();
-                if(p)
+                if(!p.IsNull())
                 {
                     sw.writeStartElement("span");
                     sw.writeAttribute("style", __generate_piece_style(p, f));

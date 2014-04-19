@@ -36,9 +36,6 @@ Piece Piece::FromFEN(char c)
     return Piece(GetTypeFromUnicodeValue(c), a);
 }
 
-Piece::~Piece()
-{}
-
 #define DEFAULT_STRING_CAPACITY 6
 
 String Piece::ToString(bool wa) const

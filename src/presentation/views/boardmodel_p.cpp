@@ -75,15 +75,15 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
             switch((Qt::ItemDataRole)role)
             {
             case Qt::DisplayRole:
-                if(p)
+                if(!p.IsNull())
                     ret = QString(QChar(p.UnicodeValue()));
                 break;
             case Qt::EditRole:
-                if(p)
+                if(!p.IsNull())
                     ret = QString(QChar(p.ToFEN()));
                 break;
             case Qt::ToolTipRole:
-                if(p)
+                if(!p.IsNull())
                     ret = p.ToString(true).ToQString();
                 break;
             case Qt::DecorationRole:
@@ -96,7 +96,7 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
             switch((CustomDataRoleEnum)role)
             {
             case PieceRole:
-                if(p)
+                if(!p.IsNull())
                     ret.setValue(p);
                 break;
             case ValidMovesRole:
@@ -150,7 +150,7 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
                 if(s.length() == 0)
                 {
                     // Clear the square
-                    if(cur_piece)
+                    if(!cur_piece.IsNull())
                     {
                         m_board->SetPiece(Piece(), *sqr);
                         ret = true;
@@ -160,7 +160,7 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
                 {
                     // Set a piece if it's valid and different
                     Piece p = Piece::FromFEN(s[0].toAscii());
-                    if(!p.IsNull() && (!cur_piece || p != cur_piece))
+                    if(!p.IsNull() && (cur_piece.IsNull() || p != cur_piece))
                     {
                         m_board->SetPiece(p, *sqr);
                         ret = true;

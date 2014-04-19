@@ -71,14 +71,7 @@ public:
     }
 
     /** A less-than operator so you can index by the piece type. */
-    bool operator < (Piece const &o) const{
-        return GetAllegience() < o.GetAllegience() || GetType() < o.GetType();
-    }
-
-    /** Casts to a boolean, which is true if the piece is not null. */
-    operator bool () const{ return !IsNull(); }
-
-    virtual ~Piece();
+    bool operator < (Piece const &o) const{ return UnicodeValue() < o.UnicodeValue(); }
 
     /** Returns the type of the piece. */
     READONLY_PROPERTY(Type, PieceTypeEnum);
@@ -92,7 +85,7 @@ public:
     bool IsNull() const{ return NoPiece == GetType(); }
 
     /** Returns a human-readable string to describe the piece. */
-    virtual GUtil::String ToString(bool with_allegience = false) const;
+    GUtil::String ToString(bool with_allegience = false) const;
 
     /** Returns the unicode point of the piece. You can display this in any text viewer
      *  that supports unicode characters.

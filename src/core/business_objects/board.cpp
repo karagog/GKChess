@@ -19,6 +19,10 @@ limitations under the License.*/
 #include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
 
+#ifdef DEBUG
+#include "gutil_console.h"
+#endif // DEBUG
+
 
 #define CASTLE_A_KING_DEST  2
 #define CASTLE_H_KING_DEST  6
@@ -29,7 +33,6 @@ static int __map_2d_indices_to_1d(GUINT32 col, GUINT32 row)
 {
     return (col << 3) | row;
 }
-
 
 NAMESPACE_GKCHESS;
 
@@ -107,7 +110,7 @@ void Board::_init_index()
         for(int r = 0; r < RowCount(); ++r)
         {
             const Square &cur = SquareAt(c, r);
-            if(cur.GetPiece())
+            if(!cur.GetPiece().IsNull())
                 m_index.InsertMulti(cur.GetPiece(), &cur);
         }
     }
@@ -115,6 +118,15 @@ void Board::_init_index()
 
 Board::~Board()
 {
+    // Destruct all squares
+    Square *ptr = m_squares;
+    Square *end = m_squares + ColumnCount() * RowCount();
+    while(ptr != end){
+        ptr->~Square();
+        ++ptr;
+    }
+
+
     free(m_squares);
 }
 
@@ -569,7 +581,7 @@ static GUtil::String __get_castle_string_for_allegience(const Board &b,
             for(int i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
             {
                 Square const &sqr = b.SquareAt(i, rank);
-                if(sqr.GetPiece() &&
+                if(!sqr.GetPiece().IsNull() &&
                         sqr.GetPiece().GetType() == Piece::Rook &&
                         sqr.GetPiece().GetAllegience() == a){
                     no_outer_rook = false;
@@ -587,7 +599,7 @@ static GUtil::String __get_castle_string_for_allegience(const Board &b,
             for(int i = castle_file_a_side - 1; i >= 0; --i)
             {
                 Square const &sqr = b.SquareAt(i, rank);
-                if(sqr.GetPiece() &&
+                if(!sqr.GetPiece().IsNull() &&
                         sqr.GetPiece().GetType() == Piece::Rook &&
                         sqr.GetPiece().GetAllegience() == a){
                     no_outer_rook = false;
@@ -612,7 +624,7 @@ String Board::ToFEN() const
         for(int c = 0; c < ColumnCount(); ++c)
         {
             Square const &cur = SquareAt(c, r);
-            if(cur.GetPiece())
+            if(!cur.GetPiece().IsNull())
             {
                 if(0 < empty_cnt)
                 {
@@ -715,11 +727,11 @@ static bool __is_path_blocked(Board const &b, Square const &s, Square const &d, 
         {
             // The destination square is only blocked if there is a piece that belongs
             //  to the same allegience as the piece being moved.
-            if(p)
+            if(!p.IsNull())
                 ret = a == p.GetAllegience();
             break;
         }
-        else if(p)
+        else if(!p.IsNull())
         {
             ret = true;
             break;
@@ -813,7 +825,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
 {
     Piece const &p(s.GetPiece());
     Piece const &dp(d.GetPiece());
-    if(!p)
+    if(p.IsNull())
         return InvalidEmptySquare;
 
 
@@ -850,7 +862,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         // non-capture
         if(col_diff == 0)
         {
-            technically_ok = !dp &&
+            technically_ok = dp.IsNull() &&
                     (row_diff == 1*sign || (startRank == s.GetRow() && row_diff == 2*sign));
         }
 
@@ -863,7 +875,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
                     row_diff == 1*sign && 1 == col_diff_abs &&
 
                     // there must be a captured piece of the other color on the dest square
-                    ((dp && dp.GetAllegience() != p.GetAllegience()) ||
+                    ((!dp.IsNull() && dp.GetAllegience() != p.GetAllegience()) ||
 
                      //  or the square being captured to must be an en passant square
                      (GetEnPassantSquare() && d == *GetEnPassantSquare()));
@@ -876,7 +888,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         break;
     case Piece::Knight:
         technically_ok = __is_move_valid_for_knight(*this, &s, &d, p.GetAllegience()) &&
-                (!dp || dp.GetAllegience() == Piece::Black);
+                (dp.IsNull() || dp.GetAllegience() == Piece::Black);
         break;
     case Piece::Rook:
         if(0 == col_diff_abs || 0 == row_diff_abs)
@@ -923,14 +935,15 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
     if(!technically_ok)
         return InvalidTechnical;
 
-    if(d.GetPiece() && d.GetPiece().GetAllegience() == p.GetAllegience())
+    if(!d.GetPiece().IsNull() && d.GetPiece().GetAllegience() == p.GetAllegience())
         return InvalidTechnical;
 
     // Now check if the king is safe, otherwise it's an invalid move
     {
         // Copy this board to simulate the move, and see if we're in check.
         Board cpy(*this);
-        cpy.move_p(cpy.GenerateMoveData(s, d));
+        cpy.move_p(cpy.GenerateMoveData(cpy.SquareAt(s.GetColumn(), s.GetRow()),
+                                        cpy.SquareAt(d.GetColumn(), d.GetRow())));
         if(cpy.IsInCheck(p.GetAllegience()))
             return InvalidCheck;
     }
@@ -972,7 +985,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
 
         if(m.Flags.TestFlag(PGN_MoveData::Capture))
         {
-            if(dest->GetPiece() && dest->GetPiece().GetAllegience() != turn)
+            if(!dest->GetPiece().IsNull() && dest->GetPiece().GetAllegience() != turn)
                 ret.PieceCaptured = dest->GetPiece();
             else
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid piece to capture at the destination square");
@@ -986,7 +999,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             Square const *s = &SquareAt(tmp_source_column, m.SourceRank - 1);
 
             // Do a sanity check on the square they specified
-            if(!s->GetPiece())
+            if(s->GetPiece().IsNull())
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "No piece on the square");
             if(s->GetPiece().GetAllegience() != turn)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "It is not your turn");
@@ -1057,12 +1070,12 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
                     Square const *s = &SquareAt(ret.Destination->GetColumn(), r);
-                    if(!s->GetPiece())
+                    if(s->GetPiece().IsNull())
                     {
                         // The pawn can move two squares on the first move
                         r = s->GetRow() - __allegience_to_rank_increment(turn);
                         if((turn == Piece::White && 1 != r) || (turn == Piece::Black && 6 != r) ||
-                                !(s = &SquareAt(ret.Destination->GetColumn(), r))->GetPiece())
+                                (s = &SquareAt(ret.Destination->GetColumn(), r))->GetPiece().IsNull())
                             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
                     }
 
@@ -1070,7 +1083,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                             s->GetPiece().GetType() != Piece::Pawn)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-                    if(!ret.Destination->GetPiece())
+                    if(ret.Destination->GetPiece().IsNull())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Destination square occupied");
 
                     ret.Source = s;
@@ -1208,7 +1221,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
         ret.PieceMoved = SquareAt(ret.Source->GetColumn(), ret.Source->GetRow()).GetPiece();
-        GASSERT(ret.PieceMoved);
+        GASSERT(!ret.PieceMoved.IsNull());
 
         // Add a promoted piece, if necessary
         if(Piece::Pawn != m.PiecePromoted)
@@ -1232,7 +1245,7 @@ MoveData Board::GenerateMoveData(const Square &s,
     MoveData ret;
     bool ok = true;
 
-    if(s.GetPiece())
+    if(!s.GetPiece().IsNull())
     {
         // Check if there is a piece promotion
         if(s.GetPiece().GetType() == Piece::Pawn)
@@ -1265,10 +1278,10 @@ MoveData Board::GenerateMoveData(const Square &s,
         ret.Source = &s;
         ret.Destination = &d;
 
-        if(s.GetPiece())
+        if(!s.GetPiece().IsNull())
             ret.PieceMoved = s.GetPiece();
 
-        if(d.GetPiece())
+        if(!d.GetPiece().IsNull())
             ret.PieceCaptured = d.GetPiece();
 
         ret.CurrentPosition_FEN = ToFEN();
@@ -1295,7 +1308,7 @@ static void __get_threatened_squares_helper(Vector<Square const *> &ret, const B
     {
         Square const *cur_sqr = &b.SquareAt(col, row);
         Piece const &p = cur_sqr->GetPiece();
-        if(p)
+        if(!p.IsNull())
         {
             // You can threaten the piece, but not go beyond it
             break_after = true;
@@ -1399,7 +1412,7 @@ void Board::UpdateThreatCounts()
     G_FOREACH(Square const *s_c, all_pieces)
     {
         Piece const &p = s_c->GetPiece();
-        if(!p)
+        if(p.IsNull())
             continue;
 
         Vector<Square const *> squares(__get_threatened_squares(*this, p, *s_c));
@@ -1479,6 +1492,24 @@ bool Board::IsInCheck(Piece::AllegienceEnum a) const
 
 
 
+
+#ifdef DEBUG
+
+void Board::ShowIndex() const
+{
+    for(typename Map<Piece, Square const *>::const_iterator iter = m_index.begin();
+        iter != m_index.end(); ++iter)
+    {
+        G_FOREACH_CONST(const Square *s, iter->Values()){
+            Console::WriteLine(String::Format("%s: %s",
+                                              iter->Key().ToString(true).ConstData(),
+                                              s->ToString().ConstData()));
+        }
+    }
+    Console::FlushOutput();
+}
+
+#endif
 
 
 

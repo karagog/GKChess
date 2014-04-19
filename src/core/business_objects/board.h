@@ -311,6 +311,18 @@ public:
     /** \} */
 
 
+    /** \name Debug functions
+     *  These functions are useful for debugging, but should not be used in the release code
+     *  \{
+    */
+
+#ifdef DEBUG
+    void ShowIndex() const;
+#endif
+
+    /** \} */
+
+
 protected:
 
     /** This is called when a piece is moved. */

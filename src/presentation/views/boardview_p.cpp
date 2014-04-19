@@ -479,7 +479,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
 
             // Paint the pieces
             Piece const &pc = cur_sqr.GetPiece();
-            if(pc && (!m_dragging || (m_activeSquare.column() != c ||
+            if(!pc.IsNull() && (!m_dragging || (m_activeSquare.column() != c ||
                                       m_activeSquare.row() != r)))
             {
                 paint_piece_at(pc, tmp, painter);
@@ -579,7 +579,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
                  cur_pos.y() - GetSquareSize()/2 + verticalOffset(),
                  GetSquareSize(), GetSquareSize());
 
-        if(active_piece)
+        if(!active_piece.IsNull())
             paint_piece_at(active_piece, r, painter);
     }
 
