@@ -24,10 +24,17 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    m_board.FromFEN(FEN_STANDARD_CHESS_STARTING_POSITION);
+    //m_board.SetupNewGame(AbstractBoard::SetupStandardChess);
+    m_board.SetupNewGame(AbstractBoard::SetupChess960);
+
+#ifdef DEBUG
+    connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
+            this, SLOT(_piece_moved(GKChess::MoveData)));
+#endif
 
     ui->boardView->SetIconFactory(&m_iconFactory);
     ui->boardView->SetBoard(&m_board);
+    ui->boardView->SetShowThreatCounts(true);
 
     m_iconFactory.ChangeColors(Qt::yellow, Qt::gray);
 }
@@ -36,3 +43,19 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+#ifdef DEBUG
+void MainWindow::_piece_moved(const GKChess::MoveData &)
+{
+    GUtil::String fen_string1 = m_board.ToFEN();
+    Board cpy;
+    cpy.FromFEN(fen_string1);
+
+    GUtil::String fen_string2 = cpy.ToFEN();
+    GASSERT2(fen_string1 == fen_string2,
+             GUtil::String::Format("%s != %s",
+                                   fen_string1.ConstData(),
+                                   fen_string2.ConstData()).ConstData());
+    GDEBUG(fen_string1.ConstData());
+}
+#endif

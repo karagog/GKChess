@@ -99,6 +99,15 @@ public:
         return (0x1 & GetRow()) == (0x1 & GetColumn()); 
     }
 
+    /** Returns string form of the square.  For example, "e4". */
+    GUtil::String ToString() const{
+        char tmp[3];
+        tmp[0] = 'a' + GetColumn();
+        tmp[1] = '1' + GetRow();
+        tmp[2] = '\0';
+        return GUtil::String(tmp, 2);
+    }
+
 
     /** \} */
 

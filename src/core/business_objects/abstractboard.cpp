@@ -217,6 +217,8 @@ void AbstractBoard::FromFEN(const String &s)
     int king_col_black = -1;
     String cpy( s.Trimmed() );
     StringList sl( cpy.Split(' ', false) );
+    String backRank_white;
+    String backRank_black;
     if(6 != sl.Length())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN requires 6 fields separated by spaces");
 
@@ -225,6 +227,9 @@ void AbstractBoard::FromFEN(const String &s)
         StringList sl2( sl[0].Split('/', false) );
         if(8 != sl2.Length())
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN position text requires 8 fields separated by /");
+
+        backRank_white = sl2[7];
+        backRank_black = sl2[0];
 
         // For each section of position text...
         for(int i = 0; i < sl2.Length(); ++i)
@@ -309,6 +314,8 @@ void AbstractBoard::FromFEN(const String &s)
         G_FOREACH_CONST(char c, sl[2])
         {
             Piece::AllegienceEnum a = String::IsUpper(c) ? Piece::White : Piece::Black;
+            char const rook_char = Piece::White == a ? 'R' : 'r';
+            char const king_char = Piece::White == a ? 'K' : 'k';
             char tmps[2] = {c, '\0'};
             String::ToUpper(&c, tmps);
             switch(c)
@@ -317,12 +324,34 @@ void AbstractBoard::FromFEN(const String &s)
                 // If a dash is given, then this field is empty (nobody can castle)
                 break;
             case 'K':
-                // Standard FEN - translate to X-FEN
-                c = 'H';
+            {
+                // Find the outermost rook on the H-side
+                const String *s = Piece::White == a ? &backRank_white : &backRank_black;
+                for(int i = s->Length() - 1; i >= 0; --i){
+                    char cur = (*s)[i];
+                    if(cur == rook_char){
+                        c = 'A' + i;
+                        break;
+                    }
+                    else if(cur == king_char)
+                        break;
+                }
+            }
                 break;
             case 'Q':
-                // Standard FEN - translate to X-FEN
-                c = 'A';
+            {
+                // Find the outermost rook on the A-side
+                const String *s = Piece::White == a ? &backRank_white : &backRank_black;
+                for(int i = 0; i < s->Length(); ++i){
+                    char cur = (*s)[i];
+                    if(cur == rook_char){
+                        c = 'A' + i;
+                        break;
+                    }
+                    else if(cur == king_char)
+                        break;
+                }
+            }
                 break;
             default:
                 break;
@@ -350,7 +379,7 @@ void AbstractBoard::FromFEN(const String &s)
                 default: break;
                 }
             }
-            else
+            else if('-' != c)
             {
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "There was an error with the castle info");
             }
@@ -393,9 +422,127 @@ void AbstractBoard::FromFEN(const String &s)
     }
 }
 
+static GUtil::String __get_castle_string_for_allegience(const AbstractBoard &b,
+                                                        Piece::AllegienceEnum a,
+                                                        int castle_file_a_side,
+                                                        int castle_file_h_side)
+{
+    GUtil::String ret;
+    char a_side_char = Piece::White == a ? 'Q' : 'q';
+    char h_side_char = Piece::White == a ? 'K' : 'k';
+    char base_char = Piece::White == a ? 'A' : 'a';
+    int rank = Piece::White == a ? 0 : 7;
+
+    if(castle_file_a_side != -1 || castle_file_h_side != -1)
+    {
+        if(castle_file_a_side != -1 && castle_file_h_side != -1)
+        {
+            ret.Reserve(2);
+            ret.Append(h_side_char);
+            ret.Append(a_side_char);
+        }
+        else if(castle_file_h_side != -1)
+        {
+            bool no_outer_rook = true;
+            for(int i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
+            {
+                ISquare const &sqr = b.SquareAt(i, rank);
+                if(sqr.GetPiece() &&
+                        sqr.GetPiece()->GetType() == Piece::Rook &&
+                        sqr.GetPiece()->GetAllegience() == a){
+                    no_outer_rook = false;
+                    break;
+                }
+            }
+            if(no_outer_rook)
+                ret = h_side_char;
+            else
+                ret = (base_char + castle_file_h_side);
+        }
+        else
+        {
+            bool no_outer_rook = true;
+            for(int i = castle_file_a_side - 1; i >= 0; --i)
+            {
+                ISquare const &sqr = b.SquareAt(i, rank);
+                if(sqr.GetPiece() &&
+                        sqr.GetPiece()->GetType() == Piece::Rook &&
+                        sqr.GetPiece()->GetAllegience() == a){
+                    no_outer_rook = false;
+                    break;
+                }
+            }
+            if(no_outer_rook)
+                ret = a_side_char;
+            else
+                ret = (base_char + castle_file_a_side);
+        }
+    }
+    return ret;
+}
+
 String AbstractBoard::ToFEN() const
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    String ret;
+    for(int r = RowCount() - 1; r >= 0; --r)
+    {
+        int empty_cnt = 0;
+        for(int c = 0; c < ColumnCount(); ++c)
+        {
+            ISquare const &cur = SquareAt(c, r);
+            if(cur.GetPiece())
+            {
+                if(0 < empty_cnt)
+                {
+                    ret.Append(String::FromInt(empty_cnt));
+                    empty_cnt = 0;
+                }
+
+                ret.Append(cur.GetPiece()->ToFEN());
+            }
+            else
+            {
+                ++empty_cnt;
+            }
+        }
+
+        if(0 < empty_cnt)
+        {
+            ret.Append(String::FromInt(empty_cnt));
+        }
+
+        if(r != 0)
+            ret.Append('/');
+    }
+
+    // Generate the castle string
+    String castle_string("-");
+    if(GetCastleBlackA() != -1 || GetCastleBlackH() != -1 ||
+            GetCastleWhiteA() != -1 || GetCastleWhiteH() != -1)
+    {
+        castle_string = "";
+
+        castle_string.Append(__get_castle_string_for_allegience(
+                                 *this,
+                                 Piece::White,
+                                 GetCastleWhiteA(),
+                                 GetCastleWhiteH()));
+
+        castle_string.Append(__get_castle_string_for_allegience(
+                                 *this,
+                                 Piece::Black,
+                                 GetCastleBlackA(),
+                                 GetCastleBlackH()));
+    }
+
+    return String::Format("%s %s %s %s %d %d",
+                          ret.ConstData(),
+                          Piece::White == GetWhoseTurn() ? "w" : "b",
+                          castle_string.ConstData(),
+                          GetEnPassantSquare() ? GetEnPassantSquare()->ToString().ConstData() : "-",
+                          GetHalfMoveClock(),
+                          GetFullMoveNumber()
+                          );
 }
 
 
@@ -1032,7 +1179,7 @@ static void __append_if_within_bounds(Vector<ISquare const *> &ret, const Abstra
         ret.PushBack(&b.SquareAt(col, row));
 }
 
-static void __get_threatened_squares_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int col_inc, int row_inc, Piece::AllegienceEnum a, int max_distance = -1)
+static void __get_threatened_squares_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int col_inc, int row_inc, int max_distance = -1)
 {
     int col = s.GetColumn() + col_inc;
     int row = s.GetRow() + row_inc;
@@ -1073,27 +1220,27 @@ static void __get_threatened_squares_knight_helper(Vector<ISquare const *> &ret,
     __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() - 1);
 }
 
-static void __get_threatened_squares_bishop_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
+static void __get_threatened_squares_bishop_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int max_distance = -1)
 {
-    __get_threatened_squares_helper(ret, b, s, 1, 1, a, max_distance);
-    __get_threatened_squares_helper(ret, b, s, 1, -1, a, max_distance);
-    __get_threatened_squares_helper(ret, b, s, -1, 1, a, max_distance);
-    __get_threatened_squares_helper(ret, b, s, -1, -1, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 1, 1, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 1, -1, max_distance);
+    __get_threatened_squares_helper(ret, b, s, -1, 1, max_distance);
+    __get_threatened_squares_helper(ret, b, s, -1, -1, max_distance);
 }
 
-static void __get_threatened_squares_rook_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
+static void __get_threatened_squares_rook_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int max_distance = -1)
 {
-    __get_threatened_squares_helper(ret, b, s, 0, 1, a, max_distance);
-    __get_threatened_squares_helper(ret, b, s, 0, -1, a, max_distance);
-    __get_threatened_squares_helper(ret, b, s, 1, 0, a, max_distance);
-    __get_threatened_squares_helper(ret, b, s, -1, 0, a, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 0, 1, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 0, -1, max_distance);
+    __get_threatened_squares_helper(ret, b, s, 1, 0, max_distance);
+    __get_threatened_squares_helper(ret, b, s, -1, 0, max_distance);
 }
 
-static void __get_threatened_squares_queen_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, Piece::AllegienceEnum a, int max_distance = -1)
+static void __get_threatened_squares_queen_helper(Vector<ISquare const *> &ret, const AbstractBoard &b, const ISquare &s, int max_distance = -1)
 {
     // Queen is a combination of a rook and a bishop
-    __get_threatened_squares_bishop_helper(ret, b, s, a, max_distance);
-    __get_threatened_squares_rook_helper(ret, b, s, a, max_distance);
+    __get_threatened_squares_bishop_helper(ret, b, s, max_distance);
+    __get_threatened_squares_rook_helper(ret, b, s, max_distance);
 }
 
 // Returns the squares that a piece with given type on the given square can capture
@@ -1132,7 +1279,7 @@ static Vector<ISquare const *> __get_threatened_squares(const AbstractBoard &b, 
         break;
     case Piece::King:
         // A king threatens like a queen but with max distance 1
-        __get_threatened_squares_queen_helper(ret, b, s, p.GetAllegience(), 1);
+        __get_threatened_squares_queen_helper(ret, b, s, 1);
         break;
     default:break;
     }

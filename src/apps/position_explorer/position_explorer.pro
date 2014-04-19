@@ -14,7 +14,7 @@ TEMPLATE = app
 TOP_DIR = ../../..
 
 DESTDIR = $$TOP_DIR/bin
-DEFINES +=
+DEFINES += DEBUG
 
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \

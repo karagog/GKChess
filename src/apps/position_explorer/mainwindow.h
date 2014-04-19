@@ -35,6 +35,12 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+private slots:
+
+#ifdef DEBUG
+    void _piece_moved(const GKChess::MoveData &);
+#endif
 };
 
 #endif // MAINWINDOW_H
