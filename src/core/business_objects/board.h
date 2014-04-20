@@ -72,7 +72,7 @@ class Board
 {
     const int m_columnCount;
     Square *m_squares;
-    GUtil::Map<Piece, SquarePointerConst> m_index;
+    GUtil::Map<Piece::PieceTypeEnum, SquarePointerConst> m_indexWhite, m_indexBlack;
 public:
 
 
@@ -342,6 +342,13 @@ private:
     /** Causes the board to update the threat counts for all squares. */
     void _update_threat_counts();
     void _set_all_threat_counts(int);
+
+    GUtil::Map<Piece::PieceTypeEnum, SquarePointerConst> &_get_index(Piece::AllegienceEnum a){
+        return a == Piece::White ? m_indexWhite : m_indexBlack;
+    }
+    GUtil::Map<Piece::PieceTypeEnum, SquarePointerConst> const &_get_index(Piece::AllegienceEnum a) const{
+        return a == Piece::White ? m_indexWhite : m_indexBlack;
+    }
 
 };
 

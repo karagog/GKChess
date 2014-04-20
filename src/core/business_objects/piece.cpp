@@ -38,10 +38,38 @@ Piece Piece::FromFEN(char c)
 
 #define DEFAULT_STRING_CAPACITY 6
 
+String Piece::TypeToString(PieceTypeEnum pt)
+{
+    String ret(DEFAULT_STRING_CAPACITY);
+    switch(pt)
+    {
+    case Pawn:
+        ret = "Pawn";
+        break;
+    case Knight:
+        ret = "Knight";
+        break;
+    case Bishop:
+        ret = "Bishop";
+        break;
+    case Rook:
+        ret = "Rook";
+        break;
+    case Queen:
+        ret = "Queen";
+        break;
+    case King:
+        ret = "King";
+        break;
+    default:
+        break;
+    }
+    return ret;
+}
+
 String Piece::ToString(bool wa) const
 {
     String ret(wa ? 6 + DEFAULT_STRING_CAPACITY : DEFAULT_STRING_CAPACITY );
-
     if(wa)
     {
         switch(GetAllegience())
@@ -56,31 +84,7 @@ String Piece::ToString(bool wa) const
             break;
         }
     }
-
-    switch(GetType())
-    {
-    case Pawn:
-        ret.Append("Pawn");
-        break;
-    case Knight:
-        ret.Append("Knight");
-        break;
-    case Bishop:
-        ret.Append("Bishop");
-        break;
-    case Rook:
-        ret.Append("Rook");
-        break;
-    case Queen:
-        ret.Append("Queen");
-        break;
-    case King:
-        ret.Append("King");
-        break;
-    default:
-        break;
-    }
-
+    ret.Append(TypeToString(GetType()));
     return ret;
 }
 

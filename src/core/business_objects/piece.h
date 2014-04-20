@@ -87,6 +87,9 @@ public:
     /** Returns a human-readable string to describe the piece. */
     GUtil::String ToString(bool with_allegience = false) const;
 
+    /** Returns a human-readable string for the piece type. */
+    static GUtil::String TypeToString(PieceTypeEnum);
+
     /** Returns the unicode point of the piece. You can display this in any text viewer
      *  that supports unicode characters.
     */

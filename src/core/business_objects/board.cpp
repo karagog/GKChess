@@ -104,14 +104,15 @@ void Board::_copy_board(const Board &o)
 
 void Board::_init_index()
 {
-    m_index.Clear();
+    m_indexWhite.Clear();
+    m_indexBlack.Clear();
     for(int c = 0; c < ColumnCount(); ++c)
     {
         for(int r = 0; r < RowCount(); ++r)
         {
             const Square &cur = SquareAt(c, r);
             if(!cur.GetPiece().IsNull())
-                m_index.InsertMulti(cur.GetPiece(), &cur);
+                _get_index(cur.GetPiece().GetAllegience()).InsertMulti(cur.GetPiece().GetType(), &cur);
         }
     }
 }
@@ -1444,10 +1445,10 @@ void Board::SetPiece(Piece const &p, const Square &s)
 
     // Remove the old piece from the index
     if(!orig.IsNull())
-        m_index.Remove(orig, &s);
+        _get_index(orig.GetAllegience()).Remove(orig.GetType(), &s);
     // Add the new piece to the index
     if(!p.IsNull())
-        m_index.InsertMulti(p, &s);
+        _get_index(p.GetAllegience()).InsertMulti(p.GetType(), &s);
 }
 
 Vector<Square const *> Board::FindPieces(Piece const &pc) const
@@ -1456,25 +1457,30 @@ Vector<Square const *> Board::FindPieces(Piece const &pc) const
     if(Piece::NoPiece == pc.GetType()){
         if(Piece::AnyAllegience == pc.GetAllegience()){
             // Append all pieces to the list
-            for(typename Map<Piece, SquarePointerConst>::const_iterator iter = m_index.begin();
-                iter != m_index.end(); ++iter){
+            for(typename Map<Piece::PieceTypeEnum, SquarePointerConst>::const_iterator iter = m_indexWhite.begin();
+                iter != m_indexWhite.end(); ++iter){
+                G_FOREACH_CONST(Square const *sqr, iter->Values())
+                    ret.PushBack(sqr);
+            }
+            for(typename Map<Piece::PieceTypeEnum, SquarePointerConst>::const_iterator iter = m_indexBlack.begin();
+                iter != m_indexBlack.end(); ++iter){
                 G_FOREACH_CONST(Square const *sqr, iter->Values())
                     ret.PushBack(sqr);
             }
         }
         else{
             // Append only pieces of the given allegience to the list
-            for(typename Map<Piece, Square const *>::const_iterator iter = m_index.begin();
-                iter != m_index.end(); ++iter){
-                if(iter->Key().GetAllegience() == pc.GetAllegience()){
-                    G_FOREACH_CONST(Square const *sqr, iter->Values())
-                        ret.PushBack(sqr);
-                }
+            const Map<Piece::PieceTypeEnum, Square const *> &index = _get_index(pc.GetAllegience());
+            for(typename Map<Piece::PieceTypeEnum, Square const *>::const_iterator iter = index.begin();
+                iter != index.end(); ++iter)
+            {
+                G_FOREACH_CONST(Square const *sqr, iter->Values())
+                    ret.PushBack(sqr);
             }
         }
     }
     else{
-        ret = m_index.Values(pc);
+        ret = _get_index(pc.GetAllegience()).Values(pc.GetType());
     }
     return ret;
 }
@@ -1499,12 +1505,24 @@ bool Board::IsInCheck(Piece::AllegienceEnum a) const
 
 void Board::ShowIndex() const
 {
-    for(typename Map<Piece, Square const *>::const_iterator iter = m_index.begin();
-        iter != m_index.end(); ++iter)
+    Console::WriteLine("White Pieces:");
+    for(typename Map<Piece::PieceTypeEnum, Square const *>::const_iterator iter = m_indexWhite.begin();
+        iter != m_indexWhite.end(); ++iter)
     {
         G_FOREACH_CONST(const Square *s, iter->Values()){
             Console::WriteLine(String::Format("%s: %s",
-                                              iter->Key().ToString(true).ConstData(),
+                                              Piece::TypeToString(iter->Key()).ConstData(),
+                                              s->ToString().ConstData()));
+        }
+    }
+
+    Console::WriteLine("\nBlack Pieces:");
+    for(typename Map<Piece::PieceTypeEnum, Square const *>::const_iterator iter = m_indexBlack.begin();
+        iter != m_indexBlack.end(); ++iter)
+    {
+        G_FOREACH_CONST(const Square *s, iter->Values()){
+            Console::WriteLine(String::Format("%s: %s",
+                                              Piece::TypeToString(iter->Key()).ConstData(),
                                               s->ToString().ConstData()));
         }
     }
