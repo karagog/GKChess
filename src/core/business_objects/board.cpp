@@ -38,11 +38,7 @@ NAMESPACE_GKCHESS;
 
 
 Board::piece_index_t::piece_index_t()
-    :king(0),
-      queens(1),
-      rooks(2),
-      bishops(2),
-      knights(2)
+    :king(0)
 {}
 
 Vector<Square const *> Board::piece_index_t::all_pieces() const
@@ -50,12 +46,8 @@ Vector<Square const *> Board::piece_index_t::all_pieces() const
     Vector<Square const *> ret(16);
     if(king)
         ret << king;
-
-    ret << queens
-        << rooks
-        << bishops
-        << knights;
-
+    for(int i = 0; i < 4; ++i)
+        ret << pieces[i];
     G_FOREACH_CONST(Square const *s, pawns){
         ret.PushBack(s);
     }
@@ -70,23 +62,16 @@ Vector<Square const *> Board::piece_index_t::find_pieces(Piece::PieceTypeEnum pt
     case Piece::King:
         ret.PushBack(king);
         break;
-    case Piece::Queen:
-        ret << queens;
-        break;
-    case Piece::Rook:
-        ret << rooks;
-        break;
-    case Piece::Bishop:
-        ret << bishops;
-        break;
-    case Piece::Knight:
-        ret << knights;
-        break;
     case Piece::Pawn:
         G_FOREACH_CONST(Square const *s, pawns){
             ret.PushBack(s);
         }
         break;
+    case Piece::Queen:
+    case Piece::Rook:
+    case Piece::Bishop:
+    case Piece::Knight:
+        ret << pieces[(int)pt - 1];
     default: break;
     }
     return ret;
@@ -96,23 +81,10 @@ void Board::piece_index_t::update_piece(Piece::PieceTypeEnum pt,
                                         Square const *orig_val,
                                         Square const *new_val)
 {
-    Vector<Square const *> *vec(0);
     switch(pt)
     {
     case Piece::King:
         king = new_val;
-        break;
-    case Piece::Queen:
-        vec = &queens;
-        break;
-    case Piece::Rook:
-        vec = &rooks;
-        break;
-    case Piece::Bishop:
-        vec = &bishops;
-        break;
-    case Piece::Knight:
-        vec = &knights;
         break;
     case Piece::Pawn:
         if(0 != orig_val)
@@ -120,32 +92,34 @@ void Board::piece_index_t::update_piece(Piece::PieceTypeEnum pt,
         if(0 != new_val)
             pawns.Insert(new_val);
         break;
-    default: break;
-    }
-
-    if(vec){
-        int indx = 0 == orig_val ? -1 : vec->IndexOf(orig_val);
+    case Piece::Queen:
+    case Piece::Rook:
+    case Piece::Bishop:
+    case Piece::Knight:
+    {
+        Vector<Square const *> &vec = pieces[(int)pt - 1];
+        int indx = 0 == orig_val ? -1 : vec.IndexOf(orig_val);
         if(-1 == indx){
             if(0 != new_val)
-                vec->PushBack(new_val);
+                vec.PushBack(new_val);
         }
         else{
             if(0 == new_val)
-                vec->RemoveAt(indx);
+                vec.RemoveAt(indx);
             else
-                vec->operator[](indx) = new_val;
+                vec[indx] = new_val;
         }
+    }
+    default: break;
     }
 }
 
 void Board::piece_index_t::clear()
 {
     king = 0;
-    queens.Empty();
-    rooks.Empty();
-    bishops.Empty();
-    knights.Empty();
     pawns.Clear();
+    for(int i = 0; i < 4; ++i)
+        pieces[i].Empty();
 }
 
 

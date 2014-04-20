@@ -76,11 +76,8 @@ class Board
     struct piece_index_t
     {
         Square const *king;
-        GUtil::Vector<Square const *> queens;
-        GUtil::Vector<Square const *> rooks;
-        GUtil::Vector<Square const *> bishops;
-        GUtil::Vector<Square const *> knights;
         GUtil::Set<Square const *> pawns;
+        GUtil::Vector<Square const *> pieces[4];
 
         piece_index_t();
 
