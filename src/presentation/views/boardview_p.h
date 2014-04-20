@@ -32,7 +32,7 @@ namespace GKChess{
 namespace UI{
     class IFactory_PieceIcon;
 }}
-        
+
 
 /** A private class to implement the board view, because we don't want to expose the
  *  QAbstractItemView interface. This gives us better encapsulation.
@@ -153,13 +153,13 @@ protected:
      *  with the given easing curve.  The easing curve responds to the Type enum of
      *  the QEasingCurve.
     */
-    void animate_move(const GKChess::Piece &,
+    void animate_move(const GKChess::MoveData &,
                       const QPointF &source, const QPointF &dest,
                       GKChess::Square const &sqr_source,
                       int duration_ms,
                       QEasingCurve::Type);
 
-    void animate_castle(GKChess::Piece::AllegienceEnum allegience,
+    void animate_castle(const GKChess::MoveData &,
                         const GKChess::Square &king_src, const GKChess::Square &king_dest,
                         const GKChess::Square &rook_src, const GKChess::Square &rook_dest,
                         int duration_ms,

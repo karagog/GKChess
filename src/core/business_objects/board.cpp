@@ -304,7 +304,7 @@ void Board::move_p(const MoveData &md)
     }
 
     _update_gamestate(md);
-    UpdateThreatCounts();
+    _update_threat_counts();
 }
 
 Board::MoveValidationEnum Board::Move(const MoveData &md)
@@ -554,6 +554,8 @@ void Board::FromFEN(const String &s)
         if(!ok)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid full-move number");
     }
+
+    _update_threat_counts();
 }
 
 static GUtil::String __get_castle_string_for_allegience(const Board &b,
@@ -818,7 +820,7 @@ void Board::SetupNewGame(Board::SetupTypeEnum ste)
         break;
     }
 
-    UpdateThreatCounts();
+    _update_threat_counts();
 }
 
 Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) const
@@ -888,7 +890,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         break;
     case Piece::Knight:
         technically_ok = __is_move_valid_for_knight(*this, &s, &d, p.GetAllegience()) &&
-                (dp.IsNull() || dp.GetAllegience() == Piece::Black);
+                (dp.IsNull() || dp.GetAllegience() != p.GetAllegience());
         break;
     case Piece::Rook:
         if(0 == col_diff_abs || 0 == row_diff_abs)
@@ -1403,7 +1405,7 @@ static Vector<Square const *> __get_threatened_squares(const Board &b, Piece con
     return ret;
 }
 
-void Board::UpdateThreatCounts()
+void Board::_update_threat_counts()
 {
     // Set all threats to 0 and then increment them as we find threats
     _set_all_threat_counts(0);

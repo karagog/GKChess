@@ -203,9 +203,6 @@ public:
     /** Removes all pieces from the board and resets the gamestate to default. */
     void Clear();
 
-    /** Causes the board to update the threat counts for all squares. */
-    void UpdateThreatCounts();
-
 
 
 
@@ -340,6 +337,10 @@ private:
     void _init_index();
 
     void _update_gamestate(const MoveData &);
+
+
+    /** Causes the board to update the threat counts for all squares. */
+    void _update_threat_counts();
     void _set_all_threat_counts(int);
 
 };

@@ -663,7 +663,9 @@ bool BoardView_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
 {
     Square const *sqr = GetBoardModel()->ConvertIndexToSquare(s);
-    animate_move(sqr->GetPiece(),
+    MoveData md;
+    md.PieceMoved = sqr->GetPiece();
+    animate_move(md,
                  from,
                  item_rect(s.column(), s.row()).center(),
                  *sqr,
@@ -683,18 +685,19 @@ void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
                  );
 }
 
-void BoardView_p::animate_move(Piece const &p,
+void BoardView_p::animate_move(const MoveData &md,
                                const QPointF &source, const QPointF &dest,
                                Square const &sqr_source,
                                int dur, QEasingCurve::Type easing_curve)
 {
-    // Make a copy of the board so it doesn't change while we're animating
-    m_animationBoard = new Board(GetBoardModel()->GetBoard());
+    // Make a copy of the board and populate it with the correct position information
+    m_animationBoard = new Board;
+    m_animationBoard->FromFEN(md.CurrentPosition_FEN);
 
     // Remove the source piece from the board because it is being animated
     m_animationBoard->SetPiece(Piece(), sqr_source);
 
-    piece_animation_t *anim = new piece_animation_t(p, this);
+    piece_animation_t *anim = new piece_animation_t(md.PieceMoved, this);
     m_animation = new QSequentialAnimationGroup(this);
     m_animation->addAnimation(anim);
 
@@ -709,14 +712,17 @@ void BoardView_p::animate_move(Piece const &p,
     m_animation->start();
 }
 
-void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
+void BoardView_p::animate_castle(const MoveData &md,
                                  const Square &king_src, const Square &king_dest,
                                  const Square &rook_src, const Square &rook_dest,
                                  int dur,
                                  QEasingCurve::Type easing_curve)
 {
-    // Make a copy of the board so it doesn't change while we're animating
-    m_animationBoard = new Board(GetBoardModel()->GetBoard());
+    Piece::AllegienceEnum a = md.PieceMoved.GetAllegience();
+
+    // Make a copy of the board and populate it with the correct position information
+    m_animationBoard = new Board;
+    m_animationBoard->FromFEN(md.CurrentPosition_FEN);
 
     // Remove the rook and king from the board because they're being animated
     m_animationBoard->SetPiece(Piece(), king_src);
@@ -730,12 +736,12 @@ void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
     if(m_dragging)
     {
         // If they dropped the king, put him at the dest while we animate only the rook
-        m_animationBoard->SetPiece(Piece(Piece::King, allegience), king_dest);
+        m_animationBoard->SetPiece(Piece(Piece::King, a), king_dest);
     }
     else
     {
         // Only animate the king moving if they didn't drag-drop him
-        anim = new piece_animation_t(Piece(Piece::King, allegience), this);
+        anim = new piece_animation_t(Piece(Piece::King, a), this);
         anim->setStartValue(item_rect(king_src.GetColumn(), king_src.GetRow()).center());
         anim->setEndValue(item_rect(king_dest.GetColumn(), king_dest.GetRow()).center());
         anim->setEasingCurve(easing_curve);
@@ -743,7 +749,7 @@ void BoardView_p::animate_castle(Piece::AllegienceEnum allegience,
         m_animation->addAnimation(anim);
     }
 
-    anim = new piece_animation_t(Piece(Piece::Rook, allegience), this);
+    anim = new piece_animation_t(Piece(Piece::Rook, a), this);
     connect(anim, SIGNAL(valueChanged(const QVariant &)), viewport(), SLOT(update()));
     anim->setStartValue(item_rect(rook_src.GetColumn(), rook_src.GetRow()).center());
     anim->setEndValue(item_rect(rook_dest.GetColumn(), rook_dest.GetRow()).center());
@@ -981,7 +987,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
         default: break;
         }
 
-        animate_castle(allegience,
+        animate_castle(md,
                        *md.Source, *king_dest,
                        *rook_src, *rook_dest,
                        ANIM_MOVE_DURATION *1000,
@@ -995,7 +1001,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
     {
         // Animate regular moving, unless they're dragging
         if(!m_dragging)
-            animate_move(md.PieceMoved,
+            animate_move(md,
                          item_rect(md.Source->GetColumn(), md.Source->GetRow()).center(),
                          item_rect(md.Destination->GetColumn(), md.Destination->GetRow()).center(),
                          *md.Source,
