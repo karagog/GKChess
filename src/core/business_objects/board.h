@@ -18,7 +18,7 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
-#include "gutil_map.h"
+#include "gutil_set.h"
 
 // Even though we don't need this to compile the header, we include it anyways for completeness of this
 //  class interface.
@@ -72,7 +72,28 @@ class Board
 {
     const int m_columnCount;
     Square *m_squares;
-    GUtil::Map<Piece::PieceTypeEnum, SquarePointerConst> m_indexWhite, m_indexBlack;
+
+    struct piece_index_t
+    {
+        Square const *king;
+        GUtil::Vector<Square const *> queens;
+        GUtil::Vector<Square const *> rooks;
+        GUtil::Vector<Square const *> bishops;
+        GUtil::Vector<Square const *> knights;
+        GUtil::Set<Square const *> pawns;
+
+        piece_index_t();
+
+        GUtil::Vector<Square const *> find_pieces(Piece::PieceTypeEnum) const;
+        GUtil::Vector<Square const *> all_pieces() const;
+
+        // Pass 0 for new_val to remove a piece.  Pass 0 for orig_val to add a piece
+        void update_piece(Piece::PieceTypeEnum, Square const *orig_val, Square const *new_val);
+        void clear();
+    };
+
+    piece_index_t m_indexWhite;
+    piece_index_t m_indexBlack;
 public:
 
 
@@ -343,10 +364,10 @@ private:
     void _update_threat_counts();
     void _set_all_threat_counts(int);
 
-    GUtil::Map<Piece::PieceTypeEnum, SquarePointerConst> &_get_index(Piece::AllegienceEnum a){
+    piece_index_t &_get_index(Piece::AllegienceEnum a){
         return a == Piece::White ? m_indexWhite : m_indexBlack;
     }
-    GUtil::Map<Piece::PieceTypeEnum, SquarePointerConst> const &_get_index(Piece::AllegienceEnum a) const{
+    piece_index_t const &_get_index(Piece::AllegienceEnum a) const{
         return a == Piece::White ? m_indexWhite : m_indexBlack;
     }
 

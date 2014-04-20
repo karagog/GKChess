@@ -37,6 +37,118 @@ static int __map_2d_indices_to_1d(GUINT32 col, GUINT32 row)
 NAMESPACE_GKCHESS;
 
 
+Board::piece_index_t::piece_index_t()
+    :king(0),
+      queens(1),
+      rooks(2),
+      bishops(2),
+      knights(2)
+{}
+
+Vector<Square const *> Board::piece_index_t::all_pieces() const
+{
+    Vector<Square const *> ret(16);
+    if(king)
+        ret << king;
+
+    ret << queens
+        << rooks
+        << bishops
+        << knights;
+
+    G_FOREACH_CONST(Square const *s, pawns){
+        ret.PushBack(s);
+    }
+    return ret;
+}
+
+Vector<Square const *> Board::piece_index_t::find_pieces(Piece::PieceTypeEnum pt) const
+{
+    Vector<Square const *> ret;
+    switch(pt)
+    {
+    case Piece::King:
+        ret.PushBack(king);
+        break;
+    case Piece::Queen:
+        ret << queens;
+        break;
+    case Piece::Rook:
+        ret << rooks;
+        break;
+    case Piece::Bishop:
+        ret << bishops;
+        break;
+    case Piece::Knight:
+        ret << knights;
+        break;
+    case Piece::Pawn:
+        G_FOREACH_CONST(Square const *s, pawns){
+            ret.PushBack(s);
+        }
+        break;
+    default: break;
+    }
+    return ret;
+}
+
+void Board::piece_index_t::update_piece(Piece::PieceTypeEnum pt,
+                                        Square const *orig_val,
+                                        Square const *new_val)
+{
+    Vector<Square const *> *vec(0);
+    switch(pt)
+    {
+    case Piece::King:
+        king = new_val;
+        break;
+    case Piece::Queen:
+        vec = &queens;
+        break;
+    case Piece::Rook:
+        vec = &rooks;
+        break;
+    case Piece::Bishop:
+        vec = &bishops;
+        break;
+    case Piece::Knight:
+        vec = &knights;
+        break;
+    case Piece::Pawn:
+        if(0 != orig_val)
+            pawns.RemoveOne(orig_val);
+        if(0 != new_val)
+            pawns.Insert(new_val);
+        break;
+    default: break;
+    }
+
+    if(vec){
+        int indx = 0 == orig_val ? -1 : vec->IndexOf(orig_val);
+        if(-1 == indx){
+            if(0 != new_val)
+                vec->PushBack(new_val);
+        }
+        else{
+            if(0 == new_val)
+                vec->RemoveAt(indx);
+            else
+                vec->operator[](indx) = new_val;
+        }
+    }
+}
+
+void Board::piece_index_t::clear()
+{
+    king = 0;
+    queens.Empty();
+    rooks.Empty();
+    bishops.Empty();
+    knights.Empty();
+    pawns.Clear();
+}
+
+
 Board::Board(int num_cols)
     :m_columnCount(num_cols),
       _p_WhoseTurn(Piece::AnyAllegience),
@@ -104,15 +216,15 @@ void Board::_copy_board(const Board &o)
 
 void Board::_init_index()
 {
-    m_indexWhite.Clear();
-    m_indexBlack.Clear();
+    m_indexWhite.clear();
+    m_indexBlack.clear();
     for(int c = 0; c < ColumnCount(); ++c)
     {
         for(int r = 0; r < RowCount(); ++r)
         {
             const Square &cur = SquareAt(c, r);
             if(!cur.GetPiece().IsNull())
-                _get_index(cur.GetPiece().GetAllegience()).InsertMulti(cur.GetPiece().GetType(), &cur);
+                _get_index(cur.GetPiece().GetAllegience()).update_piece(cur.GetPiece().GetType(), 0, &cur);
         }
     }
 }
@@ -1445,10 +1557,10 @@ void Board::SetPiece(Piece const &p, const Square &s)
 
     // Remove the old piece from the index
     if(!orig.IsNull())
-        _get_index(orig.GetAllegience()).Remove(orig.GetType(), &s);
+        _get_index(orig.GetAllegience()).update_piece(orig.GetType(), &s, 0);
     // Add the new piece to the index
     if(!p.IsNull())
-        _get_index(p.GetAllegience()).InsertMulti(p.GetType(), &s);
+        _get_index(p.GetAllegience()).update_piece(p.GetType(), 0, &s);
 }
 
 Vector<Square const *> Board::FindPieces(Piece const &pc) const
@@ -1457,30 +1569,16 @@ Vector<Square const *> Board::FindPieces(Piece const &pc) const
     if(Piece::NoPiece == pc.GetType()){
         if(Piece::AnyAllegience == pc.GetAllegience()){
             // Append all pieces to the list
-            for(typename Map<Piece::PieceTypeEnum, SquarePointerConst>::const_iterator iter = m_indexWhite.begin();
-                iter != m_indexWhite.end(); ++iter){
-                G_FOREACH_CONST(Square const *sqr, iter->Values())
-                    ret.PushBack(sqr);
-            }
-            for(typename Map<Piece::PieceTypeEnum, SquarePointerConst>::const_iterator iter = m_indexBlack.begin();
-                iter != m_indexBlack.end(); ++iter){
-                G_FOREACH_CONST(Square const *sqr, iter->Values())
-                    ret.PushBack(sqr);
-            }
+            ret << m_indexWhite.all_pieces();
+            ret << m_indexBlack.all_pieces();
         }
         else{
             // Append only pieces of the given allegience to the list
-            const Map<Piece::PieceTypeEnum, Square const *> &index = _get_index(pc.GetAllegience());
-            for(typename Map<Piece::PieceTypeEnum, Square const *>::const_iterator iter = index.begin();
-                iter != index.end(); ++iter)
-            {
-                G_FOREACH_CONST(Square const *sqr, iter->Values())
-                    ret.PushBack(sqr);
-            }
+            ret << _get_index(pc.GetAllegience()).all_pieces();
         }
     }
     else{
-        ret = _get_index(pc.GetAllegience()).Values(pc.GetType());
+        ret = _get_index(pc.GetAllegience()).find_pieces(pc.GetType());
     }
     return ret;
 }
@@ -1506,25 +1604,20 @@ bool Board::IsInCheck(Piece::AllegienceEnum a) const
 void Board::ShowIndex() const
 {
     Console::WriteLine("White Pieces:");
-    for(typename Map<Piece::PieceTypeEnum, Square const *>::const_iterator iter = m_indexWhite.begin();
-        iter != m_indexWhite.end(); ++iter)
-    {
-        G_FOREACH_CONST(const Square *s, iter->Values()){
-            Console::WriteLine(String::Format("%s: %s",
-                                              Piece::TypeToString(iter->Key()).ConstData(),
-                                              s->ToString().ConstData()));
-        }
+    Vector<Square const *> v = m_indexWhite.all_pieces();
+    G_FOREACH_CONST(const Square *s, v){
+        Console::WriteLine(String::Format("%s: %s",
+                                          s->GetPiece().ToString(true).ConstData(),
+                                          s->ToString().ConstData()));
     }
 
+
     Console::WriteLine("\nBlack Pieces:");
-    for(typename Map<Piece::PieceTypeEnum, Square const *>::const_iterator iter = m_indexBlack.begin();
-        iter != m_indexBlack.end(); ++iter)
-    {
-        G_FOREACH_CONST(const Square *s, iter->Values()){
-            Console::WriteLine(String::Format("%s: %s",
-                                              Piece::TypeToString(iter->Key()).ConstData(),
-                                              s->ToString().ConstData()));
-        }
+    v = m_indexBlack.all_pieces();
+    G_FOREACH_CONST(const Square *s, v){
+        Console::WriteLine(String::Format("%s: %s",
+                                          s->GetPiece().ToString(true).ConstData(),
+                                          s->ToString().ConstData()));
     }
     Console::FlushOutput();
 }
