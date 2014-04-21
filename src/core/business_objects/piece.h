@@ -40,18 +40,16 @@ public:
         Knight = 4,
         Pawn = 5,
 
-        NoPiece = 7
+        NoPiece = -1
     };
 
-    /** Describes which side the piece fights on.
-     *  \note The enumeration values correspond to the unicode point offset
-    */
+    /** Describes which side the piece fights on. */
     enum AllegienceEnum
     {
-        AnyAllegience = 0,
+        AnyAllegience = -1,
 
-        White = 0x2654,
-        Black = 0x265A,
+        White = 0,
+        Black = 1,
     };
 
 
@@ -71,7 +69,7 @@ public:
     }
 
     /** A less-than operator so you can index by the piece type. */
-    bool operator < (Piece const &o) const{ return UnicodeValue() < o.UnicodeValue(); }
+    bool operator < (Piece const &o) const{ return UniqueIndex() < o.UniqueIndex(); }
 
     /** Returns the type of the piece. */
     READONLY_PROPERTY(Type, PieceTypeEnum);
@@ -79,7 +77,10 @@ public:
     /** Returns the allegience of the piece. */
     READONLY_PROPERTY(Allegience, AllegienceEnum);
 
-    AllegienceEnum GetOppositeAllegience() const;
+    /** Returns the opposite allegience to this piece.
+     *  The behavior is undefined if this does not have an allegience.
+    */
+    AllegienceEnum GetOppositeAllegience() const{ return (AllegienceEnum)(~(int)GetAllegience() & 0x1); }
 
     /** Returns true if this piece has no type. */
     bool IsNull() const{ return NoPiece == GetType(); }
@@ -94,6 +95,13 @@ public:
      *  that supports unicode characters.
     */
     int UnicodeValue() const;
+
+    /** Returns a unique index for the piece type, between 0 and 12. The order is arbitrary as long as
+     *  each piece has a unique value, according to their type and allegience.
+     *
+     *  \note The order happens to be the same as they appear in the unicode character set.
+    */
+    int UniqueIndex() const{ return 6*GetAllegience() + GetType(); }
 
     /** Returns the UTF-8 multi-byte representation of the piece. */
     GUtil::String GetUtf8Char() const;

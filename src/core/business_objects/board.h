@@ -18,7 +18,6 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
-#include "gutil_set.h"
 
 // Even though we don't need this to compile the header, we include it anyways for completeness of this
 //  class interface.
@@ -73,24 +72,30 @@ class Board
     const int m_columnCount;
     Square *m_squares;
 
-    struct piece_index_t
+    class piece_index_t
     {
-        Square const *king;
-        GUtil::Set<Square const *> pawns;
-        GUtil::Vector<Square const *> pieces[4];
-
+        GUtil::Vector<Square const *> pieces[2][6];
+    public:
         piece_index_t();
 
-        GUtil::Vector<Square const *> find_pieces(Piece::PieceTypeEnum) const;
-        GUtil::Vector<Square const *> all_pieces() const;
+        bool contains(const Piece &) const;
+
+        // Returns all the positions of the pieces of the given type. Both type and allegience must be defined.
+        //  Very fast constant time lookup!
+        const GUtil::Vector<Square const *> &find_pieces(const Piece &) const;
+        GUtil::Vector<Square const *> &find_pieces(const Piece &);
+
+        // Returns all pieces of the given allegience
+        GUtil::Vector<Square const *> all_pieces(Piece::AllegienceEnum) const;
 
         // Pass 0 for new_val to remove a piece.  Pass 0 for orig_val to add a piece
-        void update_piece(Piece::PieceTypeEnum, Square const *orig_val, Square const *new_val);
+        void update_piece(const Piece &, Square const *orig_val, Square const *new_val);
+
+        // Removes all pieces from the index
         void clear();
     };
 
-    piece_index_t m_indexWhite;
-    piece_index_t m_indexBlack;
+    piece_index_t m_index;
 public:
 
 
@@ -340,7 +345,7 @@ public:
 
 protected:
 
-    /** This is called when a piece is moved. */
+    /** This is called when a piece is moved via the public interface. */
     virtual void move_p(const MoveData &);
 
 
@@ -353,20 +358,12 @@ private:
     void _copy_construct(const Board &o);
     void _copy_board(const Board &o);
     void _init_index();
-
     void _update_gamestate(const MoveData &);
 
 
     /** Causes the board to update the threat counts for all squares. */
     void _update_threat_counts();
     void _set_all_threat_counts(int);
-
-    piece_index_t &_get_index(Piece::AllegienceEnum a){
-        return a == Piece::White ? m_indexWhite : m_indexBlack;
-    }
-    piece_index_t const &_get_index(Piece::AllegienceEnum a) const{
-        return a == Piece::White ? m_indexWhite : m_indexBlack;
-    }
 
 };
 

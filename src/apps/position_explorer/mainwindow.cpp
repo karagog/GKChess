@@ -63,6 +63,6 @@ void MainWindow::_piece_moved(const GKChess::MoveData &)
                                    fen_string2.ConstData()).ConstData());
     GDEBUG(fen_string1.ConstData());
 
-    m_board.ShowIndex();
+    //m_board.ShowIndex();
 }
 #endif

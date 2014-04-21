@@ -38,88 +38,79 @@ NAMESPACE_GKCHESS;
 
 
 Board::piece_index_t::piece_index_t()
-    :king(0)
-{}
+{
+    // Reserve enough memory for a traditional chess game
+    pieces[Piece::White][Piece::King].ReserveExactly(1);
+    pieces[Piece::White][Piece::Queen].ReserveExactly(1);
+    pieces[Piece::White][Piece::Rook].ReserveExactly(2);
+    pieces[Piece::White][Piece::Knight].ReserveExactly(2);
+    pieces[Piece::White][Piece::Bishop].ReserveExactly(2);
+    pieces[Piece::White][Piece::Pawn].ReserveExactly(8);
 
-Vector<Square const *> Board::piece_index_t::all_pieces() const
+    pieces[Piece::Black][Piece::King].ReserveExactly(1);
+    pieces[Piece::Black][Piece::Queen].ReserveExactly(1);
+    pieces[Piece::Black][Piece::Rook].ReserveExactly(2);
+    pieces[Piece::Black][Piece::Knight].ReserveExactly(2);
+    pieces[Piece::Black][Piece::Bishop].ReserveExactly(2);
+    pieces[Piece::Black][Piece::Pawn].ReserveExactly(8);
+}
+
+Vector<Square const *> Board::piece_index_t::all_pieces(Piece::AllegienceEnum a) const
 {
     Vector<Square const *> ret(16);
-    if(king)
-        ret << king;
-    for(int i = 0; i < 4; ++i)
-        ret << pieces[i];
-    G_FOREACH_CONST(Square const *s, pawns){
-        ret.PushBack(s);
+    if(Piece::AnyAllegience == a || Piece::White == a){
+        for(int i = 0; i < 6; ++i)
+            ret << pieces[Piece::White][i];
+    }
+    if(Piece::AnyAllegience == a || Piece::Black == a){
+        for(int i = 0; i < 6; ++i)
+            ret << pieces[Piece::Black][i];
     }
     return ret;
 }
 
-Vector<Square const *> Board::piece_index_t::find_pieces(Piece::PieceTypeEnum pt) const
+bool Board::piece_index_t::contains(const Piece &p) const
 {
-    Vector<Square const *> ret;
-    switch(pt)
-    {
-    case Piece::King:
-        ret.PushBack(king);
-        break;
-    case Piece::Pawn:
-        G_FOREACH_CONST(Square const *s, pawns){
-            ret.PushBack(s);
-        }
-        break;
-    case Piece::Queen:
-    case Piece::Rook:
-    case Piece::Bishop:
-    case Piece::Knight:
-        ret << pieces[(int)pt - 1];
-    default: break;
-    }
-    return ret;
+    return 0 < find_pieces(p).Length();
 }
 
-void Board::piece_index_t::update_piece(Piece::PieceTypeEnum pt,
+const Vector<Square const *> &Board::piece_index_t::find_pieces(const Piece &p) const
+{
+    GASSERT(p.GetType() != Piece::NoPiece && p.GetAllegience() != Piece::AnyAllegience);
+    return pieces[(int)p.GetAllegience()][(int)p.GetType()];
+}
+
+Vector<Square const *> &Board::piece_index_t::find_pieces(const Piece &p)
+{
+    GASSERT(p.GetType() != Piece::NoPiece && p.GetAllegience() != Piece::AnyAllegience);
+    return pieces[(int)p.GetAllegience()][(int)p.GetType()];
+}
+
+void Board::piece_index_t::update_piece(const Piece &p,
                                         Square const *orig_val,
                                         Square const *new_val)
 {
-    switch(pt)
-    {
-    case Piece::King:
-        king = new_val;
-        break;
-    case Piece::Pawn:
-        if(0 != orig_val)
-            pawns.RemoveOne(orig_val);
+    Vector<Square const *> &vec = find_pieces(p);
+    int indx = 0 == orig_val ? -1 : vec.IndexOf(orig_val);
+    if(-1 == indx){
         if(0 != new_val)
-            pawns.Insert(new_val);
-        break;
-    case Piece::Queen:
-    case Piece::Rook:
-    case Piece::Bishop:
-    case Piece::Knight:
-    {
-        Vector<Square const *> &vec = pieces[(int)pt - 1];
-        int indx = 0 == orig_val ? -1 : vec.IndexOf(orig_val);
-        if(-1 == indx){
-            if(0 != new_val)
-                vec.PushBack(new_val);
-        }
-        else{
-            if(0 == new_val)
-                vec.RemoveAt(indx);
-            else
-                vec[indx] = new_val;
-        }
+            vec.PushBack(new_val);
     }
-    default: break;
+    else{
+        if(0 == new_val)
+            vec.RemoveAt(indx);
+        else
+            vec[indx] = new_val;
     }
 }
 
 void Board::piece_index_t::clear()
 {
-    king = 0;
-    pawns.Clear();
-    for(int i = 0; i < 4; ++i)
-        pieces[i].Empty();
+    for(int i = 0; i < 2; ++i){
+        for(int j = 0; j < 2; ++j){
+            pieces[i][j].Empty();
+        }
+    }
 }
 
 
@@ -190,15 +181,14 @@ void Board::_copy_board(const Board &o)
 
 void Board::_init_index()
 {
-    m_indexWhite.clear();
-    m_indexBlack.clear();
+    m_index.clear();
     for(int c = 0; c < ColumnCount(); ++c)
     {
         for(int r = 0; r < RowCount(); ++r)
         {
             const Square &cur = SquareAt(c, r);
             if(!cur.GetPiece().IsNull())
-                _get_index(cur.GetPiece().GetAllegience()).update_piece(cur.GetPiece().GetType(), 0, &cur);
+                m_index.update_piece(cur.GetPiece(), 0, &cur);
         }
     }
 }
@@ -784,7 +774,7 @@ String Board::ToFEN() const
 /** Converts an allegience into a positive or negative 1, so we know what direction is forward. */
 static int __allegience_to_rank_increment(Piece::AllegienceEnum a)
 {
-    return Piece::White == a ? 1 : -1;
+    return -2 * (int)a + 1;
 }
 
 int __cmp_with_zero(int n)
@@ -1390,8 +1380,8 @@ static void __get_threatened_squares_helper(Vector<Square const *> &ret, const B
     int col = s.GetColumn() + col_inc;
     int row = s.GetRow() + row_inc;
     bool break_after = false;
-    int distance = 1;
-    while((-1 == max_distance || distance <= max_distance) &&
+    int distance = 0;
+    while((-1 == max_distance || distance < max_distance) &&
            0 <= col && col < b.ColumnCount() &&
            0 <= row && row < b.RowCount())
     {
@@ -1475,13 +1465,13 @@ static Vector<Square const *> __get_threatened_squares(const Board &b, Piece con
         __get_threatened_squares_knight_helper(ret, b, s);
         break;
     case Piece::Bishop:
-        __get_threatened_squares_bishop_helper(ret, b, s, p.GetAllegience());
+        __get_threatened_squares_bishop_helper(ret, b, s);
         break;
     case Piece::Rook:
-        __get_threatened_squares_rook_helper(ret, b, s, p.GetAllegience());
+        __get_threatened_squares_rook_helper(ret, b, s);
         break;
     case Piece::Queen:
-        __get_threatened_squares_queen_helper(ret, b, s, p.GetAllegience());
+        __get_threatened_squares_queen_helper(ret, b, s);
         break;
     case Piece::King:
         // A king threatens like a queen but with max distance 1
@@ -1500,9 +1490,9 @@ void Board::_update_threat_counts()
     Vector<Square const *> all_pieces(FindPieces(Piece()));
     G_FOREACH(Square const *s_c, all_pieces)
     {
+        GASSERT(!s_c->GetPiece().IsNull());
+
         Piece const &p = s_c->GetPiece();
-        if(p.IsNull())
-            continue;
 
         Vector<Square const *> squares(__get_threatened_squares(*this, p, *s_c));
         G_FOREACH_CONST(Square const *s_c, squares){
@@ -1531,28 +1521,20 @@ void Board::SetPiece(Piece const &p, const Square &s)
 
     // Remove the old piece from the index
     if(!orig.IsNull())
-        _get_index(orig.GetAllegience()).update_piece(orig.GetType(), &s, 0);
+        m_index.update_piece(orig, &s, 0);
     // Add the new piece to the index
     if(!p.IsNull())
-        _get_index(p.GetAllegience()).update_piece(p.GetType(), 0, &s);
+        m_index.update_piece(p, 0, &s);
 }
 
 Vector<Square const *> Board::FindPieces(Piece const &pc) const
 {
     Vector<Square const *> ret;
     if(Piece::NoPiece == pc.GetType()){
-        if(Piece::AnyAllegience == pc.GetAllegience()){
-            // Append all pieces to the list
-            ret << m_indexWhite.all_pieces();
-            ret << m_indexBlack.all_pieces();
-        }
-        else{
-            // Append only pieces of the given allegience to the list
-            ret << _get_index(pc.GetAllegience()).all_pieces();
-        }
+        ret << m_index.all_pieces(pc.GetAllegience());
     }
     else{
-        ret = _get_index(pc.GetAllegience()).find_pieces(pc.GetType());
+        ret = m_index.find_pieces(pc);
     }
     return ret;
 }
@@ -1578,7 +1560,7 @@ bool Board::IsInCheck(Piece::AllegienceEnum a) const
 void Board::ShowIndex() const
 {
     Console::WriteLine("White Pieces:");
-    Vector<Square const *> v = m_indexWhite.all_pieces();
+    Vector<Square const *> v = m_index.all_pieces(Piece::White);
     G_FOREACH_CONST(const Square *s, v){
         Console::WriteLine(String::Format("%s: %s",
                                           s->GetPiece().ToString(true).ConstData(),
@@ -1587,7 +1569,7 @@ void Board::ShowIndex() const
 
 
     Console::WriteLine("\nBlack Pieces:");
-    v = m_indexBlack.all_pieces();
+    v = m_index.all_pieces(Piece::Black);
     G_FOREACH_CONST(const Square *s, v){
         Console::WriteLine(String::Format("%s: %s",
                                           s->GetPiece().ToString(true).ConstData(),
