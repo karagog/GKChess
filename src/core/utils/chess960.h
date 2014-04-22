@@ -25,18 +25,22 @@ NAMESPACE_GKCHESS;
 class Chess960
 {
 public:
-
-    /** Returns a list of all possible starting positions for Chess960 in X-FEN notation.
-        
-        The order of the return list is undefined, but it is deterministic.
+   
+    /** Returns the starting position at the given index.
+    
+        The index must fall in the range [0, 959], and corresponds to
+        Scharnagl's ordering with a 0-based index.
     */
-    static GUtil::Vector<GUtil::String> GetAllStartingPositions();
+    static GUtil::String GetStartingPosition(int);
     
     /** Returns a random Chess960 starting position.
 
         Each position is guaranteed to be equally likely.
+        
+        \param indx A pointer to an integer that, if non-zero, will be updated with the
+        index of the starting position so you can find it again later.
     */
-    static GUtil::String GetRandomStartingPosition();
+    static GUtil::String GetRandomStartingPosition(int *indx = 0);
     
 };
 

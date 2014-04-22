@@ -14,169 +14,82 @@ limitations under the License.*/
 
 #include "rng.h"
 #include "chess960.h"
-#include "gutil_smartpointer.h"
-#include "gutil_set.h"
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
 
-static Vector<int> __get_unused_indices(const Set<int> &inds)
+GBYTE __bishop_lut[] =
 {
-    Vector<int> ret;
-    ret.ReserveExactly(inds.Size());
-    G_FOREACH_CONST(int i, inds)
-        ret.PushBack(i);
+    0b11000000,
+    0b10010000,
+    0b10000100,
+    0b10000001,
+    0b01100000,
+    0b00110000,
+    0b00100100,
+    0b00100001,
+    0b01001000,
+    0b00011000,
+    0b00001100,
+    0b00001001,
+    0b01000010,
+    0b00010010,
+    0b00000110,
+    0b00000011
+};
+
+char __king_lut[][7] =
+{
+    "QNNRKR", "NQNRKR", "NNQRKR", "NNRQKR", "NNRKQR", "NNRKRQ",
+    "QNRNKR", "NQRNKR", "NRQNKR", "NRNQKR", "NRNKQR", "NRNKRQ",
+    "QNRKNR", "NQRKNR", "NRQKNR", "NRKQNR", "NRKNQR", "NRKNRQ",
+    "QNRKRN", "NQRKRN", "NRQKRN", "NRKQRN", "NRKRQN", "NRKRNQ",
+    "QRNNKR", "RQNNKR", "RNQNKR", "RNNQKR", "RNNKQR", "RNNKRQ",
+    "QRNKNR", "RQNKNR", "RNQKNR", "RNKQNR", "RNKNQR", "RNKNRQ",
+    "QRNKRN", "RQNKRN", "RNQKRN", "RNKQRN", "RNKRQN", "RNKRNQ",
+    "QRKNNR", "RQKNNR", "RKQNNR", "RKNQNR", "RKNNQR", "RKNNRQ",
+    "QRKNRN", "RQKNRN", "RKQNRN", "RKNQRN", "RKNRQN", "RKNRNQ",
+    "QRKRNN", "RQKRNN", "RKQRNN", "RKRQNN", "RKRNQN", "RKRNNQ"
+};
+
+
+static String __generate_position(int indx)
+{
+    String ret(8);
+    GBYTE bishop_vals = __bishop_lut[indx & 0x0F];
+    const char *other_vals = __king_lut[indx >> 4];
+    int other_indx = 0;
+    for(int i = 0; i < 8; ++i){
+        if(bishop_vals & (((GUINT8)0b10000000) >> i))
+            ret.Append('B');
+        else{
+            ret.Append(other_vals[other_indx]);
+            ++other_indx;
+        }
+    }
     return ret;
 }
 
-#define FEN_STARTING_FORMAT_STRING "%s/pppppppp/8/8/8/8/PPPPPPPP/%s w KQkq - 0 1"
-
-static void __place_king_and_rooks(Vector<String> &results,
-                            String &placed_pieces,
-                            Set<int> &unused_indices)
+String Chess960::GetStartingPosition(int indx)
 {
-    Vector<int> ui(__get_unused_indices(unused_indices));
-
-    // There are exactly 3 indices left, and the set sorted them in ascending order
-    placed_pieces[ui[0]] = 'R';
-    placed_pieces[ui[1]] = 'K';
-    placed_pieces[ui[2]] = 'R';
-
-    // Add the current configuration to the results
-    results.PushBack(String::Format(FEN_STARTING_FORMAT_STRING,
-                                    placed_pieces.ToLower().ConstData(),
-                                    placed_pieces.ConstData()));
-
-    placed_pieces[ui[0]] = ' ';
-    placed_pieces[ui[1]] = ' ';
-    placed_pieces[ui[2]] = ' ';
-}
-
-static void __iteratively_place_queen(Vector<String> &results,
-                               String &placed_pieces,
-                               Set<int> &unused_indices)
-{
-    Vector<int> ui(__get_unused_indices(unused_indices));
-    for(int i = 0; i < ui.Length(); ++i)
+    String tmp;
+    if(0 <= indx && indx < 960)
     {
-        unused_indices.RemoveOne(ui[i]);
-
-        placed_pieces[ui[i]] = 'Q';
-        __place_king_and_rooks(results, placed_pieces, unused_indices);
-
-        placed_pieces[ui[i]] = ' ';
-        unused_indices.Insert(ui[i]);
+        tmp = __generate_position(indx);
+        tmp = String::Format("%s/pppppppp/8/8/8/8/PPPPPPPP/%s w KQkq - 0 1",
+                             tmp.ToLower().ConstData(),
+                             tmp.ConstData());
     }
+    return tmp;
 }
 
-static void __iteratively_place_knights(Vector<String> &results,
-                                 String &placed_pieces,
-                                 Set<int> &unused_indices)
+String Chess960::GetRandomStartingPosition(int *indx)
 {
-    Vector<int> ui(__get_unused_indices(unused_indices));
-    for(int i = 0; i < ui.Length(); ++i)
-    {
-        for(int j = i + 1; j < ui.Length(); ++j)
-        {
-            unused_indices.RemoveOne(ui[i]);
-            unused_indices.RemoveOne(ui[j]);
-
-            placed_pieces[ui[i]] = 'N';
-            placed_pieces[ui[j]] = 'N';
-            __iteratively_place_queen(results, placed_pieces, unused_indices);
-
-            placed_pieces[ui[i]] = ' ';
-            placed_pieces[ui[j]] = ' ';
-            unused_indices.Insert(ui[i]);
-            unused_indices.Insert(ui[j]);
-        }
-    }
-}
-
-static void __iteratively_place_bishops(Vector<String> &results,
-                                 String &placed_pieces,
-                                 Set<int> &unused_indices)
-{
-    for(int i = 0; i < 4; ++i)
-    {
-        for(int j = 0; j < 4; ++j)
-        {
-            int ind1 = i * 2;
-            int ind2 = j * 2 + 1;
-            unused_indices.RemoveOne(ind1);
-            unused_indices.RemoveOne(ind2);
-
-            placed_pieces[ind1] = 'B';
-            placed_pieces[ind2] = 'B';
-            __iteratively_place_knights(results, placed_pieces, unused_indices);
-
-            placed_pieces[ind1] = ' ';
-            placed_pieces[ind2] = ' ';
-            unused_indices.Insert(ind1);
-            unused_indices.Insert(ind2);
-        }
-    }
-}
-
-
-
-
-
-
-Vector<String> Chess960::GetAllStartingPositions()
-{
-    Vector<String> ret;
-    ret.ReserveExactly(960);
-
-    // Instantiate temporary variables
-    String pp(' ', 8);
-    Set<int> ui;
-    for(int i = 0; i < 8; ++i)
-        ui.Insert(i);
-
-    __iteratively_place_bishops(ret, pp, ui);
-    return ret;
-}
-
-static void __place_piece(String &ret, Vector<int> &unused_indices, char piece)
-{
-    int i = RNG::RandInt(0, unused_indices.Length() - 1);
-    ret[unused_indices[i]] = piece;
-    unused_indices.RemoveAt(i);
-}
-
-String Chess960::GetRandomStartingPosition()
-{
-    // We will generate one on the fly
-    String ret(' ', 8);
-    Vector<int> unused_indices(8);
-    for(int i = 0; i < 8; ++i)
-        unused_indices.PushBack(i);
-
-    // First place the bishops
-    int ind1 = RNG::RandInt(0, unused_indices.Length() / 2 - 1) * 2;
-    int ind2 = RNG::RandInt(0, unused_indices.Length() / 2 - 1) * 2 + 1;
-    ret[unused_indices[ind1]] = 'B';
-    ret[unused_indices[ind2]] = 'B';
-    unused_indices.RemoveOne(Max(ind1, ind2));
-    unused_indices.RemoveOne(Min(ind1, ind2));
-
-    // Then place the knights
-    __place_piece(ret, unused_indices, 'N');
-    __place_piece(ret, unused_indices, 'N');
-
-    // Then place the queen
-    __place_piece(ret, unused_indices, 'Q');
-
-    // Then there are three spots left and our rooks have to be on either side of our king
-    ret[unused_indices[0]] = 'R';
-    ret[unused_indices[1]] = 'K';
-    ret[unused_indices[2]] = 'R';
-
-    return String::Format(FEN_STARTING_FORMAT_STRING,
-                         ret.ToLower().ConstData(),
-                         ret.ConstData());
+    int tmpindx = RNG::RandInt(0, 959);
+    if(indx) 
+        *indx = tmpindx;
+    return GetStartingPosition(tmpindx);
 }
 
 
