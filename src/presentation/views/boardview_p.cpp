@@ -720,7 +720,7 @@ void BoardView_p::animate_castle(const MoveData &md,
     Piece::AllegienceEnum a = md.PieceMoved.GetAllegience();
 
     // Make a copy of the board and populate it with the correct position information
-    m_animationBoard = new Board;
+    m_animationBoard = new Board(GetBoardModel()->GetBoard());
 
     // Remove the rook and king from the board because they're being animated
     m_animationBoard->SetPiece(Piece(), king_src);
