@@ -1315,8 +1315,6 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         }
     }
 
-    ret.CurrentPosition_FEN = ToFEN();
-
     return ret;
 }
 
@@ -1365,8 +1363,6 @@ MoveData Board::GenerateMoveData(const Square &s,
 
         if(!d.GetPiece().IsNull())
             ret.PieceCaptured = d.GetPiece();
-
-        ret.CurrentPosition_FEN = ToFEN();
     }
 
     return ret;

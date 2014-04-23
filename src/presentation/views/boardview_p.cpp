@@ -691,12 +691,7 @@ void BoardView_p::animate_move(const MoveData &md,
                                int dur, QEasingCurve::Type easing_curve)
 {
     // Make a copy of the board and populate it with the correct position information
-    if(md.CurrentPosition_FEN.IsNull())
-        m_animationBoard = new Board(GetBoardModel()->GetBoard());
-    else{
-        m_animationBoard = new Board;
-        m_animationBoard->FromFEN(md.CurrentPosition_FEN);
-    }
+    m_animationBoard = new Board(GetBoardModel()->GetBoard());
 
     // Remove the source piece from the board because it is being animated
     m_animationBoard->SetPiece(Piece(), sqr_source);
@@ -726,7 +721,6 @@ void BoardView_p::animate_castle(const MoveData &md,
 
     // Make a copy of the board and populate it with the correct position information
     m_animationBoard = new Board;
-    m_animationBoard->FromFEN(md.CurrentPosition_FEN);
 
     // Remove the rook and king from the board because they're being animated
     m_animationBoard->SetPiece(Piece(), king_src);

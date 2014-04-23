@@ -16,7 +16,6 @@ limitations under the License.*/
 #define GKCHESS_MOVEDATA_H
 
 #include "gkchess_piece.h"
-#include "gutil_strings.h"
 
 NAMESPACE_GKCHESS;
 
@@ -59,9 +58,6 @@ struct MoveData
     /** The piece that was promoted, if any. If this is type NoPiece then the
      *  move did not involve a promotion. */
     Piece PiecePromoted;
-
-    /** The position of the board before the move, in FEN notation. */
-    GUtil::String CurrentPosition_FEN;
 
     /** Returns true if this is a null move data (default constructed). */
     bool IsNull() const{ return -1 == PlyNumber; }
