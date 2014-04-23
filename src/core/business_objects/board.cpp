@@ -422,6 +422,9 @@ void Board::Clear()
 
 void Board::FromFEN(const String &s)
 {
+    if(s.IsNull())
+        return;
+
     int king_col_white = -1;
     int king_col_black = -1;
     String cpy( s.Trimmed() );
