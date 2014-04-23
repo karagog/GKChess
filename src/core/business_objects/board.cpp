@@ -16,6 +16,7 @@ limitations under the License.*/
 #include "piece.h"
 #include "square.h"
 #include "pgn_move_data.h"
+#include "gutil_euclideanvector.h"
 #include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
 
@@ -1368,80 +1369,72 @@ MoveData Board::GenerateMoveData(const Square &s,
     return ret;
 }
 
-static void __append_if_within_bounds(Vector<Square const *> &ret, const Board &b, int col, int row)
+// If there is a piece at the destination, dest_piece will be updated with the information
+//  Returns true if the square was appended
+static bool __append_if_within_bounds(Vector<Square const *> &res, const Board &b, int col, int row, Piece *dest_piece)
 {
-    if(0 <= col && col < b.ColumnCount() && 0 <= row && row < b.RowCount())
-        ret.PushBack(&b.SquareAt(col, row));
+    bool ret = false;
+    if(0 <= col && col < b.ColumnCount() && 0 <= row && row < b.RowCount()){
+        Square const *sqr = &b.SquareAt(col, row);
+        res.PushBack(sqr);
+        ret = true;
+
+        if(!sqr->GetPiece().IsNull())
+            *dest_piece = sqr->GetPiece();
+    }
+    return ret;
 }
+
 
 static void __get_threatened_squares_helper(Vector<Square const *> &ret, const Board &b, const Square &s, int col_inc, int row_inc, int max_distance = -1)
 {
-    int col = s.GetColumn() + col_inc;
-    int row = s.GetRow() + row_inc;
-    bool break_after = false;
-    int distance = 0;
-    while((-1 == max_distance || distance < max_distance) &&
-           0 <= col && col < b.ColumnCount() &&
-           0 <= row && row < b.RowCount())
+    int distance = 1;
+    int measuring_cnt = 4;
+    bool measuring[4] = {true, true, true, true};
+    while((-1 == max_distance || distance <= max_distance) &&
+           0 < measuring_cnt)
     {
-        Square const *cur_sqr = &b.SquareAt(col, row);
-        Piece const &p = cur_sqr->GetPiece();
-        if(!p.IsNull())
+        int col = s.GetColumn() + (distance * col_inc);
+        int row = s.GetRow() + (distance * row_inc);
+        int i = 0;
+
+        // The increments get rotated 4 times for each distance
+        G_FOREVER
         {
-            // You can threaten the piece, but not go beyond it
-            break_after = true;
+            if(measuring[i])
+            {
+                Piece dp;
+                if(!__append_if_within_bounds(ret, b, col, row, &dp) ||
+                   !dp.IsNull())
+                {
+                    measuring[i] = false;
+                    --measuring_cnt;
+                }
+            }
+
+            if(i < 3)
+            {
+                // Rotate the increments 90 degrees each time:
+                EuclideanVector2<GINT8> vec = EuclideanVector2<GINT8>(s.GetColumn(), s.GetRow(), col, row).Orthogonal();
+                col = vec.GetX() + s.GetColumn();
+                row = vec.GetY() + s.GetRow();
+                ++i;
+            }
+            else{
+                // To avoid checking the exit condition twice, just break here
+                break;
+            }
         }
 
-        ret.PushBack(cur_sqr);
-
-        if(break_after)
-            break;
-
-        col += col_inc;
-        row += row_inc;
         ++distance;
     }
-}
-
-static void __get_threatened_squares_knight_helper(Vector<Square const *> &ret, const Board &b, const Square &s)
-{
-    __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() + 2);
-    __append_if_within_bounds(ret, b, s.GetColumn() + 1, s.GetRow() - 2);
-    __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() + 2);
-    __append_if_within_bounds(ret, b, s.GetColumn() - 1, s.GetRow() - 2);
-    __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() + 1);
-    __append_if_within_bounds(ret, b, s.GetColumn() + 2, s.GetRow() - 1);
-    __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() + 1);
-    __append_if_within_bounds(ret, b, s.GetColumn() - 2, s.GetRow() - 1);
-}
-
-static void __get_threatened_squares_bishop_helper(Vector<Square const *> &ret, const Board &b, const Square &s, int max_distance = -1)
-{
-    __get_threatened_squares_helper(ret, b, s, 1, 1, max_distance);
-    __get_threatened_squares_helper(ret, b, s, 1, -1, max_distance);
-    __get_threatened_squares_helper(ret, b, s, -1, 1, max_distance);
-    __get_threatened_squares_helper(ret, b, s, -1, -1, max_distance);
-}
-
-static void __get_threatened_squares_rook_helper(Vector<Square const *> &ret, const Board &b, const Square &s, int max_distance = -1)
-{
-    __get_threatened_squares_helper(ret, b, s, 0, 1, max_distance);
-    __get_threatened_squares_helper(ret, b, s, 0, -1, max_distance);
-    __get_threatened_squares_helper(ret, b, s, 1, 0, max_distance);
-    __get_threatened_squares_helper(ret, b, s, -1, 0, max_distance);
-}
-
-static void __get_threatened_squares_queen_helper(Vector<Square const *> &ret, const Board &b, const Square &s, int max_distance = -1)
-{
-    // Queen is a combination of a rook and a bishop
-    __get_threatened_squares_bishop_helper(ret, b, s, max_distance);
-    __get_threatened_squares_rook_helper(ret, b, s, max_distance);
 }
 
 // Returns the squares that a piece with given type on the given square can capture
 static Vector<Square const *> __get_threatened_squares(const Board &b, Piece const &p, const Square &s)
 {
     Vector<Square const *> ret;
+    int max_distance = -1;
     switch(p.GetType())
     {
     case Piece::Pawn:
@@ -1460,21 +1453,22 @@ static Vector<Square const *> __get_threatened_squares(const Board &b, Piece con
         }
     }
         break;
-    case Piece::Knight:
-        __get_threatened_squares_knight_helper(ret, b, s);
-        break;
     case Piece::Bishop:
-        __get_threatened_squares_bishop_helper(ret, b, s);
+        __get_threatened_squares_helper(ret, b, s, 1, 1);
         break;
     case Piece::Rook:
-        __get_threatened_squares_rook_helper(ret, b, s);
+        __get_threatened_squares_helper(ret, b, s, 0, 1);
         break;
-    case Piece::Queen:
-        __get_threatened_squares_queen_helper(ret, b, s);
+    case Piece::Knight:
+        __get_threatened_squares_helper(ret, b, s, 1, 2, 1);
+        __get_threatened_squares_helper(ret, b, s, 2, 1, 1);
         break;
     case Piece::King:
-        // A king threatens like a queen but with max distance 1
-        __get_threatened_squares_queen_helper(ret, b, s, 1);
+        max_distance = 1;
+        // King falls through to Queen, because they move the same way, just a different distance
+    case Piece::Queen:
+        __get_threatened_squares_helper(ret, b, s, 0, 1, max_distance);
+        __get_threatened_squares_helper(ret, b, s, 1, 1, max_distance);
         break;
     default:break;
     }
