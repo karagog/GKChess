@@ -78,6 +78,9 @@ class Board
     public:
         piece_index_t();
 
+        // Imports the index to ours, mapping the squares to our board.  It does NOT clear the index first
+        void copy_from(const piece_index_t &, const Board &);
+
         bool contains(const Piece &) const;
 
         // Returns all the positions of the pieces of the given type. Both type and allegience must be defined.
@@ -357,7 +360,6 @@ private:
     void _init();
     void _copy_construct(const Board &o);
     void _copy_board(const Board &o);
-    void _init_index();
     void _update_gamestate(const MoveData &);
 
 

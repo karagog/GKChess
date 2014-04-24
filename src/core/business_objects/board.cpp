@@ -56,6 +56,19 @@ Board::piece_index_t::piece_index_t()
     pieces[Piece::Black][Piece::Pawn].ReserveExactly(8);
 }
 
+void Board::piece_index_t::copy_from(const piece_index_t &o, const Board &b)
+{
+    for(int i = 0; i < 2; ++i)
+    {
+        for(int j = 0; j < 6; ++j)
+        {
+            pieces[i][j].Reserve(o.pieces[i][j].Capacity());
+            G_FOREACH_CONST(Square const *s, o.pieces[i][j])
+                pieces[i][j].PushBack(&b.SquareAt(s->GetColumn(), s->GetRow()));
+        }
+    }
+}
+
 Vector<Square const *> Board::piece_index_t::all_pieces(Piece::AllegienceEnum a) const
 {
     Vector<Square const *> ret(16);
@@ -147,6 +160,7 @@ Board::Board(const Board &o)
 
 Board &Board::operator = (const Board &o)
 {
+    m_index.clear();
     _copy_construct(o);
     return *this;
 }
@@ -162,11 +176,9 @@ void Board::_init()
 
 void Board::_copy_construct(const Board &o)
 {
-    if(ColumnCount() != o.ColumnCount() || RowCount() != o.RowCount())
-        THROW_NEW_GUTIL_EXCEPTION2(GUtil::Exception, "Board size mismatch");
+    GASSERT(ColumnCount() == o.ColumnCount() && RowCount() == o.RowCount());
     _init();
     _copy_board(o);
-    _init_index();
 }
 
 void Board::_copy_board(const Board &o)
@@ -179,20 +191,7 @@ void Board::_copy_board(const Board &o)
         *mine = *theirs;
         ++mine, ++theirs;
     }
-}
-
-void Board::_init_index()
-{
-    m_index.clear();
-    for(int c = 0; c < ColumnCount(); ++c)
-    {
-        for(int r = 0; r < RowCount(); ++r)
-        {
-            const Square &cur = SquareAt(c, r);
-            if(!cur.GetPiece().IsNull())
-                m_index.update_piece(cur.GetPiece(), 0, &cur);
-        }
-    }
+    m_index.copy_from(o.m_index, *this);
 }
 
 Board::~Board()
