@@ -171,12 +171,13 @@ void Board::_copy_construct(const Board &o)
 
 void Board::_copy_board(const Board &o)
 {
-    for(int c = 0; c < ColumnCount(); ++c)
+    Square *mine = m_squares;
+    Square *my_end = m_squares + ColumnCount()*RowCount();
+    Square const *theirs = o.m_squares;
+    while(mine != my_end)
     {
-        for(int r = 0; r < RowCount(); ++r)
-        {
-            square_at(c, r) = o.SquareAt(c, r);
-        }
+        *mine = *theirs;
+        ++mine, ++theirs;
     }
 }
 
