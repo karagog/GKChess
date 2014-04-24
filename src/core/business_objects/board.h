@@ -70,11 +70,12 @@ public:
 class Board
 {
     const int m_columnCount;
+    const int m_rowCount;
     Square *m_squares;
 
     class piece_index_t
     {
-        GUtil::Vector<Square const *> pieces[2][6];
+        GUtil::Vector<Square const *> pieces[2][8];
     public:
         piece_index_t();
 
@@ -174,10 +175,10 @@ public:
 
 
 
-    /** Constructs a board with the given number of columns.
-     *  It defaults to the standard chess board with 8 columns.
+    /** Constructs a board with the given number of columns and rows.
+     *  It defaults to the standard chess board with 8 columns and rows.
     */
-    Board(int num_cols = 8);
+    Board(int num_cols = 8, int num_rows = 8);
 
     Board(const Board &o);
     Board &operator = (const Board &o);

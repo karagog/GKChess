@@ -39,28 +39,13 @@ NAMESPACE_GKCHESS;
 
 
 Board::piece_index_t::piece_index_t()
-{
-    // Reserve enough memory for a traditional chess game
-    pieces[Piece::White][Piece::King].ReserveExactly(1);
-    pieces[Piece::White][Piece::Queen].ReserveExactly(1);
-    pieces[Piece::White][Piece::Rook].ReserveExactly(2);
-    pieces[Piece::White][Piece::Knight].ReserveExactly(2);
-    pieces[Piece::White][Piece::Bishop].ReserveExactly(2);
-    pieces[Piece::White][Piece::Pawn].ReserveExactly(8);
-
-    pieces[Piece::Black][Piece::King].ReserveExactly(1);
-    pieces[Piece::Black][Piece::Queen].ReserveExactly(1);
-    pieces[Piece::Black][Piece::Rook].ReserveExactly(2);
-    pieces[Piece::Black][Piece::Knight].ReserveExactly(2);
-    pieces[Piece::Black][Piece::Bishop].ReserveExactly(2);
-    pieces[Piece::Black][Piece::Pawn].ReserveExactly(8);
-}
+{}
 
 void Board::piece_index_t::copy_from(const piece_index_t &o, const Board &b)
 {
-    for(int i = 0; i < 2; ++i)
+    for(GUINT32 i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i)
     {
-        for(int j = 0; j < 6; ++j)
+        for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j)
         {
             pieces[i][j].Reserve(o.pieces[i][j].Capacity());
             G_FOREACH_CONST(Square const *s, o.pieces[i][j])
@@ -73,11 +58,11 @@ Vector<Square const *> Board::piece_index_t::all_pieces(Piece::AllegienceEnum a)
 {
     Vector<Square const *> ret(16);
     if(Piece::AnyAllegience == a || Piece::White == a){
-        for(int i = 0; i < 6; ++i)
+        for(GUINT32 i = 0; i < sizeof(pieces[0])/sizeof(pieces[0][0]); ++i)
             ret << pieces[Piece::White][i];
     }
     if(Piece::AnyAllegience == a || Piece::Black == a){
-        for(int i = 0; i < 6; ++i)
+        for(GUINT32 i = 0; i < sizeof(pieces[0])/sizeof(pieces[0][0]); ++i)
             ret << pieces[Piece::Black][i];
     }
     return ret;
@@ -128,8 +113,9 @@ void Board::piece_index_t::clear()
 }
 
 
-Board::Board(int num_cols)
+Board::Board(int num_cols, int num_rows)
     :m_columnCount(num_cols),
+      m_rowCount(num_rows),
       _p_WhoseTurn(Piece::AnyAllegience),
       _p_CastleWhiteA(-1),
       _p_CastleWhiteH(-1),
@@ -145,6 +131,7 @@ Board::Board(int num_cols)
 
 Board::Board(const Board &o)
     :m_columnCount(o.ColumnCount()),
+      m_rowCount(o.RowCount()),
       _p_WhoseTurn(o.GetWhoseTurn()),
       _p_CastleWhiteA(o.GetCastleWhiteA()),
       _p_CastleWhiteH(o.GetCastleWhiteH()),
@@ -204,7 +191,6 @@ Board::~Board()
         ++ptr;
     }
 
-
     free(m_squares);
 }
 
@@ -215,7 +201,7 @@ int Board::ColumnCount() const
 
 int Board::RowCount() const
 {
-    return 8;
+    return m_rowCount;
 }
 
 Square const &Board::SquareAt(int col, int row) const

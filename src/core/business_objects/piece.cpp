@@ -61,6 +61,12 @@ String Piece::TypeToString(PieceTypeEnum pt)
     case King:
         ret = "King";
         break;
+    case Archbishop:
+        ret = "Archbishop";
+        break;
+    case Chancellor:
+        ret = "Chancellor";
+        break;
     default:
         break;
     }
@@ -90,7 +96,11 @@ String Piece::ToString(bool wa) const
 
 int Piece::UnicodeValue() const
 {
-    return 0x2654 + UniqueIndex();
+    int ret = -1;
+    if(0 <= GetAllegience() && GetAllegience() < 2 &&
+       0 <= GetType() && GetType() < 6)
+       ret = 0x2654 + 6*GetAllegience() + GetType();
+    return ret;
 }
 
 String Piece::GetUtf8Char() const
@@ -120,6 +130,12 @@ char Piece::ToFEN() const
         break;
     case King:
         ret = White == GetAllegience() ? 'K' : 'k';
+        break;
+    case Archbishop:
+        ret = White == GetAllegience() ? 'A' : 'a';
+        break;
+    case Chancellor:
+        ret = White == GetAllegience() ? 'C' : 'c';
         break;
     default:
         break;
@@ -154,6 +170,12 @@ char const *Piece::ToPGN(Piece::PieceTypeEnum p)
         break;
     case King:
         ret = "K";
+        break;
+    case Archbishop:
+        ret = "A";
+        break;
+    case Chancellor:
+        ret = "C";
         break;
     default:
         break;
@@ -190,6 +212,12 @@ Piece::PieceTypeEnum Piece::GetTypeFromPGN(const char *c)
             break;
         case 'P':
             ret = Piece::Pawn;
+            break;
+        case 'A':
+            ret = Piece::Archbishop;
+            break;
+        case 'C':
+            ret = Piece::Chancellor;
             break;
         default:
             break;
