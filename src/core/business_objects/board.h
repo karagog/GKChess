@@ -18,15 +18,13 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gkchess_piece.h"
 #include "gkchess_movedata.h"
+#include "gkchess_pgn_parser.h"
 
 // Even though we don't need this to compile the header, we include it anyways for completeness of this
 //  class interface.
 #include "gkchess_square.h"
 
 namespace GKChess{
-
-
-class PGN_MoveData;
 
 
 /** An interface that encapsulates feedback from the user, such as choosing a promoted piece.
@@ -263,7 +261,7 @@ public:
     virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse * = 0) const;
 
     /** Creates a MoveData object from a PGN MoveData object. */
-    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
+    virtual MoveData GenerateMoveData(const PGN_Parser::MoveData &) const;
 
     /** Validates the move. */
     virtual MoveValidationEnum ValidateMove(const Square &, const Square &) const;

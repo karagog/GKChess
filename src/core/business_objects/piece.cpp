@@ -183,45 +183,38 @@ char const *Piece::ToPGN(Piece::PieceTypeEnum p)
     return ret;
 }
 
-Piece::PieceTypeEnum Piece::GetTypeFromPGN(const char *c)
+Piece::PieceTypeEnum Piece::GetTypeFromPGN(char c)
 {
     PieceTypeEnum ret = NoPiece;
-    if(0 == strlen(c))
+    switch(c)
     {
-        // An empty string is a pawn
-        ret = Pawn;
-    }
-    else
-    {
-        switch(c[0])
-        {
-        case 'K':
-            ret = Piece::King;
-            break;
-        case 'Q':
-            ret = Piece::Queen;
-            break;
-        case 'R':
-            ret = Piece::Rook;
-            break;
-        case 'B':
-            ret = Piece::Bishop;
-            break;
-        case 'N':
-            ret = Piece::Knight;
-            break;
-        case 'P':
-            ret = Piece::Pawn;
-            break;
-        case 'A':
-            ret = Piece::Archbishop;
-            break;
-        case 'C':
-            ret = Piece::Chancellor;
-            break;
-        default:
-            break;
-        }
+    case '\0':
+    case 'P':
+        ret = Piece::Pawn;
+        break;
+    case 'K':
+        ret = Piece::King;
+        break;
+    case 'Q':
+        ret = Piece::Queen;
+        break;
+    case 'R':
+        ret = Piece::Rook;
+        break;
+    case 'B':
+        ret = Piece::Bishop;
+        break;
+    case 'N':
+        ret = Piece::Knight;
+        break;
+    case 'A':
+        ret = Piece::Archbishop;
+        break;
+    case 'C':
+        ret = Piece::Chancellor;
+        break;
+    default:
+        break;
     }
     return ret;
 }
@@ -233,17 +226,18 @@ Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
     s.AppendUnicode(uc);
     if(1 < s.Length())
     {
+        THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
         // The unicode point is a chess piece
-        int tmp = uc - (int)Black;
-        if(0 > tmp)
-            tmp = uc - (int)White;
+//        int tmp = uc - (int)Black;
+//        if(0 > tmp)
+//            tmp = uc - (int)White;
 
-        if(0 <= tmp && tmp < 6)
-            ret = (PieceTypeEnum)tmp;
+//        if(0 <= tmp && tmp < 6)
+//            ret = (PieceTypeEnum)tmp;
     }
-    else
+    else if(1 == s.Length() || (s.IsEmpty() && !s.IsNull()))
     {
-        ret = GetTypeFromPGN(s);
+        ret = GetTypeFromPGN(s[0]);
     }
     return ret;
 }

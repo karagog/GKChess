@@ -15,7 +15,6 @@ limitations under the License.*/
 #include "gutil_console.h"
 #include "gutil_consolelogger.h"
 #include "gutil_strings.h"
-#include "gutil_file.h"
 #include "gkchess_pgn_parser.h"
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
@@ -28,15 +27,10 @@ int main(int argc, char *argv[])
         Console::WriteLine("You must pass a single file path to a pgn file.");
     }
 
+    String pgn_file(argv[1]);
     try
     {
-        String pgn_text;
-        File f(argv[1]);
-        f.Open(File::OpenRead);
-        pgn_text = f.Read();
-        f.Close();
-
-        _parse_pgn(pgn_text);
+        _parse_pgn(pgn_file);
     }
     catch(const Exception<> &ex)
     {
@@ -50,12 +44,17 @@ int main(int argc, char *argv[])
 
 void _parse_pgn(const String &s)
 {
-    PGN_Parser pgn(s);
+    Vector<PGN_Parser::GameData> games = PGN_Parser::ParseFile(s);
+
+    if(0 == games.Length()){
+        Console::WriteLine("There were no games in that file");
+        return;
+    }
 
     // Show the tag pairs we read
     Console::WriteLine("\nShowing tag section contents:");
 
-    Map<String, String> const &tags( pgn.GetData().Tags );
+    Map<String, String> const &tags( games[0].Tags );
     for(typename Map<String, String>::const_iterator iter(tags.begin());
         iter != tags.end();
         ++iter)
@@ -66,22 +65,25 @@ void _parse_pgn(const String &s)
     // Show the moves we read:
     Console::WriteLine("\nShowing move text:");
 
-    Vector<PGN_MoveData> const &moves( pgn.GetData().Moves );
+    Vector<PGN_Parser::MoveData> const &moves( games[0].Moves );
     int cnt = 0;
-    for(typename Vector<PGN_MoveData>::const_iterator iter(moves.begin());
+    for(typename Vector<PGN_Parser::MoveData>::const_iterator iter(moves.begin());
         iter != moves.end();
         ++iter, ++cnt)
     {
         if((0x1 & cnt) == 0)
-            Console::WriteLine(String::Format("%d. %s %s", (2+cnt)/2, iter->Text.ConstData(), iter->ToString().ConstData()));
+            Console::WriteLine(String::Format("%d. %s %s", (2+cnt)/2, iter->MoveText.ConstData(), iter->ToString().ConstData()));
         else
-            Console::WriteLine(String::Format("  ...%s %s", iter->Text.ConstData(), iter->ToString().ConstData()));
+            Console::WriteLine(String::Format("  ...%s %s", iter->MoveText.ConstData(), iter->ToString().ConstData()));
     }
 
-    if(1 == pgn.GetData().Result)
-        Console::WriteLine("White Wins!");
-    else if(-1 == pgn.GetData().Result)
-        Console::WriteLine("Black Wins!");
-    else if(0 == pgn.GetData().Result)
-        Console::WriteLine("The game ended in a draw");
+    if(games[0].Tags.Contains("Result"))
+    {
+        if(games[0].Tags["Result"] == "1-0")
+            Console::WriteLine("White Wins!");
+        else if(games[0].Tags["Result"] == "0-1")
+            Console::WriteLine("Black Wins!");
+        else if(games[0].Tags["Result"] == "1/2-1/2")
+            Console::WriteLine("The game ended in a draw");
+    }
 }

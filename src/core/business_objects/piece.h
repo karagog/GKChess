@@ -39,10 +39,10 @@ public:
         Bishop = 3,
         Knight = 4,
         Pawn = 5,
-        
+
         /** A special piece from Capablanca chess. */
         Archbishop = 6,
-        
+
         /** A special piece from Capablanca chess. */
         Chancellor = 7,
 
@@ -75,8 +75,8 @@ public:
     }
 
     /** A less-than operator so you can index by the piece type. */
-    bool operator < (Piece const &o) const{ 
-        return 100 * GetAllegience() + GetType() < 
+    bool operator < (Piece const &o) const{
+        return 100 * GetAllegience() + GetType() <
                100 * o.GetAllegience() + o.GetType();
     }
 
@@ -117,7 +117,7 @@ public:
     static char const *ToPGN(PieceTypeEnum);
 
     /** Returns the piece type from the PGN string. */
-    static PieceTypeEnum GetTypeFromPGN(char const *);
+    static PieceTypeEnum GetTypeFromPGN(char);
 
     /** Returns the ascii FEN representation of the piece, which encodes allegience information
      *  in the case of the char, so white is in capital letters and black is lower case.

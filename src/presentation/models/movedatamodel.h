@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_MOVEDATAMODEL_H
 #define GKCHESS_MOVEDATAMODEL_H
 
-#include "gkchess_pgn_move_data.h"
+#include "gkchess_pgn_parser.h"
 #include "gkchess_board.h"
 #include "gutil_vector.h"
 #include <QAbstractItemModel>
@@ -28,42 +28,42 @@ class MoveDataModel :
         public QAbstractItemModel
 {
     Q_OBJECT
-    
+
     struct MoveDataCache;
-    
+
     /** Contains a list of moves. */
     struct MoveContainer
     {
         GUtil::Vector<MoveDataCache *> Moves;
     };
-    
+
     /** One cached move consists of the actual move data, a reference to
         the parent index and a list of other moves.
     */
-    struct MoveDataCache : 
+    struct MoveDataCache :
         public MoveContainer
     {
         /** A reference to my parent index. */
         MoveDataCache *Parent;
-        
+
         /** The data held within an index. */
         MoveData Data;
-        
+
         MoveDataCache(MoveDataCache *parent = 0) :Parent(parent){}
     };
-    
+
     MoveContainer m_rootContainer;
-    
-    
+
+
 public:
 
     explicit MoveDataModel(QObject * = 0);
-    
-    /** Initializes the model from a list of pgn moves. 
+
+    /** Initializes the model from a list of pgn moves.
         These PGN moves are created by the PGN_Parser.
     */
-    void InitFromPGN(const GUtil::Vector<PGN_MoveData> &);
-    
+    void InitFromPGN(const GUtil::Vector<PGN_Parser::MoveData> &);
+
     /** QAbstractItemModel interface
         \{
     */
@@ -73,14 +73,14 @@ public:
     virtual QModelIndex index(int, int, const QModelIndex & = QModelIndex()) const;
     virtual QModelIndex parent(const QModelIndex &) const;
     /** \} */
-    
-    
+
+
 private:
 
     // This will always return a value, because even the root is a container
     MoveContainer *_get_container_from_index(const QModelIndex &);
     MoveContainer const *_get_container_from_index(const QModelIndex &) const;
-    
+
     // This will always return a value except when the root index is passed
     static MoveDataCache *_get_data_from_index(const QModelIndex &);
 

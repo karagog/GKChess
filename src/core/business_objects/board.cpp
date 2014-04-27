@@ -15,7 +15,7 @@ limitations under the License.*/
 #include "board.h"
 #include "piece.h"
 #include "square.h"
-#include "pgn_move_data.h"
+#include "gkchess_pgn_parser.h"
 #include "gutil_euclideanvector.h"
 #include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
@@ -1026,14 +1026,14 @@ Vector<Square const *> Board::GetValidMovesForSquare(const Square &) const
     return ret;
 }
 
-MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
+MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
 {
     MoveData ret;
     Piece::AllegienceEnum turn = GetWhoseTurn();
 
-    if(m.Flags.TestFlag(PGN_MoveData::CastleHSide))
+    if(m.Flags.TestFlag(PGN_Parser::MoveData::CastleHSide))
         ret.CastleType = MoveData::CastleHSide;
-    else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
+    else if(m.Flags.TestFlag(PGN_Parser::MoveData::CastleQueenSide))
         ret.CastleType = MoveData::CastleASide;
     else
     {
@@ -1052,7 +1052,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         Square const *dest = &SquareAt(m.DestFile - 'a', m.DestRank - 1);
         ret.Destination = dest;
 
-        if(m.Flags.TestFlag(PGN_MoveData::Capture))
+        if(m.Flags.TestFlag(PGN_Parser::MoveData::Capture))
         {
             if(!dest->GetPiece().IsNull() && dest->GetPiece().GetAllegience() != turn)
                 ret.PieceCaptured = dest->GetPiece();
@@ -1088,7 +1088,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             case Piece::Pawn:
                 // The pawn takes the most code, because it moves differently depending on if it's
                 //  capturing or not.  It can also move two squares instead of one on the first move.
-                if(m.Flags.TestFlag(PGN_MoveData::Capture))
+                if(m.Flags.TestFlag(PGN_Parser::MoveData::Capture))
                 {
                     // If the pawn is capturing then it can only be from either of the two files
                     //  next to the destination
@@ -1096,7 +1096,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                             1 != Abs(tmp_source_column - ret.Destination->GetColumn()))
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file for pawn capture");
 
-                    Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                    Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                     if(0 == possible_sources.Length())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "There are no pieces of that type to move");
 
@@ -1163,7 +1163,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             {
                 // Knights are easy, because they cannot be blocked. If they are in range of
                 //  the square then it is a valid move.
-                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     Square const *s = possible_sources[i];
@@ -1190,7 +1190,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::Bishop:
             {
-                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     Square const *s = possible_sources[i];
@@ -1217,7 +1217,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::Rook:
             {
-                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     Square const *s = possible_sources[i];
@@ -1244,7 +1244,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::Queen:
             {
-                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
                 {
                     Square const *s = possible_sources[i];
@@ -1271,7 +1271,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case Piece::King:
             {
-                Vector<Square const *> possible_sources( FindPieces(Piece(m.PieceMoved, turn)) );
+                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
 
                 // There can only be one king
                 GASSERT(1 == possible_sources.Length());
@@ -1298,7 +1298,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             if(Piece::Pawn != m.PieceMoved)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Only pawns can be promoted");
 
-            ret.PiecePromoted = Piece(m.PiecePromoted, turn);
+            ret.PiecePromoted = Piece(Piece::GetTypeFromPGN(m.PiecePromoted), turn);
         }
     }
 

@@ -22,7 +22,7 @@ MoveDataModel::MoveDataModel(QObject *parent)
     :QAbstractItemModel(parent)
 {}
 
-void MoveDataModel::InitFromPGN(const GUtil::Vector<PGN_MoveData> &)
+void MoveDataModel::InitFromPGN(const GUtil::Vector<PGN_Parser::MoveData> &)
 {
     THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
 }

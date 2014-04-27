@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "pgn_player.h"
-#include "gutil_file.h"
 #include "board.h"
 USING_NAMESPACE_GUTIL;
 
@@ -24,23 +23,24 @@ PGN_Player::PGN_Player(Board *b)
     :m_board(b)
 {}
 
+void PGN_Player::SetGameData(const PGN_Parser::GameData &gm)
+{
+    m_pgnData = new PGN_Parser::GameData(gm);
+}
+
 void PGN_Player::Clear()
 {
     m_pgnData.Clear();
 }
 
-void PGN_Player::LoadFromString(const String &pgn_text)
+void PGN_Player::Next()
 {
-    m_pgnData = new PGN_Parser::Data_t(PGN_Parser(pgn_text).Data);
+
 }
 
-void PGN_Player::LoadFromFile(const String &pgn_filename)
+void PGN_Player::Previous()
 {
-    File f(pgn_filename);
-    f.Open(File::OpenRead);
-    String s( f.Read() );
-    f.Close();
-    LoadFromString(s);
+
 }
 
 

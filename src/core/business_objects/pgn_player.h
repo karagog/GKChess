@@ -19,8 +19,11 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gutil_map.h"
 #include "gutil_flags.h"
+#include "gutil_smartpointer.h"
 
 NAMESPACE_GKCHESS;
+
+class Board;
 
 
 /** Plays a PGN file.
@@ -29,27 +32,24 @@ NAMESPACE_GKCHESS;
 class PGN_Player
 {
     Board *m_board;
-    GUtil::SmartPointer<PGN_Parser::Data_t> m_pgnData;
+    GUtil::SmartPointer<PGN_Parser::GameData> m_pgnData;
 public:
 
     /** Constructs a PGN player with the given game logic.  It will not take ownership. */
     PGN_Player(Board *);
 
-    /** Parses the PGN data from the given string. */
-    void LoadFromString(const GUtil::String &);
-    
-    /** Parses the PGN data from the given file. */
-    void LoadFromFile(const GUtil::String &);
+    /** Sets the PGN game data to be played. */
+    void SetGameData(const PGN_Parser::GameData &);
 
-    /** Returns true if PGN data has been successfully loaded. */
-    bool IsLoaded() const{ return m_pgnData; }
-    
+    /** Returns game data used by the player.  This will be null if data has not been set. */
+    PGN_Parser::GameData const *GetGameData() const{ return m_pgnData; }
+
     /** Unloads the PGN data.  After calling this, "IsLoaded()" returns false. */
     void Clear();
-    
+
     /** After loading a PGN string, you can step through the moves with this. */
     void Next();
-    
+
     /** After loading a PGN string, you can step back through the moves with this. */
     void Previous();
 
@@ -58,9 +58,6 @@ public:
 
     /** Returns the game board object used by the PGN player. */
     Board &GetBoard(){ return *m_board; }
-
-    /** Returns the moves from the file.  This will be null if data has not been loaded. */
-    PGN_Parser::Data_t const *GetPGNData() const{ return m_pgnData; }
 
 };
 
