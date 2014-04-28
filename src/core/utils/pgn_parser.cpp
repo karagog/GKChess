@@ -484,8 +484,8 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             // Add the last move data to the list when we encounter the next move data. That way we ensure
             //  the comments get tagged to the right moves
 
-            if((gm.Moves.Length() + 1) >> 1 != md.MoveNumber){
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid move number");
+            if((gm.Moves.Length() >> 1) + 1 != md.MoveNumber){
+                THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid move number: '%d'", md.MoveNumber));
             }
             gm.Moves.PushBack(md);
             md = PGN_Parser::MoveData();
