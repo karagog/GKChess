@@ -369,22 +369,22 @@ static void __parse_moves(PGN_Parser::GameData &gm,
     // The states of our parsing function as it traverses the string
     enum state_enum
     {
-        ground,
+        ground = 0,
 
         // Parsing the move number
-        parsing_movenumber,
+        parsing_movenumber = 1,
 
         // Parsing the dots after the move number, either . or ...
-        parsing_dots,
+        parsing_dots = 2,
 
         // Parsing the move text
-        parsing_movetext,
+        parsing_movetext = 3,
 
         // Parsing a comment enclosed in curly braces
-        parsing_comment_curly_braces,
+        parsing_comment_curly_braces = 4,
 
         // Parsing an "end of line" comment starting with a semicolon
-        parsing_comment_semicolon
+        parsing_comment_semicolon = 5
     }
     cur_state = ground;
 
@@ -402,6 +402,8 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         char c = (char)uc;
         bool ok;
         state_enum prev_state = cur_state;
+        
+        GDEBUG(String::Format("%c", c));
 
         // This first switch leaves our current state and enters 'ground'
         switch(cur_state)
@@ -434,6 +436,12 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         default: break;
         }
 
+        
+        // Debug info
+        if(prev_state != cur_state){
+            GDEBUG(String::Format("Leaving state %d for %d", (int)prev_state, (int)cur_state));
+        }
+        
 
         // Next we provide criteria for entering a new state from ground
         if(ground == cur_state)
@@ -453,6 +461,11 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             else if(';' == c){
                 cur_state = parsing_comment_semicolon;
             }
+        }
+        
+        
+        if(prev_state != cur_state){
+            GDEBUG(String::Format("Entering state %d", (int)cur_state));
         }
 
 
