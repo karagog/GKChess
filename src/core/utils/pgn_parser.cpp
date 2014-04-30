@@ -67,7 +67,7 @@ String PGN_Parser::MoveData::ToString() const
         ret.Append("Castle Queenside");
     else
     {
-        ret.Append(PieceMoved);
+        ret.Append(__convert_piece_char_to_name(PieceMoved));
 
         if(0 != SourceFile){
             ret.Append(String::Format(" on %c", SourceFile));
@@ -82,7 +82,7 @@ String PGN_Parser::MoveData::ToString() const
 
         ret.Append(String::Format("%c%d", DestFile, DestRank));
 
-        if('P' != PiecePromoted)
+        if(0 != PiecePromoted)
             ret.Append(String::Format(" promotes to %s",
                                       __convert_piece_char_to_name(PiecePromoted)));
     }
@@ -234,7 +234,7 @@ static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
     bool ret = true;
     m.MoveText = s;
 
-    GDEBUG(String::Format("Parsing '%s'", m.MoveText.ConstData()));
+    //GDEBUG(String::Format("Parsing '%s'", m.MoveText.ConstData()));
 
     if(-1 != m.MoveText.ToUpper().IndexOf("O-O-O"))
         m.Flags.SetFlag(PGN_Parser::MoveData::CastleQueenSide, true);
@@ -384,11 +384,17 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
         // Parsing an "end of line" comment starting with a semicolon
         parsing_comment_semicolon = 5
-    }
-    cur_state = ground;
+    };
+
+    state_enum cur_state = ground;
+    state_enum last_state = ground;
 
     int first_move_number = 1;  // This is only not 1 in the case of a partial game
+    int prev_move_number = 0;
+    int next_move_number = 0;
     int whose_turn = 0;      // 0 for white, 1 for black
+    bool has_move_data = false;
+    bool parsing_result = false;
 
     int dot_count = 0;
 
@@ -404,35 +410,47 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
         //GDEBUG(String::Format("%c", c));
 
-        // This first switch leaves our current state and enters 'ground'
-        switch(cur_state)
+        if(parsing_result)
         {
-        case parsing_movenumber:
-            // As soon as you encounter the first non-number character, the movenumber text is finished
-            if(!String::IsNumber(c))
-                cur_state = ground;
-            break;
-        case parsing_dots:
-            // Dot sequences are self-delimiting
-            if('.' != c)
-                cur_state = ground;
-            break;
-        case parsing_movetext:
-            // Movetext is delimited by whitespace
             if(String::IsWhitespace(c))
-                cur_state = ground;
-            break;
-        case parsing_comment_curly_braces:
-            // Curly braces end at the next right brace
-            if(cur_state == parsing_comment_curly_braces && '}' == c)
-                cur_state = ground;
-            break;
-        case parsing_comment_semicolon:
-            // The semicolon comment ends at the next newline
-            if(cur_state == parsing_comment_semicolon && '\n' == c)
-                cur_state = ground;
-            break;
-        default: break;
+            {
+                // Seek to the next char and return
+                while(String::IsWhitespace(iter.UnicodeValue()) && iter != end) ++iter;
+                break;
+            }
+        }
+        else
+        {
+            // This first switch leaves our current state and enters 'ground'
+            switch(cur_state)
+            {
+            case parsing_movenumber:
+                // As soon as you encounter the first non-number character, the movenumber text is finished
+                if(!String::IsNumber(c))
+                    cur_state = ground;
+                break;
+            case parsing_dots:
+                // Dot sequences are self-delimiting
+                if('.' != c)
+                    cur_state = ground;
+                break;
+            case parsing_movetext:
+                // Movetext is delimited by whitespace
+                if(String::IsWhitespace(c))
+                    cur_state = ground;
+                break;
+            case parsing_comment_curly_braces:
+                // Curly braces end at the next right brace
+                if(cur_state == parsing_comment_curly_braces && '}' == c)
+                    cur_state = ground;
+                break;
+            case parsing_comment_semicolon:
+                // The semicolon comment ends at the next newline
+                if(cur_state == parsing_comment_semicolon && '\n' == c)
+                    cur_state = ground;
+                break;
+            default: break;
+            }
         }
 
 
@@ -456,6 +474,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             }
             else if('{' == c){
                 cur_state = parsing_comment_curly_braces;
+                continue;
             }
             else if(';' == c){
                 cur_state = parsing_comment_semicolon;
@@ -481,28 +500,45 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
         if(prev_state == parsing_movenumber && cur_state != parsing_movenumber)
         {
-            md.MoveNumber = tmps.ToInt(&ok);
+            if(c == '/' || c == '-'){
+                // The result will get interpreted as a move number, so here is where
+                //  we distinguish between the two
+                parsing_result = true;
+            }
+            else
+            {
+                next_move_number = tmps.ToInt(&ok);
+                if(0 == gm.Moves.Length()){
+                    first_move_number = next_move_number;
+                    prev_move_number = next_move_number;
+                }
+                GASSERT(ok);
+            }
             tmps.Empty();
-            if(0 == gm.Moves.Length())
-                first_move_number = md.MoveNumber;
-            GASSERT(ok);
         }
         if(prev_state == parsing_movetext && cur_state != parsing_movetext)
         {
             // Add the movetext to the move data
             __new_movedata_from_string(md, tmps);
+            has_move_data = true;
             tmps.Empty();
         }
-        if(prev_state != parsing_movetext && cur_state == parsing_movetext && gm.Moves != 0)
+        if(prev_state != parsing_movetext && cur_state == parsing_movetext && has_move_data)
         {
             // Add the last move data to the list when we encounter the next move data. That way we ensure
             //  the comments get tagged to the right moves
+
+            md.MoveNumber = prev_move_number;
+            prev_move_number = next_move_number;
 
             if((gm.Moves.Length() >> 1) + 1 != md.MoveNumber){
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid move number: '%d'", md.MoveNumber));
             }
             gm.Moves.PushBack(md);
+
+            int move_num = md.MoveNumber;
             md = PGN_Parser::MoveData();
+            md.MoveNumber = move_num;
         }
         if((prev_state == parsing_comment_curly_braces && cur_state != parsing_comment_curly_braces) ||
                 (prev_state == parsing_comment_semicolon && cur_state != parsing_comment_semicolon))
@@ -511,6 +547,10 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             md.Comment = tmps;
             tmps.Empty();
         }
+
+        // Remember every time we leave an important state
+        if(prev_state != ground && cur_state == ground)
+            last_state = prev_state;
 
 
         // The third switch does the appropriate things with the latest character and new state

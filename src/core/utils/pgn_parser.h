@@ -87,7 +87,7 @@ public:
         /** The type of piece being moved. */
         char PieceMoved;
 
-        /** If the piece was promoted, then this is anything but a Pawn. */
+        /** If the piece was promoted, then this is anything but 0. */
         char PiecePromoted;
 
         /** The source file is not always given, but if it is this will not be 0. */

@@ -51,39 +51,43 @@ void _parse_pgn(const String &s)
         return;
     }
 
-    // Show the tag pairs we read
-    Console::WriteLine("\nShowing tag section contents:");
 
-    Map<String, String> const &tags( games[0].Tags );
-    for(typename Map<String, String>::const_iterator iter(tags.begin());
-        iter != tags.end();
-        ++iter)
+    G_FOREACH_CONST(const PGN_Parser::GameData &gd, games)
     {
-        Console::WriteLine(String::Format("Key: \"%s\" \tValue: \"%s\"", iter->Key().ConstData(), iter->Value().ConstData()));
-    }
+        // Show the tag pairs we read
+        Console::WriteLine("\nShowing tag section contents:");
 
-    // Show the moves we read:
-    Console::WriteLine("\nShowing move text:");
+        Map<String, String> const &tags( gd.Tags );
+        for(typename Map<String, String>::const_iterator iter(tags.begin());
+            iter != tags.end();
+            ++iter)
+        {
+            Console::WriteLine(String::Format("Key: \"%s\" \tValue: \"%s\"", iter->Key().ConstData(), iter->Value().ConstData()));
+        }
 
-    Vector<PGN_Parser::MoveData> const &moves( games[0].Moves );
-    int cnt = 0;
-    for(typename Vector<PGN_Parser::MoveData>::const_iterator iter(moves.begin());
-        iter != moves.end();
-        ++iter, ++cnt)
-    {
-        if((0x1 & cnt) == 0)
-            Console::WriteLine(String::Format("%d. %s %s", (2+cnt)/2, iter->MoveText.ConstData(), iter->ToString().ConstData()));
-        else
-            Console::WriteLine(String::Format("  ...%s %s", iter->MoveText.ConstData(), iter->ToString().ConstData()));
-    }
+        // Show the moves we read:
+        Console::WriteLine("\nShowing move text:");
 
-    if(games[0].Tags.Contains("Result"))
-    {
-        if(games[0].Tags["Result"] == "1-0")
-            Console::WriteLine("White Wins!");
-        else if(games[0].Tags["Result"] == "0-1")
-            Console::WriteLine("Black Wins!");
-        else if(games[0].Tags["Result"] == "1/2-1/2")
-            Console::WriteLine("The game ended in a draw");
+        Vector<PGN_Parser::MoveData> const &moves( gd.Moves );
+        int cnt = 0;
+        for(typename Vector<PGN_Parser::MoveData>::const_iterator iter(moves.begin());
+            iter != moves.end();
+            ++iter, ++cnt)
+        {
+            if((0x1 & cnt) == 0)
+                Console::WriteLine(String::Format("%d. %s %s", (2+cnt)/2, iter->MoveText.ConstData(), iter->ToString().ConstData()));
+            else
+                Console::WriteLine(String::Format("  ...%s %s", iter->MoveText.ConstData(), iter->ToString().ConstData()));
+        }
+
+        if(gd.Tags.Contains("Result"))
+        {
+            if(gd.Tags.At("Result") == "1-0")
+                Console::WriteLine("White Wins!");
+            else if(gd.Tags.At("Result") == "0-1")
+                Console::WriteLine("Black Wins!");
+            else if(gd.Tags.At("Result") == "1/2-1/2")
+                Console::WriteLine("The game ended in a draw");
+        }
     }
 }
