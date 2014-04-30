@@ -233,33 +233,36 @@ static bool __validate_file_char(char c)
     return ret;
 }
 
-static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
+static bool __is_invalid_promotion_piece(char c)
 {
-    m.MoveText = s;
+    return c != 'Q' && c != 'N' && c != 'R' && c != 'B';
+}
 
-    //GDEBUG(String::Format("Parsing '%s'", m.MoveText.ConstData()));
+PGN_Parser::MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
+{
+    MoveData ret;
+    ret.MoveText = s;
 
-    if(-1 != m.MoveText.ToUpper().IndexOf("O-O-O"))
-        m.Flags.SetFlag(PGN_Parser::MoveData::CastleQueenSide, true);
-    else if(-1 != m.MoveText.ToUpper().IndexOf("O-O"))
-        m.Flags.SetFlag(PGN_Parser::MoveData::CastleHSide, true);
+    //GDEBUG(String::Format("Parsing '%s'", ret.MoveText.ConstData()));
+
+    if(-1 != ret.MoveText.ToUpper().IndexOf("O-O-O"))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::CastleQueenSide, true);
+    else if(-1 != ret.MoveText.ToUpper().IndexOf("O-O"))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::CastleHSide, true);
     else
     {
-        typename String::const_iterator iter(m.MoveText.begin());
+        typename String::const_iterator iter(ret.MoveText.begin());
 
-        // The first character must be a piece type, or it's a pawn
+        // The first character must be a piece type, or we don't record it
         if(String::IsUpper(*iter)){
-            m.PieceMoved = *iter;
+            ret.PieceMoved = *iter;
             ++iter;
-        }
-        else{
-            m.PieceMoved = 'P';
         }
 
         // Parse the source and destination squares
         Vector<char> files(2);
         Vector<int> ranks(2);
-        for(; iter != m.MoveText.end(); ++iter)
+        for(; iter != ret.MoveText.end(); ++iter)
         {
             char c = *iter.Current();
             int tmp_number = __get_valid_rank_number(c);
@@ -276,7 +279,7 @@ static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
             }
             else if('x' == c)
             {
-                m.Flags.SetFlag(PGN_Parser::MoveData::Capture, true);
+                ret.Flags.SetFlag(PGN_Parser::MoveData::Capture, true);
             }
             else if('-' == c)
             {
@@ -291,51 +294,54 @@ static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
 
         // Now we can sort out what the source and destination squares are:
         if(files.Length() == 2){
-            m.SourceFile = files[0];
-            m.DestFile = files[1];
+            ret.SourceFile = files[0];
+            ret.DestFile = files[1];
         }
         else if(files.Length() == 1)
-            m.DestFile = files[0];
+            ret.DestFile = files[0];
         else
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file info");
-        
+
         if(ranks.Length() == 2){
-            m.SourceRank = ranks[0];
-            m.DestRank = ranks[1];
+            ret.SourceRank = ranks[0];
+            ret.DestRank = ranks[1];
         }
         else if(ranks.Length() == 1)
-            m.DestRank = ranks[0];
+            ret.DestRank = ranks[0];
         else
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid rank info");
 
         // Is there a piece promotion?
-        GINT32 ind = m.MoveText.IndexOf("=");
+        GINT32 ind = ret.MoveText.IndexOf("=");
         if(-1 != ind){
-            if(ind + 1 >= m.MoveText.Length())
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Promotion piece not given");
-            m.PiecePromoted = m.MoveText[ind+1];
+            if(ind + 1 >= ret.MoveText.Length() ||
+                    __is_invalid_promotion_piece(ret.MoveText[ind+1]))
+                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid promotion piece");
+            ret.PiecePromoted = ret.MoveText[ind+1];
         }
     }
 
     // See if the move puts the king in check or checkmate
-    if(-1 != m.MoveText.IndexOf('#'))
-        m.Flags.SetFlag(PGN_Parser::MoveData::CheckMate, true);
-    else if(-1 != m.MoveText.IndexOf('+'))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Check, true);
+    if(-1 != ret.MoveText.IndexOf('#'))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::CheckMate, true);
+    else if(-1 != ret.MoveText.IndexOf('+'))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Check, true);
 
     // See if the annotator has an assessment of this move
-    if(-1 != m.MoveText.IndexOf("??"))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Blunder, true);
-    else if(-1 != m.MoveText.IndexOf("!!"))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Brilliant, true);
-    else if(-1 != m.MoveText.IndexOf("!?"))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Interesting, true);
-    else if(-1 != m.MoveText.IndexOf("?!"))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Dubious, true);
-    else if(-1 != m.MoveText.IndexOf('?'))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Mistake, true);
-    else if(-1 != m.MoveText.IndexOf('!'))
-        m.Flags.SetFlag(PGN_Parser::MoveData::Good, true);
+    if(-1 != ret.MoveText.IndexOf("??"))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Blunder, true);
+    else if(-1 != ret.MoveText.IndexOf("!!"))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Brilliant, true);
+    else if(-1 != ret.MoveText.IndexOf("!?"))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Interesting, true);
+    else if(-1 != ret.MoveText.IndexOf("?!"))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Dubious, true);
+    else if(-1 != ret.MoveText.IndexOf('?'))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Mistake, true);
+    else if(-1 != ret.MoveText.IndexOf('!'))
+        ret.Flags.SetFlag(PGN_Parser::MoveData::Good, true);
+
+    return ret;
 }
 
 /** Populates the move data and updates the iterator to the start of the next game, or the end of the string. */
@@ -476,7 +482,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         if(prev_state == parsing_movetext && cur_state != parsing_movetext)
         {
             // Add the movetext to the move data
-            __new_movedata_from_string(md, tmps);
+            md = PGN_Parser::CreateMoveDataFromString(tmps);
             has_move_data = true;
             tmps.Empty();
         }
@@ -492,10 +498,6 @@ static void __parse_moves(PGN_Parser::GameData &gm,
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid move number: '%d'", md.MoveNumber));
             }
             gm.Moves.Append(md);
-
-            int move_num = md.MoveNumber;
-            md = PGN_Parser::MoveData();
-            md.MoveNumber = move_num;
         }
         if((prev_state == parsing_comment_curly_braces && cur_state != parsing_comment_curly_braces) ||
                 (prev_state == parsing_comment_semicolon && cur_state != parsing_comment_semicolon))
@@ -533,7 +535,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         default: break;
         }
     }
-    
+
     // Append the last move data
     if(has_move_data){
         md.MoveNumber = prev_move_number;
@@ -569,25 +571,25 @@ List<PGN_Parser::GameData> PGN_Parser::ParseString(String const &s)
     {
         ret.Append(GameData());
         GameData &gd = ret.Back();
-        
+
         // Parse the heading section for tags-value pairs
         __parse_heading(gd, iter, end);
-        
+
         // Validate the heading to make sure it has the required tags
         if(!gd.Tags.Contains(TAG_RESULT))
             THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Tag section is missing '%s'", TAG_RESULT));
-        
+
         // The result is the game termination marker
         String result_val = gd.Tags[TAG_RESULT];
         if(result_val != "1-0" && result_val != "0-1" && result_val != "1/2-1/2" && result_val != "*")
             THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid Result: %s", result_val.ConstData()));
-            
+
         int last_index = s.IndexOf(result_val, iter - s.begin());
         if(-1 == last_index)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Move section not terminated by result");
-        
+
         __parse_moves(gd, iter, s.begin() + last_index);
-        
+
         // Seek to the start of the next PGN
         while(iter != end && '[' != *iter)
             ++iter;

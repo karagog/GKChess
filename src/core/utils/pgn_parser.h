@@ -137,6 +137,11 @@ public:
     /** Parses the file with UTF-8 encoding. Throws an exception on error. */
     static GUtil::List<GameData> ParseFile(const GUtil::String &filename);
 
+    /** Parses a single PGN move into a move data object.
+     *  Example move strings are:  e4 e2e4 e2-e4 O-O Nxg5+ d8=Q
+    */
+    static MoveData CreateMoveDataFromString(const GUtil::String &);
+
 };
 
 
