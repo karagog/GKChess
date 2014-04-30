@@ -69,8 +69,11 @@ String PGN_Parser::MoveData::ToString() const
     {
         ret.Append(__convert_piece_char_to_name(PieceMoved));
 
-        if(0 != SourceFile){
-            ret.Append(String::Format(" on %c", SourceFile));
+        if(0 != SourceFile || 0 != SourceRank)
+        {
+            ret.Append(" on ");
+            if(0 != SourceFile)
+                ret.Append(SourceFile);
             if(0 != SourceRank)
                 ret.Append(String::FromInt(SourceRank));
         }
@@ -254,8 +257,8 @@ static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
         }
 
         // Parse the source and destination squares
-        char file1 = 0, file2 = 0;
-        int rank1 = 0, rank2 = 0;
+        Vector<char> files(2);
+        Vector<int> ranks(2);
         for(; iter != m.MoveText.end(); ++iter)
         {
             char c = *iter.Current();
@@ -265,26 +268,11 @@ static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
             {
                 // If a file is given, it may be a source or destination file,
                 //  so we just remember it until we have more information.
-                if(0 == file1)
-                    file1 = c;
-                else if(0 == file2)
-                    file2 = c;
-                else
-                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
+                files.PushBack(c);
             }
             else if(-1 != tmp_number)
             {
-                // If a number is given, it is paired with the last given file.
-                if(0 != file2){
-                    if(0 == rank2)
-                        rank2 = tmp_number;
-                    else
-                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
-                }
-                else if(0 != file1)
-                    rank1 = tmp_number;
-                else
-                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
+                ranks.PushBack(tmp_number);
             }
             else if('x' == c)
             {
@@ -302,22 +290,23 @@ static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
         }
 
         // Now we can sort out what the source and destination squares are:
-        if(0 != file2){
-            m.SourceFile = file1;
-            m.DestFile = file2;
+        if(files.Length() == 2){
+            m.SourceFile = files[0];
+            m.DestFile = files[1];
         }
-        else if(0 != file1)
-            m.DestFile = file1;
-
-        if(0 != rank2)
-            m.DestRank = rank2;
-        if(0 != rank1){
-            if(0 == m.SourceFile)
-                m.DestRank = rank1;
-            else
-                m.SourceRank = rank1;
+        else if(files.Length() == 1)
+            m.DestFile = files[0];
+        else
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file info");
+        
+        if(ranks.Length() == 2){
+            m.SourceRank = ranks[0];
+            m.DestRank = ranks[1];
         }
-
+        else if(ranks.Length() == 1)
+            m.DestRank = ranks[0];
+        else
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid rank info");
 
         // Is there a piece promotion?
         GINT32 ind = m.MoveText.IndexOf("=");
