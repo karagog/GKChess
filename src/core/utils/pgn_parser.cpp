@@ -23,7 +23,8 @@ NAMESPACE_GKCHESS;
 
 
 PGN_Parser::MoveData::MoveData()
-    :PieceMoved(0),
+    :MoveNumber(0),
+      PieceMoved(0),
       PiecePromoted(0),
       SourceFile(0),
       SourceRank(0),
@@ -233,7 +234,7 @@ static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
     bool ret = true;
     m.MoveText = s;
 
-    GDEBUG(String::Format("Parsing '%s'\n", m.MoveText.ConstData()));
+    GDEBUG(String::Format("Parsing '%s'", m.MoveText.ConstData()));
 
     if(-1 != m.MoveText.ToUpper().IndexOf("O-O-O"))
         m.Flags.SetFlag(PGN_Parser::MoveData::CastleQueenSide, true);
@@ -296,8 +297,6 @@ static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
             }
             else if('x' == c)
             {
-                if(m.Flags.TestFlag(PGN_Parser::MoveData::Capture))
-                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid PGN");
                 m.Flags.SetFlag(PGN_Parser::MoveData::Capture, true);
             }
             else if('-' == c)
@@ -389,9 +388,9 @@ static void __parse_moves(PGN_Parser::GameData &gm,
     cur_state = ground;
 
     int first_move_number = 1;  // This is only not 1 in the case of a partial game
-    int whose_turn = -1;      // 0 for white, 1 for black
+    int whose_turn = 0;      // 0 for white, 1 for black
 
-    int dot_count = -1;
+    int dot_count = 0;
 
     String tmps;
     PGN_Parser::MoveData md;
@@ -403,7 +402,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         bool ok;
         state_enum prev_state = cur_state;
 
-        GDEBUG(String::Format("%c", c));
+        //GDEBUG(String::Format("%c", c));
 
         // This first switch leaves our current state and enters 'ground'
         switch(cur_state)
@@ -438,9 +437,9 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
 
         // Debug info
-        if(prev_state != cur_state){
-            GDEBUG(String::Format("Leaving state %d for %d", (int)prev_state, (int)cur_state));
-        }
+//        if(prev_state != cur_state){
+//            GDEBUG(String::Format("Leaving state %d for %d", (int)prev_state, (int)cur_state));
+//        }
 
 
         // Next we provide criteria for entering a new state from ground
@@ -464,12 +463,22 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         }
 
 
-        if(prev_state != cur_state){
-            GDEBUG(String::Format("Entering state %d", (int)cur_state));
-        }
+//        if(prev_state != cur_state){
+//            GDEBUG(String::Format("Entering state %d", (int)cur_state));
+//        }
 
 
         // Here we do some processing upon certain state transitions:
+        if(prev_state == parsing_dots && cur_state != parsing_dots)
+        {
+            if(1 == dot_count)
+                whose_turn = 0;   // white's turn
+            else if(1 < dot_count)
+                whose_turn = 1;   // black's turn
+            dot_count = 0;
+            GASSERT(0 == tmps.Length());
+        }
+
         if(prev_state == parsing_movenumber && cur_state != parsing_movenumber)
         {
             md.MoveNumber = tmps.ToInt(&ok);
@@ -478,21 +487,13 @@ static void __parse_moves(PGN_Parser::GameData &gm,
                 first_move_number = md.MoveNumber;
             GASSERT(ok);
         }
-        else if(prev_state == parsing_dots && cur_state != parsing_dots)
-        {
-            if(1 == dot_count)
-                whose_turn = 0;   // white's turn
-            else if(1 < dot_count)
-                whose_turn = 1;   // black's turn
-            GASSERT(0 == tmps.Length());
-        }
-        else if(prev_state == parsing_movetext && cur_state != parsing_movetext)
+        if(prev_state == parsing_movetext && cur_state != parsing_movetext)
         {
             // Add the movetext to the move data
             __new_movedata_from_string(md, tmps);
             tmps.Empty();
         }
-        else if(prev_state != parsing_movetext && cur_state == parsing_movetext)
+        if(prev_state != parsing_movetext && cur_state == parsing_movetext && gm.Moves != 0)
         {
             // Add the last move data to the list when we encounter the next move data. That way we ensure
             //  the comments get tagged to the right moves
@@ -503,7 +504,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             gm.Moves.PushBack(md);
             md = PGN_Parser::MoveData();
         }
-        else if((prev_state == parsing_comment_curly_braces && cur_state != parsing_comment_curly_braces) ||
+        if((prev_state == parsing_comment_curly_braces && cur_state != parsing_comment_curly_braces) ||
                 (prev_state == parsing_comment_semicolon && cur_state != parsing_comment_semicolon))
         {
             // Add the comment to the move data

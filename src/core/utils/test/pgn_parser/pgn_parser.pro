@@ -17,7 +17,7 @@ QT       += core
 
 QT       -= gui
 
-TARGET = pgn_player
+TARGET = pgn_parser
 CONFIG   += console
 CONFIG   -= app_bundle
 
