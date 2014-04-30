@@ -540,7 +540,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
 
 
-Vector<PGN_Parser::GameData> PGN_Parser::ParseFile(const String &filename)
+List<PGN_Parser::GameData> PGN_Parser::ParseFile(const String &filename)
 {
     String s;
     {
@@ -551,18 +551,18 @@ Vector<PGN_Parser::GameData> PGN_Parser::ParseFile(const String &filename)
     return ParseString(s);
 }
 
-Vector<PGN_Parser::GameData> PGN_Parser::ParseString(String const &s)
+List<PGN_Parser::GameData> PGN_Parser::ParseString(String const &s)
 {
     if(!s.IsValidUTF8())
         THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
                                    "The data contains an invalid UTF-8 sequence");
 
-    Vector<GameData> ret;
+    List<GameData> ret;
     typename String::UTF8ConstIterator iter(s.beginUTF8());
     typename String::UTF8ConstIterator end(s.endUTF8());
     while(iter != end)
     {
-        ret.PushBack(GameData());
+        ret.Append(GameData());
         __parse_heading(ret.Back(), iter, end);
         __parse_moves(ret.Back(), iter, end);
     }

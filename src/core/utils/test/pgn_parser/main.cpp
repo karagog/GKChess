@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
 void _parse_pgn(const String &s)
 {
-    Vector<PGN_Parser::GameData> games = PGN_Parser::ParseFile(s);
+    List<PGN_Parser::GameData> games = PGN_Parser::ParseFile(s);
 
     if(0 == games.Length()){
         Console::WriteLine("There were no games in that file");

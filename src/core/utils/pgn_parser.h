@@ -132,10 +132,10 @@ public:
     };
 
     /** Parses the UTF-8 string. Throws an exception on error. */
-    static GUtil::Vector<GameData> ParseString(const GUtil::String &utf8);
+    static GUtil::List<GameData> ParseString(const GUtil::String &utf8);
 
     /** Parses the file with UTF-8 encoding. Throws an exception on error. */
-    static GUtil::Vector<GameData> ParseFile(const GUtil::String &filename);
+    static GUtil::List<GameData> ParseFile(const GUtil::String &filename);
 
 };
 
