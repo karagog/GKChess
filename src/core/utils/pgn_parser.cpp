@@ -115,8 +115,8 @@ String PGN_Parser::MoveData::ToString() const
 
 /** Populates the heading tags and updates the iterator to the start of the move data section. */
 static void __parse_heading(PGN_Parser::GameData &gm,
-                            typename String::UTF8ConstIterator &iter,
-                            const typename String::UTF8ConstIterator &end)
+                            typename String::const_iterator &iter,
+                            const typename String::const_iterator &end)
 {
     String tmp, tmp_key, tmp_value;
     bool escape_char = false;
@@ -127,9 +127,9 @@ static void __parse_heading(PGN_Parser::GameData &gm,
         if(inside_tag)
         {
             bool skip_char = false;
-            if(iter.IsValidAscii())
+            if(0 < *iter)
             {
-                char c = (char)iter.UnicodeValue();
+                char c = (char)*iter;
 
                 if(String::IsNumber(c))
                 {
@@ -149,6 +149,7 @@ static void __parse_heading(PGN_Parser::GameData &gm,
                     gm.Tags.Insert(tmp_key, tmp_value);
                     inside_tag = false;
                     skip_char = true;
+                    //GDEBUG(String::Format("Found tag: %s-%s", tmp_key.ConstData(), tmp_value.ConstData()));
                     break;
                 case ' ':
                     if(tmp_key.IsEmpty()){
@@ -177,19 +178,18 @@ static void __parse_heading(PGN_Parser::GameData &gm,
                 case '\\':
                     escape_char = true;
                     break;
-                default:
-                    break;
+                default: break;
                 }
             }
 
             if(!skip_char)
-                tmp.Append(iter.Current(), iter.ByteLength());
+                tmp.Append(*iter);
         }
         else
         {
-            if(iter.IsValidAscii())
+            if(0 <= *iter)
             {
-                char c = (char)iter.UnicodeValue();
+                char c = (char)*iter;
                 if(String::IsNumber(c))
                 {
                     // This is our exit condition: encountering a numeral outside of a tag
@@ -203,6 +203,7 @@ static void __parse_heading(PGN_Parser::GameData &gm,
                     tmp_key.Clear();
                     tmp_value.Clear();
                     inside_tag = true;
+                    //GDEBUG("Found Tag Start");
                     break;
                 }
             }
@@ -229,9 +230,8 @@ static bool __validate_file_char(char c)
     return ret;
 }
 
-static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
+static void __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
 {
-    bool ret = true;
     m.MoveText = s;
 
     //GDEBUG(String::Format("Parsing '%s'", m.MoveText.ConstData()));
@@ -240,15 +240,6 @@ static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
         m.Flags.SetFlag(PGN_Parser::MoveData::CastleQueenSide, true);
     else if(-1 != m.MoveText.ToUpper().IndexOf("O-O"))
         m.Flags.SetFlag(PGN_Parser::MoveData::CastleHSide, true);
-    else if(-1 != m.MoveText.IndexOf("1-0")){
-        ret = false;
-    }
-    else if(-1 != m.MoveText.IndexOf("0-1")){
-        ret = false;
-    }
-    else if(-1 != m.MoveText.IndexOf("1/2-1/2")){
-        ret = false;
-    }
     else
     {
         typename String::const_iterator iter(m.MoveText.begin());
@@ -265,7 +256,7 @@ static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
         // Parse the source and destination squares
         char file1 = 0, file2 = 0;
         int rank1 = 0, rank2 = 0;
-        for(; iter != m.MoveText.endUTF8(); ++iter)
+        for(; iter != m.MoveText.end(); ++iter)
         {
             char c = *iter.Current();
             int tmp_number = __get_valid_rank_number(c);
@@ -356,14 +347,12 @@ static bool __new_movedata_from_string(PGN_Parser::MoveData &m, const String &s)
         m.Flags.SetFlag(PGN_Parser::MoveData::Mistake, true);
     else if(-1 != m.MoveText.IndexOf('!'))
         m.Flags.SetFlag(PGN_Parser::MoveData::Good, true);
-
-    return ret;
 }
 
 /** Populates the move data and updates the iterator to the start of the next game, or the end of the string. */
 static void __parse_moves(PGN_Parser::GameData &gm,
-                          typename String::UTF8ConstIterator &iter,
-                          const typename String::UTF8ConstIterator &end)
+                          typename String::const_iterator &iter,
+                          const typename String::const_iterator &end)
 {
     // The states of our parsing function as it traverses the string
     enum state_enum
@@ -394,7 +383,6 @@ static void __parse_moves(PGN_Parser::GameData &gm,
     int next_move_number = 0;
     int whose_turn = 0;      // 0 for white, 1 for black
     bool has_move_data = false;
-    bool parsing_result = false;
 
     int dot_count = 0;
 
@@ -403,54 +391,42 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
     for(; iter != end; ++iter)
     {
-        int uc = iter.UnicodeValue();
+        int uc = *iter;
         char c = (char)uc;
         bool ok;
         state_enum prev_state = cur_state;
 
         //GDEBUG(String::Format("%c", c));
 
-        if(parsing_result)
+        // This first switch leaves our current state and enters 'ground'
+        switch(cur_state)
         {
+        case parsing_movenumber:
+            // As soon as you encounter the first non-number character, the movenumber text is finished
+            if(!String::IsNumber(c))
+                cur_state = ground;
+            break;
+        case parsing_dots:
+            // Dot sequences are self-delimiting
+            if('.' != c)
+                cur_state = ground;
+            break;
+        case parsing_movetext:
+            // Movetext is delimited by whitespace
             if(String::IsWhitespace(c))
-            {
-                // Seek to the next char and return
-                while(String::IsWhitespace(iter.UnicodeValue()) && iter != end) ++iter;
-                break;
-            }
-        }
-        else
-        {
-            // This first switch leaves our current state and enters 'ground'
-            switch(cur_state)
-            {
-            case parsing_movenumber:
-                // As soon as you encounter the first non-number character, the movenumber text is finished
-                if(!String::IsNumber(c))
-                    cur_state = ground;
-                break;
-            case parsing_dots:
-                // Dot sequences are self-delimiting
-                if('.' != c)
-                    cur_state = ground;
-                break;
-            case parsing_movetext:
-                // Movetext is delimited by whitespace
-                if(String::IsWhitespace(c))
-                    cur_state = ground;
-                break;
-            case parsing_comment_curly_braces:
-                // Curly braces end at the next right brace
-                if(cur_state == parsing_comment_curly_braces && '}' == c)
-                    cur_state = ground;
-                break;
-            case parsing_comment_semicolon:
-                // The semicolon comment ends at the next newline
-                if(cur_state == parsing_comment_semicolon && '\n' == c)
-                    cur_state = ground;
-                break;
-            default: break;
-            }
+                cur_state = ground;
+            break;
+        case parsing_comment_curly_braces:
+            // Curly braces end at the next right brace
+            if(cur_state == parsing_comment_curly_braces && '}' == c)
+                cur_state = ground;
+            break;
+        case parsing_comment_semicolon:
+            // The semicolon comment ends at the next newline
+            if(cur_state == parsing_comment_semicolon && '\n' == c)
+                cur_state = ground;
+            break;
+        default: break;
         }
 
 
@@ -500,21 +476,13 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
         if(prev_state == parsing_movenumber && cur_state != parsing_movenumber)
         {
-            if(c == '/' || c == '-'){
-                // The result will get interpreted as a move number, so here is where
-                //  we distinguish between the two
-                parsing_result = true;
-            }
-            else
-            {
-                next_move_number = tmps.ToInt(&ok);
-                if(0 == gm.Moves.Length()){
-                    first_move_number = next_move_number;
-                    prev_move_number = next_move_number;
-                }
-                GASSERT(ok);
-            }
+            next_move_number = tmps.ToInt(&ok);
             tmps.Empty();
+            if(0 == gm.Moves.Length()){
+                first_move_number = next_move_number;
+                prev_move_number = next_move_number;
+            }
+            GASSERT(ok);
         }
         if(prev_state == parsing_movetext && cur_state != parsing_movetext)
         {
@@ -534,7 +502,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             if((gm.Moves.Length() >> 1) + 1 != md.MoveNumber){
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid move number: '%d'", md.MoveNumber));
             }
-            gm.Moves.PushBack(md);
+            gm.Moves.Append(md);
 
             int move_num = md.MoveNumber;
             md = PGN_Parser::MoveData();
@@ -576,6 +544,12 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         default: break;
         }
     }
+    
+    // Append the last move data
+    if(has_move_data){
+        md.MoveNumber = prev_move_number;
+        gm.Moves.Append(md);
+    }
 }
 
 
@@ -591,6 +565,8 @@ List<PGN_Parser::GameData> PGN_Parser::ParseFile(const String &filename)
     return ParseString(s);
 }
 
+#define TAG_RESULT "Result"
+
 List<PGN_Parser::GameData> PGN_Parser::ParseString(String const &s)
 {
     if(!s.IsValidUTF8())
@@ -598,13 +574,34 @@ List<PGN_Parser::GameData> PGN_Parser::ParseString(String const &s)
                                    "The data contains an invalid UTF-8 sequence");
 
     List<GameData> ret;
-    typename String::UTF8ConstIterator iter(s.beginUTF8());
-    typename String::UTF8ConstIterator end(s.endUTF8());
+    typename String::const_iterator iter(s.begin());
+    typename String::const_iterator end(s.end());
     while(iter != end)
     {
         ret.Append(GameData());
-        __parse_heading(ret.Back(), iter, end);
-        __parse_moves(ret.Back(), iter, end);
+        GameData &gd = ret.Back();
+        
+        // Parse the heading section for tags-value pairs
+        __parse_heading(gd, iter, end);
+        
+        // Validate the heading to make sure it has the required tags
+        if(!gd.Tags.Contains(TAG_RESULT))
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Tag section is missing '%s'", TAG_RESULT));
+        
+        // The result is the game termination marker
+        String result_val = gd.Tags[TAG_RESULT];
+        if(result_val != "1-0" && result_val != "0-1" && result_val != "1/2-1/2" && result_val != "*")
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid Result: %s", result_val.ConstData()));
+            
+        int last_index = s.IndexOf(result_val, iter - s.begin());
+        if(-1 == last_index)
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Move section not terminated by result");
+        
+        __parse_moves(gd, iter, s.begin() + last_index);
+        
+        // Seek to the start of the next PGN
+        while(iter != end && '[' != *iter)
+            ++iter;
     }
     return ret;
 }

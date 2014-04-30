@@ -128,7 +128,7 @@ public:
         GUtil::Map<GUtil::String, GUtil::String> Tags;
 
         /** All the move data. */
-        GUtil::Vector<MoveData> Moves;
+        GUtil::List<MoveData> Moves;
     };
 
     /** Parses the UTF-8 string. Throws an exception on error. */

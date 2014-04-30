@@ -68,9 +68,9 @@ void _parse_pgn(const String &s)
         // Show the moves we read:
         Console::WriteLine("\nShowing move text:");
 
-        Vector<PGN_Parser::MoveData> const &moves( gd.Moves );
+        List<PGN_Parser::MoveData> const &moves( gd.Moves );
         int cnt = 0;
-        for(typename Vector<PGN_Parser::MoveData>::const_iterator iter(moves.begin());
+        for(typename List<PGN_Parser::MoveData>::const_iterator iter(moves.begin());
             iter != moves.end();
             ++iter, ++cnt)
         {
