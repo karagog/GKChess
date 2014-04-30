@@ -402,7 +402,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         char c = (char)uc;
         bool ok;
         state_enum prev_state = cur_state;
-        
+
         GDEBUG(String::Format("%c", c));
 
         // This first switch leaves our current state and enters 'ground'
@@ -436,12 +436,12 @@ static void __parse_moves(PGN_Parser::GameData &gm,
         default: break;
         }
 
-        
+
         // Debug info
         if(prev_state != cur_state){
             GDEBUG(String::Format("Leaving state %d for %d", (int)prev_state, (int)cur_state));
         }
-        
+
 
         // Next we provide criteria for entering a new state from ground
         if(ground == cur_state)
@@ -449,7 +449,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
             if(String::IsNumber(c)){
                 cur_state = parsing_movenumber;
             }
-            else if(String::IsLatin(c)){
+            else if(String::IsRoman(c)){
                 cur_state = parsing_movetext;
             }
             else if('.' == c){
@@ -462,8 +462,8 @@ static void __parse_moves(PGN_Parser::GameData &gm,
                 cur_state = parsing_comment_semicolon;
             }
         }
-        
-        
+
+
         if(prev_state != cur_state){
             GDEBUG(String::Format("Entering state %d", (int)cur_state));
         }
