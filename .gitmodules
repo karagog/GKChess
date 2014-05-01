@@ -1,3 +1,6 @@
 [submodule "gutil"]
 	path = gutil
 	url = ssh://george@gdomain.homelinux.net/srv/git/gutil.git
+[submodule "stockfish"]
+	path = stockfish
+	url = https://github.com/mcostalba/Stockfish.git
