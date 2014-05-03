@@ -15,9 +15,9 @@ limitations under the License.*/
 #ifndef GKCHESS_UCI_CLIENT_H
 #define GKCHESS_UCI_CLIENT_H
 
-#include <QThread>
+#include <QStringList>
+#include <QObject>
 
-#include "gkchess_globals.h"
 #include "gutil_map.h"
 
 namespace GKChess
@@ -26,9 +26,10 @@ namespace GKChess
 
 /** A class to handle access to a UCI-compatible chess engine. */
 class UCI_Client :
-        private QThread
+        public QObject
 {
     Q_OBJECT
+    void *d;
 public:
 
     struct Option_t
@@ -84,6 +85,15 @@ public:
         CheckOption(const QString &name, bool v) :Option_t(name), Value(v), Default(v) {}
     };
 
+    struct ComboOption : public Option_t
+    {
+        QStringList Values;
+        const QString &Default;
+
+        ComboOption(const QString &name, const QStringList &vals, const QString &default_val)
+            :Option_t(name), Values(vals), Default(default_val){}
+    };
+
     struct ButtonOption : public Option_t
     {
         TypeEnum GetType() const{ return Button; }
@@ -106,21 +116,55 @@ public:
      *  After the constructor, the engine info member will be populated.
     */
     explicit UCI_Client(const QString &path_to_engine, QObject *parent = 0);
+    ~UCI_Client();
 
-    /** Initializes the engine.  This must be called before using. */
-    void Startup();
+    const EngineInfo &GetEngineInfo() const;
 
-    const EngineInfo &GetEngineInfo() const{ return m_info; }
+    /** Switches on/off debug output for the engine. */
+    void SetDebugOutputEnabled(bool);
+    bool GetDebugOutputEnabled() const;
+
+    /** Sets the position for the engine to work on.
+     *  This can be "startpos" or a FEN string
+    */
+    void SetPosition(const QByteArray &);
+
+
+    /** Parameters to the Go() function. */
+    struct GoParams
+    {
+
+    };
+
+    /** Tells the engine to start thinking about the best move. */
+    void Go(const GoParams &);
+
+    /** Tells the engine to stop thinking. */
+    void Stop();
 
 
 signals:
 
+    /** A line has been received from the engine.  This is emitted for every single line
+     *  of engine output so you can use it for logging or whatever
+    */
+    void MessageReceived(const QByteArray &);
+
+    /** This signal is emitted whenever a 'bestmove' is received from the engine.
+     *  \param move The move text
+     *  \param ponder The move that the engine would like to ponder
+    */
+    void BestMove(const QByteArray &move, const QByteArray &ponder = QByteArray());
+
+
+private slots:
+
+    void _data_available();
+
+
 private:
 
-    QString m_engine;
-    EngineInfo m_info;
-
-    void run();
+    void _writer_thread();
 
 };
 

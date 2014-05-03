@@ -15,13 +15,14 @@ limitations under the License.*/
 #include "gkchess_uci_client.h"
 #include <QCoreApplication>
 #include "gutil_consolelogger.h"
+#include "gkchess_globals.h"
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
 
 int main(int argc, char *argv[])
 {
 //    QCoreApplication a(argc, argv);
-    UCI_Client *cli;
+    SmartPointer<UCI_Client> cli;
 
     try
     {
