@@ -370,22 +370,32 @@ void UCI_Client::_data_available()
     }
 }
 
-void UCI_Client::SetPosition(const QByteArray &data)
+void UCI_Client::SetPosition(const char *data)
 {
     G_D;
     d->lock.lock();
-    d->outqueue.append(QString("position fen %1").arg(data.constData()).toUtf8());
+    d->outqueue.append(String::Format("position fen %s", data).ConstData());
     d->lock.unlock();
     d->wc.wakeOne();
 }
 
-void UCI_Client::Go(const UCI_Client::GoParams &params)
+void UCI_Client::Go(const UCI_Client::GoParams &p)
 {
-    QString str = "go ";
-    if(-1 == params.MoveTime)
-        str.append("infinite");
-    else
-        str.append(QString("movetime %1").arg(params.MoveTime));
+    QString str = "go";
+    if(-1 == p.MoveTime)
+        str.append(" infinite");
+    else if(0 < p.MoveTime)
+        str.append(QString(" movetime %1").arg(p.MoveTime));
+
+    if(0 < p.Depth)
+        str.append(QString(" depth %1").arg(p.Depth));
+
+    if(0 < p.Nodes)
+        str.append(QString(" nodes %1").arg(p.Nodes));
+
+    if(0 < p.Mate)
+        str.append(QString(" mate %1").arg(p.Mate));
+
     _append_to_write_queue(str.toUtf8());
 }
 

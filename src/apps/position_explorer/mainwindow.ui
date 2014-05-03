@@ -65,9 +65,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget_2">
-   <property name="floating">
-    <bool>true</bool>
-   </property>
    <property name="features">
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
@@ -76,24 +73,20 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
      <item>
-      <widget class="QTextBrowser" name="engine_log">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>1</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="lineWrapMode">
-        <enum>QTextEdit::NoWrap</enum>
-       </property>
-       <property name="acceptRichText">
-        <bool>false</bool>
-       </property>
-       <property name="openLinks">
-        <bool>false</bool>
-       </property>
-      </widget>
+      <widget class="GKChess::UI::EngineControl" name="engine_control" native="true"/>
      </item>
     </layout>
    </widget>
@@ -111,6 +104,12 @@
    <class>GKChess::UI::PGNView</class>
    <extends>QPlainTextEdit</extends>
    <header>gkchess_pgnview.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GKChess::UI::EngineControl</class>
+   <extends>QWidget</extends>
+   <header>gkchess_enginecontrol.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

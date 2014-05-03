@@ -38,9 +38,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-private slots:
 
-    void _engine_message_received(const QByteArray &);
+private slots:
 
 #ifdef DEBUG
     void _piece_moved(const GKChess::MoveData &);

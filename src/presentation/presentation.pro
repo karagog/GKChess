@@ -27,6 +27,7 @@ unix {
 
 include(views/views.pri)
 include(models/models.pri)
+include(controls/controls.pri)
 include(data_access/data_access.pri)
 
 HEADERS += \

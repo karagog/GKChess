@@ -130,16 +130,28 @@ public:
     /** Sets the position for the engine to work on.
      *  This can be "startpos" or a FEN string
     */
-    void SetPosition(const QByteArray &);
+    void SetPosition(const char *);
 
 
     /** Parameters to the Go() function. */
     struct GoParams
     {
+        /** If the move time is -1 it will search until you say stop.  If it's 0 it has no time to think of a move. */
         int MoveTime;
 
+        /** Constrains the search depth.  0 means unconstrained. */
+        int Depth;
+
+        /** Constrains the number of search nodes. 0 means unconstrained. */
+        int Nodes;
+
+        /** Searches for mate in a given number of moves.  0 means unconstrained. */
+        int Mate;
+
         GoParams()
-            :MoveTime(-1)
+            :MoveTime(-1),
+              Depth(0),
+              Nodes(0)
         {}
     };
 

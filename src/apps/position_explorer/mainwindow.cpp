@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
       ui(new Ui::MainWindow),
       m_board(),
       //m_board(10),
-      m_uci(0),
+      m_uci(new UCI_Client("/usr/games/stockfish")),
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
@@ -33,14 +33,11 @@ MainWindow::MainWindow(QWidget *parent)
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    m_uci = new UCI_Client("/usr/games/stockfish");
-    connect(m_uci, SIGNAL(MessageReceived(QByteArray)), this, SLOT(_engine_message_received(QByteArray)));
-
-    //m_uci->SetAnalysisMode(true);
+    ui->engine_control->Initialize(m_uci, &m_board);
 
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
-            this, SLOT(_piece_moved(GKChess::MoveData)));
+            this, SLOT(_piece_moved(const GKChess::MoveData &)));
 #endif
 
     ui->boardView->SetIconFactory(&m_iconFactory);
@@ -56,12 +53,6 @@ MainWindow::~MainWindow()
     delete m_uci;
 }
 
-void MainWindow::_engine_message_received(const QByteArray &d)
-{
-    ui->engine_log->append(d);
-}
-
-
 #ifdef DEBUG
 void MainWindow::_piece_moved(const GKChess::MoveData &)
 {
@@ -75,11 +66,6 @@ void MainWindow::_piece_moved(const GKChess::MoveData &)
                                    fen_string1.ConstData(),
                                    fen_string2.ConstData()).ConstData());
     GDEBUG(fen_string1);
-
-    m_uci->SetPosition(fen_string1.ConstData());
-    UCI_Client::GoParams params;
-    params.MoveTime = 1000;
-    m_uci->Go(params);
 
     //m_board.ShowIndex();
 }
