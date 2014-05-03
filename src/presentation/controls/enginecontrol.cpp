@@ -40,6 +40,8 @@ void EngineControl::Initialize(UCI_Client *cli, Board *b)
         connect(cli, SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
         setEnabled(true);
     }
+
+    GASSERT(cli && b);
 }
 
 void EngineControl::Uninitialize()
