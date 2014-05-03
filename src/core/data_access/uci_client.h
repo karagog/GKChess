@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include <QStringList>
 #include <QObject>
+#include <QProcess>
 
 #include "gutil_map.h"
 
@@ -175,10 +176,16 @@ signals:
     */
     void BestMove(const QByteArray &move, const QByteArray &ponder = QByteArray());
 
+    /** This signal notifies that the engine has crashed. */
+    void NotifyEngineCrashed();
+
 
 private slots:
 
     void _data_available();
+
+    void _engine_error(QProcess::ProcessError err);
+    void _engine_stopped(int);
 
 
 private:

@@ -17,7 +17,6 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include "gkchess_globals.h"
 #include "gutil_consolelogger.h"
-#include <QProcess>
 #include <QFile>
 #include <QMutex>
 #include <QWaitCondition>
@@ -37,6 +36,8 @@ struct d_t
     bool debug_output_enabled;
     bool analysis_mode;
 
+    bool unexpected_crash;
+
     // This data is protected by the lock and wait condition
     QList<QByteArray> outqueue;
     bool cancel_thread;
@@ -48,6 +49,7 @@ struct d_t
     d_t()
         :debug_output_enabled(false),
           analysis_mode(false),
+          unexpected_crash(true),
           cancel_thread(false)
     {}
 };
@@ -104,7 +106,7 @@ static QByteArray __get_option_value(const QByteArray &ba, int indx)
     return ret.trimmed();
 }
 
-static void __start_and_validate_engine(d_t *d)
+static void __start_and_validate_engine(d_t *d, bool populate_data)
 {
     if(!QFile(d->engine).exists())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "File does not exist");
@@ -121,112 +123,128 @@ static void __start_and_validate_engine(d_t *d)
 
     GASSERT(d->process.state() == QProcess::Running);
 
-    bool valid = false;
+    bool valid = true;
     QString name;
 
     d->process.write("uci\n");
     d->process.waitForReadyRead();
     QByteArray output = d->process.readAllStandardOutput();
 
-    int cur_idx = 0;
-    while(cur_idx < output.length())
+    if(populate_data)
     {
-        int nl_idx = output.indexOf('\n', cur_idx);
-        QByteArray line;
-        if(-1 != nl_idx){
-            line = output.left(nl_idx).right(nl_idx - cur_idx);
-            cur_idx = nl_idx + 1;
-        }
-
-        if(line.startsWith("id"))
+        valid = false;
+        int cur_idx = 0;
+        while(cur_idx < output.length())
         {
-            int name_idx = line.indexOf("name");
-            int author_idx = line.indexOf("author");
-
-            if(-1 != name_idx){
-                name = line.right(line.length() - (name_idx + 5));
-                d->info.Name = name;
+            int nl_idx = output.indexOf('\n', cur_idx);
+            QByteArray line;
+            if(-1 != nl_idx){
+                line = output.left(nl_idx).right(nl_idx - cur_idx);
+                cur_idx = nl_idx + 1;
             }
-            if(-1 != author_idx){
-                d->info.Author = line.right(line.length() - (author_idx + 7));
-            }
-        }
-        else if(line.startsWith("option"))
-        {
-            int name_idx = line.indexOf("name");
-            int type_idx = line.indexOf("type");
 
-            // Must have a name and type
-            if(-1 == name_idx || -1 == type_idx)
+            if(line.startsWith("id"))
+            {
+                int name_idx = line.indexOf("name");
+                int author_idx = line.indexOf("author");
+
+                if(-1 != name_idx){
+                    name = line.right(line.length() - (name_idx + 5));
+                    d->info.Name = name;
+                }
+                if(-1 != author_idx){
+                    d->info.Author = line.right(line.length() - (author_idx + 7));
+                }
+            }
+            else if(line.startsWith("option"))
+            {
+                int name_idx = line.indexOf("name");
+                int type_idx = line.indexOf("type");
+
+                // Must have a name and type
+                if(-1 == name_idx || -1 == type_idx)
+                    break;
+
+                QString opt_name = __get_option_name(line, name_idx + 5, "type");
+                QString opt_type = __get_option_value(line, type_idx + 5);
+                UCI_Client::Option_t *opt = 0;
+
+                if(opt_type == "spin")
+                {
+                    int default_idx = line.indexOf("default");
+                    int min_idx = line.indexOf("min");
+                    int max_idx = line.indexOf("max");
+                    if(-1 == default_idx || -1 == min_idx || -1 == max_idx)
+                        break;
+
+                    QString default_str = __get_option_value(line, default_idx + 8);
+                    QString min_str = __get_option_value(line, min_idx + 4);
+                    QString max_str = __get_option_value(line, max_idx + 4);
+                    opt = new UCI_Client::SpinOption(opt_name, default_str.toInt(), min_str.toInt(), max_str.toInt());
+                }
+                else if(opt_type == "string")
+                {
+                    int default_idx = line.indexOf("default");
+                    if(-1 == default_idx)
+                        break;
+
+                    QString val = __get_option_value(line, default_idx + 8);
+                    opt = new UCI_Client::StringOption(opt_name, val);
+
+                }
+                else if(opt_type == "check")
+                {
+                    int default_idx = line.indexOf("default");
+                    if(-1 == default_idx)
+                        break;
+
+                    QString val_str = __get_option_value(line, default_idx + 8);
+                    bool checked = val_str.toLower() == "true";
+                    opt = new UCI_Client::CheckOption(opt_name, checked);
+
+                    if(opt_name.toLower() == QString(UCI_ANALYSE_MODE_TAG).toLower() && checked)
+                        d->analysis_mode = true;
+                }
+                else if(opt_type == "combo")
+                {
+                    opt = new UCI_Client::ComboOption(opt_name, QStringList(), QString());
+                }
+                else if(opt_type == "button")
+                {
+                    opt = new UCI_Client::ButtonOption(opt_name);
+                }
+                else
+                {
+                    // Unrecognized option
+                    break;
+                }
+
+                if(opt)
+                    d->info.Options.Insert(opt_name, opt);
+            }
+            else if(line.startsWith("uciok"))
+            {
+                if(!name.isEmpty())
+                    valid = true;
                 break;
-
-            QString opt_name = __get_option_name(line, name_idx + 5, "type");
-            QString opt_type = __get_option_value(line, type_idx + 5);
-            UCI_Client::Option_t *opt = 0;
-
-            if(opt_type == "spin")
-            {
-                int default_idx = line.indexOf("default");
-                int min_idx = line.indexOf("min");
-                int max_idx = line.indexOf("max");
-                if(-1 == default_idx || -1 == min_idx || -1 == max_idx)
-                    break;
-
-                QString default_str = __get_option_value(line, default_idx + 8);
-                QString min_str = __get_option_value(line, min_idx + 4);
-                QString max_str = __get_option_value(line, max_idx + 4);
-                opt = new UCI_Client::SpinOption(opt_name, default_str.toInt(), min_str.toInt(), max_str.toInt());
             }
-            else if(opt_type == "string")
-            {
-                int default_idx = line.indexOf("default");
-                if(-1 == default_idx)
-                    break;
-
-                QString val = __get_option_value(line, default_idx + 8);
-                opt = new UCI_Client::StringOption(opt_name, val);
-
-            }
-            else if(opt_type == "check")
-            {
-                int default_idx = line.indexOf("default");
-                if(-1 == default_idx)
-                    break;
-
-                QString val_str = __get_option_value(line, default_idx + 8);
-                bool checked = val_str.toLower() == "true";
-                opt = new UCI_Client::CheckOption(opt_name, checked);
-
-                if(opt_name.toLower() == QString(UCI_ANALYSE_MODE_TAG).toLower() && checked)
-                    d->analysis_mode = true;
-            }
-            else if(opt_type == "combo")
-            {
-                opt = new UCI_Client::ComboOption(opt_name, QStringList(), QString());
-            }
-            else if(opt_type == "button")
-            {
-                opt = new UCI_Client::ButtonOption(opt_name);
-            }
-            else
-            {
-                // Unrecognized option
-                break;
-            }
-
-            if(opt)
-                d->info.Options.Insert(opt_name, opt);
-        }
-        else if(line.startsWith("uciok"))
-        {
-            if(!name.isEmpty())
-                valid = true;
-            break;
         }
     }
 
     if(!valid)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The engine is not UCI compatible");
+
+    d->process.write("isready\n");
+    d->process.waitForReadyRead();
+    char ba[32];
+    bool ready_ok = false;
+
+    qint64 len = d->process.readLine(ba, sizeof(ba));
+    while(0 < len && !(ready_ok = QByteArray(ba).contains("readyok"))){
+        len = d->process.readLine(ba, sizeof(ba));
+    }
+    if(!ready_ok)
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to get ready");
 }
 
 UCI_Client::UCI_Client(const QString &path_to_engine, QObject *parent)
@@ -238,26 +256,24 @@ UCI_Client::UCI_Client(const QString &path_to_engine, QObject *parent)
     d->engine = path_to_engine;
 
     // Initialize the engine; this class is useless without a working engine
-    __start_and_validate_engine(d);
+    __start_and_validate_engine(d, true);
 
-    d->process.write("isready\n");
-    d->process.waitForReadyRead();
-    QByteArray ba = d->process.readLine();
-    while(0 < ba.length() && !ba.contains("readyok")){
-        ba = d->process.readLine();
-    }
-    if(!ba.contains("readyok")){
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to get ready");
-    }
+    // Make necessary connections to the process
+    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+    connect(&d->process, SIGNAL(error(QProcess::ProcessError)),
+            this, SLOT(_engine_error(QProcess::ProcessError)));
+    connect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
 
     // Start the background worker
-    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
     d->writer_thread = QtConcurrent::run(this, &UCI_Client::_writer_thread);
 }
 
 UCI_Client::~UCI_Client()
 {
     G_D;
+    d->unexpected_crash = false;
+    _append_to_write_queue("quit");
+
     d->lock.lock();
     d->cancel_thread = true;
     d->wc.wakeOne();
@@ -309,15 +325,52 @@ bool UCI_Client::GetAnalysisMode() const
     return d->analysis_mode;
 }
 
+void UCI_Client::_engine_error(QProcess::ProcessError err)
+{
+    G_D;
+    switch(err)
+    {
+    case QProcess::WriteError:
+    case QProcess::ReadError:
+    case QProcess::Timedout:
+        // kill the process if it's timing out
+        d->process.kill();
+    default:break;
+    }
+}
+
+void UCI_Client::_engine_stopped(int ec)
+{
+    G_D;
+    GUTIL_UNUSED(ec);
+    if(d->unexpected_crash)
+    {
+        // Have to disconnect this while we restart the engine
+        disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+
+        emit NotifyEngineCrashed();
+        __start_and_validate_engine(d, false);
+
+        connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+
+        // Wake up the background thread if it was waiting to do a command
+        d->wc.wakeOne();
+    }
+}
+
 void UCI_Client::_writer_thread()
 {
     G_D;
     d->lock.lock();
     while(!d->cancel_thread)
     {
-        while(!d->cancel_thread && d->outqueue.length() == 0){
+        while(!d->cancel_thread &&
+              (d->process.state() != QProcess::Running || d->outqueue.length() == 0)){
             d->wc.wait(&d->lock);
         }
+
+        if(d->process.state() != QProcess::Running)
+            continue;
 
         // Write any data to the engine
         while(0 < d->outqueue.length())
@@ -345,8 +398,10 @@ void UCI_Client::_data_available()
         // remove the new line at the end (can be CR or LF or any combination)
         if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
             ba.chop(1);
-        if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
-            ba.chop(1);
+        if(0 < ba.length()){
+            if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
+                ba.chop(1);
+        }
 
         emit MessageReceived(ba);
 

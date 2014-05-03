@@ -59,6 +59,7 @@ public slots:
 private slots:
 
     void _msg_rx(const QByteArray &);
+    void _engine_crashed();
 
 };
 

@@ -37,6 +37,7 @@ void EngineControl::Initialize(UCI_Client *cli, Board *b)
         m_uci = cli;
         m_board = b;
         connect(cli, SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
+        connect(cli, SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
         setEnabled(true);
     }
 }
@@ -45,6 +46,7 @@ void EngineControl::Uninitialize()
 {
     if(IsInitialized())
     {
+        disconnect(m_uci, SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
         disconnect(m_uci, SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
         m_uci = 0;
         m_board = 0;
@@ -83,6 +85,11 @@ void EngineControl::Stop()
 void EngineControl::_msg_rx(const QByteArray &line)
 {
     ui->tb_engineLog->append(line);
+}
+
+void EngineControl::_engine_crashed()
+{
+    ui->tb_engineLog->append("*** ENGINE CRASHED ***");
 }
 
 
