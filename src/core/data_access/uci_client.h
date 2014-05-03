@@ -133,11 +133,15 @@ public:
     /** Parameters to the Go() function. */
     struct GoParams
     {
+        int MoveTime;
 
+        GoParams()
+            :MoveTime(-1)
+        {}
     };
 
     /** Tells the engine to start thinking about the best move. */
-    void Go(const GoParams &);
+    void Go(const GoParams & = GoParams());
 
     /** Tells the engine to stop thinking. */
     void Stop();
@@ -165,6 +169,8 @@ private slots:
 private:
 
     void _writer_thread();
+
+    void _append_to_write_queue(const QByteArray &);
 
 };
 

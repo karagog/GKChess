@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_board.h"
 #include "gkchess_coloredpieceiconfactory.h"
+#include "gkchess_uci_client.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -29,6 +30,7 @@ class MainWindow : public QMainWindow
 
     Ui::MainWindow *ui;
     GKChess::ObservableBoard m_board;
+    GKChess::UCI_Client *m_uci;
 
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
@@ -37,6 +39,8 @@ public:
     ~MainWindow();
 
 private slots:
+
+    void _engine_message_received(const QByteArray &);
 
 #ifdef DEBUG
     void _piece_moved(const GKChess::MoveData &);

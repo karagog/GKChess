@@ -323,6 +323,12 @@ void UCI_Client::_data_available()
     QByteArray ba = d->process.readLine();
     while(0 < ba.length())
     {
+        // remove the new line at the end (can be CR or LF or any combination)
+        if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
+            ba.chop(1);
+        if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
+            ba.chop(1);
+
         emit MessageReceived(ba);
 
         if(ba.contains("bestmove"))
@@ -349,7 +355,31 @@ void UCI_Client::SetPosition(const QByteArray &data)
 {
     G_D;
     d->lock.lock();
-    d->outqueue.append(QString("position %s\n").arg(data).toUtf8());
+    d->outqueue.append(QString("position fen %1\n").arg(data.constData()).toUtf8());
+    d->lock.unlock();
+    d->wc.wakeOne();
+}
+
+void UCI_Client::Go(const UCI_Client::GoParams &params)
+{
+    QString str = "go ";
+    if(-1 == params.MoveTime)
+        str.append("infinite");
+    else
+        str.append(QString("movetime %1").arg(params.MoveTime));
+    _append_to_write_queue((str + "\n").toUtf8());
+}
+
+void UCI_Client::Stop()
+{
+    _append_to_write_queue("stop\n");
+}
+
+void UCI_Client::_append_to_write_queue(const QByteArray &ba)
+{
+    G_D;
+    d->lock.lock();
+    d->outqueue.append(ba);
     d->lock.unlock();
     d->wc.wakeOne();
 }
