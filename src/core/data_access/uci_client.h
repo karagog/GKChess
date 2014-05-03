@@ -124,6 +124,9 @@ public:
     void SetDebugOutputEnabled(bool);
     bool GetDebugOutputEnabled() const;
 
+    void SetAnalysisMode(bool);
+    bool GetAnalysisMode() const;
+
     /** Sets the position for the engine to work on.
      *  This can be "startpos" or a FEN string
     */

@@ -26,6 +26,8 @@ USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
 
+#define UCI_ANALYSE_MODE_TAG "UCI_AnalyseMode"
+
 
 struct d_t
 {
@@ -33,6 +35,7 @@ struct d_t
     QProcess process;
     UCI_Client::EngineInfo info;
     bool debug_output_enabled;
+    bool analysis_mode;
 
     // This data is protected by the lock and wait condition
     QList<QByteArray> outqueue;
@@ -44,6 +47,7 @@ struct d_t
 
     d_t()
         :debug_output_enabled(false),
+          analysis_mode(false),
           cancel_thread(false)
     {}
 };
@@ -100,29 +104,29 @@ static QByteArray __get_option_value(const QByteArray &ba, int indx)
     return ret.trimmed();
 }
 
-static void __start_and_validate_engine(QProcess &p, const QString &e, UCI_Client::EngineInfo &info)
+static void __start_and_validate_engine(d_t *d)
 {
-    if(!QFile(e).exists())
+    if(!QFile(d->engine).exists())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "File does not exist");
 
-    p.setReadChannel(QProcess::StandardOutput);
+    d->process.setReadChannel(QProcess::StandardOutput);
     //p.setProcessChannelMode(QProcess::MergedChannels);
-    p.start(e);
-    if(!p.waitForStarted())
+    d->process.start(d->engine);
+    if(!d->process.waitForStarted())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to start");
 
     // Ignore the first bit of junk the engine sends
-    p.waitForReadyRead();
-    p.readAllStandardOutput();
+    d->process.waitForReadyRead();
+    d->process.readAllStandardOutput();
 
-    GASSERT(p.state() == QProcess::Running);
+    GASSERT(d->process.state() == QProcess::Running);
 
     bool valid = false;
     QString name;
 
-    p.write("uci\n");
-    p.waitForReadyRead();
-    QByteArray output = p.readAllStandardOutput();
+    d->process.write("uci\n");
+    d->process.waitForReadyRead();
+    QByteArray output = d->process.readAllStandardOutput();
 
     int cur_idx = 0;
     while(cur_idx < output.length())
@@ -141,10 +145,10 @@ static void __start_and_validate_engine(QProcess &p, const QString &e, UCI_Clien
 
             if(-1 != name_idx){
                 name = line.right(line.length() - (name_idx + 5));
-                info.Name = name;
+                d->info.Name = name;
             }
             if(-1 != author_idx){
-                info.Author = line.right(line.length() - (author_idx + 7));
+                d->info.Author = line.right(line.length() - (author_idx + 7));
             }
         }
         else if(line.startsWith("option"))
@@ -181,6 +185,7 @@ static void __start_and_validate_engine(QProcess &p, const QString &e, UCI_Clien
 
                 QString val = __get_option_value(line, default_idx + 8);
                 opt = new UCI_Client::StringOption(opt_name, val);
+
             }
             else if(opt_type == "check")
             {
@@ -189,7 +194,11 @@ static void __start_and_validate_engine(QProcess &p, const QString &e, UCI_Clien
                     break;
 
                 QString val_str = __get_option_value(line, default_idx + 8);
-                opt = new UCI_Client::CheckOption(opt_name, val_str.toLower() == "true");
+                bool checked = val_str.toLower() == "true";
+                opt = new UCI_Client::CheckOption(opt_name, checked);
+
+                if(opt_name.toLower() == QString(UCI_ANALYSE_MODE_TAG).toLower() && checked)
+                    d->analysis_mode = true;
             }
             else if(opt_type == "combo")
             {
@@ -206,7 +215,7 @@ static void __start_and_validate_engine(QProcess &p, const QString &e, UCI_Clien
             }
 
             if(opt)
-                info.Options.Insert(opt_name, opt);
+                d->info.Options.Insert(opt_name, opt);
         }
         else if(line.startsWith("uciok"))
         {
@@ -229,7 +238,7 @@ UCI_Client::UCI_Client(const QString &path_to_engine, QObject *parent)
     d->engine = path_to_engine;
 
     // Initialize the engine; this class is useless without a working engine
-    __start_and_validate_engine(d->process, d->engine, d->info);
+    __start_and_validate_engine(d);
 
     d->process.write("isready\n");
     d->process.waitForReadyRead();
@@ -278,16 +287,26 @@ void UCI_Client::SetDebugOutputEnabled(bool e)
 {
     G_D;
     d->debug_output_enabled = e;
-    d->lock.lock();
-    d->outqueue.append(QString("debug %1\n").arg(e ? "on" : "off").toUtf8());
-    d->lock.unlock();
-    d->wc.wakeOne();
+    _append_to_write_queue(QString("debug %1").arg(e ? "on" : "off").toUtf8());
 }
 
 bool UCI_Client::GetDebugOutputEnabled() const
 {
     G_D;
     return d->debug_output_enabled;
+}
+
+void UCI_Client::SetAnalysisMode(bool b)
+{
+    G_D;
+    d->analysis_mode = b;
+    _append_to_write_queue(QString("setoption name "UCI_ANALYSE_MODE_TAG" value %1").arg(b ? "true" : "false").toUtf8());
+}
+
+bool UCI_Client::GetAnalysisMode() const
+{
+    G_D;
+    return d->analysis_mode;
 }
 
 void UCI_Client::_writer_thread()
@@ -309,7 +328,7 @@ void UCI_Client::_writer_thread()
             d->lock.unlock();
             {
                 // Slow task: Have to write data to the engine
-                d->process.write(str);
+                d->process.write(str + '\n');
             }
             d->lock.lock();
         }
@@ -355,7 +374,7 @@ void UCI_Client::SetPosition(const QByteArray &data)
 {
     G_D;
     d->lock.lock();
-    d->outqueue.append(QString("position fen %1\n").arg(data.constData()).toUtf8());
+    d->outqueue.append(QString("position fen %1").arg(data.constData()).toUtf8());
     d->lock.unlock();
     d->wc.wakeOne();
 }
@@ -367,12 +386,12 @@ void UCI_Client::Go(const UCI_Client::GoParams &params)
         str.append("infinite");
     else
         str.append(QString("movetime %1").arg(params.MoveTime));
-    _append_to_write_queue((str + "\n").toUtf8());
+    _append_to_write_queue(str.toUtf8());
 }
 
 void UCI_Client::Stop()
 {
-    _append_to_write_queue("stop\n");
+    _append_to_write_queue("stop");
 }
 
 void UCI_Client::_append_to_write_queue(const QByteArray &ba)

@@ -36,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_uci = new UCI_Client("/usr/games/stockfish");
     connect(m_uci, SIGNAL(MessageReceived(QByteArray)), this, SLOT(_engine_message_received(QByteArray)));
 
+    //m_uci->SetAnalysisMode(true);
+
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
             this, SLOT(_piece_moved(GKChess::MoveData)));
