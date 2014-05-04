@@ -1086,6 +1086,73 @@ Vector<Square const *> Board::GetValidMovesForSquare(const Square &) const
     return ret;
 }
 
+static Square const *__get_source_square(const Board &b,
+                                         char piece_moved,
+                                         Square const *dest,
+                                         Piece::AllegienceEnum a,
+                                         GINT8 given_file_info,
+                                         GINT8 given_rank_info)
+{
+    Square const *ret = 0;
+    Vector<Square const *> possible_sources( b.FindPieces(Piece(Piece::GetTypeFromPGN(piece_moved), a)) );
+    for(GINT32 i = 0; i < possible_sources.Length(); ++i)
+    {
+        Square const *s = possible_sources[i];
+
+        bool valid = false;
+        switch(piece_moved)
+        {
+        case 'B':
+            valid = __is_move_valid_for_bishop(b, s, dest, a);
+            break;
+        case 'N':
+            valid = __is_move_valid_for_knight(b, s, dest, a);
+            break;
+        case 'Q':
+            valid = __is_move_valid_for_queen(b, s, dest, a);
+            break;
+        case 'R':
+            valid = __is_move_valid_for_rook(b, s, dest, a);
+            break;
+        default:
+            GASSERT(false);
+        }
+
+        if(valid)
+        {
+            if(-1 != given_file_info && -1 != given_rank_info)
+            {
+                if(s->GetColumn() == given_file_info && s->GetRow() == given_rank_info){
+                    ret = s;
+                    break;
+                }
+            }
+            else if(-1 != given_file_info)
+            {
+                if(s->GetColumn() == given_file_info){
+                    ret = s;
+                    break;
+                }
+            }
+            else if(-1 != given_rank_info)
+            {
+                if(s->GetRow() == given_rank_info){
+                    ret = s;
+                    break;
+                }
+            }
+            else
+            {
+                if(NULL != ret)
+                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
+
+                ret = s;
+            }
+        }
+    }
+    return ret;
+}
+
 MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
 {
     MoveData ret;
@@ -1192,6 +1259,8 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         }
         else
         {
+            int tmp_source_rank = 0 == m.SourceRank ? -1 : m.SourceRank - 1;
+
             // If the source was not specified explicitly then we need to search
             //  with whatever information we've got
 
@@ -1273,115 +1342,11 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                 }
 
                 break;
-            case 'N':
-            {
-                // Knights are easy, because they cannot be blocked. If they are in range of
-                //  the square then it is a valid move.
-                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
-                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
-                {
-                    Square const *s = possible_sources[i];
-
-                    if(__is_move_valid_for_knight(*this, s, ret.Destination, turn))
-                    {
-                        if(-1 != tmp_source_column)
-                        {
-                            if(s->GetColumn() == tmp_source_column){
-                                ret.Source = s;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if(NULL != ret.Source)
-                                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
-
-                            ret.Source = s;
-                        }
-                    }
-                }
-            }
-                break;
-            case 'B':
-            {
-                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
-                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
-                {
-                    Square const *s = possible_sources[i];
-
-                    if(__is_move_valid_for_bishop(*this, s, ret.Destination, turn))
-                    {
-                        if(-1 != tmp_source_column)
-                        {
-                            if(s->GetColumn() == tmp_source_column){
-                                ret.Source = s;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if(NULL != ret.Source)
-                                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
-
-                            ret.Source = s;
-                        }
-                    }
-                }
-            }
-                break;
             case 'R':
-            {
-                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
-                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
-                {
-                    Square const *s = possible_sources[i];
-
-                    if(__is_move_valid_for_rook(*this, s, ret.Destination, turn))
-                    {
-                        if(-1 != tmp_source_column)
-                        {
-                            if(s->GetColumn() == tmp_source_column){
-                                ret.Source = s;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if(NULL != ret.Source)
-                                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
-
-                            ret.Source = s;
-                        }
-                    }
-                }
-            }
-                break;
+            case 'N':
+            case 'B':
             case 'Q':
-            {
-                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
-                for(GINT32 i = 0; i < possible_sources.Length(); ++i)
-                {
-                    Square const *s = possible_sources[i];
-
-                    if(__is_move_valid_for_queen(*this, s, ret.Destination, turn))
-                    {
-                        if(-1 != tmp_source_column)
-                        {
-                            if(s->GetColumn() == tmp_source_column){
-                                ret.Source = s;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if(NULL != ret.Source)
-                                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
-
-                            ret.Source = s;
-                        }
-                    }
-                }
-            }
+                ret.Source = __get_source_square(*this, m.PieceMoved, ret.Destination, turn, tmp_source_column, tmp_source_rank);
                 break;
             case 'K':
             {
