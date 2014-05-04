@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_board(),
       //m_board(10),
       m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
-      //m_uci(new UCI_Client("/usr/games/stockfish")),
+      m_uci(new UCI_Client("/usr/games/stockfish")),
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
@@ -51,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    //ui->engine_control->Initialize(m_uci, &m_board);
+    ui->engine_control->Initialize(m_uci, &m_board);
 
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),

@@ -20,14 +20,18 @@ limitations under the License.*/
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
 
-NAMESPACE_GKCHESS1(UI);
 
-
+namespace{
 struct d_t
 {
     Ui::PGN_PlayerControl *ui;
     PGN_Player *player;
 };
+}
+
+
+NAMESPACE_GKCHESS1(UI);
+
 
 PGN_PlayerControl::PGN_PlayerControl(Board *b, QWidget *parent)
     :QWidget(parent)

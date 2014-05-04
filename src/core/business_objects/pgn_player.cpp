@@ -17,15 +17,13 @@ limitations under the License.*/
 #include "board.h"
 USING_NAMESPACE_GUTIL;
 
-NAMESPACE_GKCHESS;
-
-
+namespace{
 struct d_t
 {
-    Board *board;
+    GKChess::Board *board;
     String pgn_text;
-    PGN_GameData game_data;
-    List<MoveData> move_data;
+    GKChess::PGN_GameData game_data;
+    List<GKChess::MoveData> move_data;
 
     int move_index;
 
@@ -33,6 +31,9 @@ struct d_t
         :move_index(-1)
     {}
 };
+}
+
+NAMESPACE_GKCHESS;
 
 
 PGN_Player::PGN_Player(Board *b)

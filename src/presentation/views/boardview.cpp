@@ -39,13 +39,17 @@ USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
 
-NAMESPACE_GKCHESS1(UI);
 
-
+namespace{
 struct d_t
 {
     BoardView_p BoardView;
 };
+}
+
+
+NAMESPACE_GKCHESS1(UI);
+
 
 // Converts a square to a QModelIndex
 #define stoi(square_ptr)    d->BoardView.model() ? \

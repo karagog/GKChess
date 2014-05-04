@@ -23,16 +23,13 @@ limitations under the License.*/
 #include <QtConcurrentRun>
 USING_NAMESPACE_GUTIL;
 
-NAMESPACE_GKCHESS;
 
-#define UCI_ANALYSE_MODE_TAG "UCI_AnalyseMode"
-
-
+namespace{
 struct d_t
 {
     QString engine;
     QProcess process;
-    UCI_Client::EngineInfo info;
+    GKChess::UCI_Client::EngineInfo info;
     bool debug_output_enabled;
     bool analysis_mode;
 
@@ -53,6 +50,12 @@ struct d_t
           cancel_thread(false)
     {}
 };
+}
+
+
+NAMESPACE_GKCHESS;
+
+#define UCI_ANALYSE_MODE_TAG "UCI_AnalyseMode"
 
 
 static QByteArray __get_next_token(const QByteArray &ba, int indx)
