@@ -806,7 +806,7 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
         return;
 
     QModelIndex ind = indexAt(ev->pos());
-    if(ind.isValid())
+    if(ind.isValid() && ev->button() == Qt::LeftButton)
     {
         QPoint p(ev->pos());
         Piece target_piece = ind.data(BoardModel_p::PieceRole).value<Piece>();

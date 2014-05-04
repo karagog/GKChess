@@ -52,6 +52,8 @@ private:
 
     void _load_fen_string(const GUtil::String &);
 
+    bool eventFilter(QObject *, QEvent *);
+
 };
 
 #endif // MAINWINDOW_H

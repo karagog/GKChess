@@ -16,6 +16,7 @@ limitations under the License.*/
 #include "ui_mainwindow.h"
 #include "gkchess_pgn_parser.h"
 #include <QClipboard>
+#include <QContextMenuEvent>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
@@ -28,6 +29,8 @@ MainWindow::MainWindow(QWidget *parent)
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
+
+    ui->boardView->installEventFilter(this);
 
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
     connect(ui->actionLoad_FEN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_fen_clipboard()));
@@ -56,6 +59,33 @@ MainWindow::~MainWindow()
 {
     delete ui;
     delete m_uci;
+}
+
+bool MainWindow::eventFilter(QObject *o, QEvent *ev)
+{
+    bool ret = false;
+    if(o == ui->boardView)
+    {
+        switch(ev->type())
+        {
+        case QEvent::ContextMenu:
+        {
+            // Display the context menu:
+            QContextMenuEvent *cmev = static_cast<QContextMenuEvent *>(ev);
+
+            QMenu *menu = new QMenu(this);
+            menu->addMenu(ui->menu_Load_Position);
+            menu->move(cmev->globalPos());
+            menu->show();
+
+            ev->accept();
+            ret = true;
+        }
+            break;
+        default: break;
+        }
+    }
+    return ret;
 }
 
 static QString __get_clipboard_data()
