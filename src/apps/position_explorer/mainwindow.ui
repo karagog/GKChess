@@ -36,6 +36,23 @@
      <height>20</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <widget class="QMenu" name="menu_Load_Position">
+     <property name="title">
+      <string>&amp;Load Position</string>
+     </property>
+     <addaction name="actionLoad_FEN_in_Clipboard"/>
+     <addaction name="actionLoad_PGN_in_Clipboard"/>
+     <addaction name="actionLoadPGN_File"/>
+    </widget>
+    <addaction name="menu_Load_Position"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
+   </widget>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -91,6 +108,26 @@
     </layout>
    </widget>
   </widget>
+  <action name="actionLoad_FEN_in_Clipboard">
+   <property name="text">
+    <string>&amp;FEN String in Clipboard</string>
+   </property>
+  </action>
+  <action name="actionLoad_PGN_in_Clipboard">
+   <property name="text">
+    <string>&amp;PGN String in Clipboard</string>
+   </property>
+  </action>
+  <action name="actionLoadPGN_File">
+   <property name="text">
+    <string>PGN File</string>
+   </property>
+  </action>
+  <action name="actionQuit">
+   <property name="text">
+    <string>&amp;Quit</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>

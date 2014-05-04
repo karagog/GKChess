@@ -41,9 +41,17 @@ public:
 
 private slots:
 
+    void _load_fen_clipboard();
+
 #ifdef DEBUG
     void _piece_moved(const GKChess::MoveData &);
 #endif
+
+
+private:
+
+    void _load_fen_string(const GUtil::String &);
+
 };
 
 #endif // MAINWINDOW_H

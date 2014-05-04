@@ -43,6 +43,12 @@ Board::piece_index_t::piece_index_t()
 
 void Board::piece_index_t::copy_from(const piece_index_t &o, const Board &b)
 {
+    int probe1 = sizeof(pieces);
+    int probe2 = sizeof(pieces[0]);
+    int probe3 = probe1 / probe2;
+
+    int probe4 = sizeof(pieces[0][0]);
+    int probe5 = probe2/probe4;
     for(GUINT32 i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i)
     {
         for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j)
@@ -105,8 +111,8 @@ void Board::piece_index_t::update_piece(const Piece &p,
 
 void Board::piece_index_t::clear()
 {
-    for(int i = 0; i < 2; ++i){
-        for(int j = 0; j < 2; ++j){
+    for(int i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i){
+        for(int j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j){
             pieces[i][j].Empty();
         }
     }
@@ -148,7 +154,7 @@ Board::Board(const Board &o)
 Board &Board::operator = (const Board &o)
 {
     m_index.clear();
-    _copy_construct(o);
+    _copy_board(o);
     return *this;
 }
 
@@ -1579,7 +1585,9 @@ ObservableBoard::ObservableBoard(const Board &o)
 
 ObservableBoard &ObservableBoard::operator = (const Board &o)
 {
-    return static_cast<ObservableBoard &>(Board::operator = (o));
+    Board::operator = (o);
+    emit NotifyBoardReset();
+    return *this;
 }
 
 ObservableBoard::~ObservableBoard()

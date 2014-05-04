@@ -15,6 +15,8 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "gkchess_pgn_parser.h"
+#include <QClipboard>
+USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 
 MainWindow::MainWindow(QWidget *parent)
@@ -26,6 +28,9 @@ MainWindow::MainWindow(QWidget *parent)
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
+
+    connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
+    connect(ui->actionLoad_FEN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_fen_clipboard()));
 
     m_board.SetupNewGame(Board::SetupStandardChess);
     //m_board.SetupNewGame(Board::SetupChess960);
@@ -52,6 +57,29 @@ MainWindow::~MainWindow()
     delete ui;
     delete m_uci;
 }
+
+static QString __get_clipboard_data()
+{
+    return QApplication::clipboard() ? QApplication::clipboard()->text() : QString();
+}
+
+void MainWindow::_load_fen_clipboard()
+{
+    return _load_fen_string(String::FromQString(__get_clipboard_data().trimmed()));
+}
+
+void MainWindow::_load_fen_string(const String &s)
+{
+    Board new_board;
+    new_board.FromFEN(s);
+
+    // We assign only after making sure that the fen string is correct
+    m_board = new_board;
+}
+
+
+
+
 
 #ifdef DEBUG
 void MainWindow::_piece_moved(const GKChess::MoveData &)

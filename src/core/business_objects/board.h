@@ -403,6 +403,11 @@ signals:
     /** This signal is emitted whenever a piece is moved with the Move() function. */
     void NotifyPieceMoved(const GKChess::MoveData &);
 
+    /** This signals is emitted whenever the whole board's position was changed. That is better
+     *  than notifying that all squares were updated individually.
+    */
+    void NotifyBoardReset();
+
     /** This signal is emitted after a side resigns. */
     void NotifyResignation(Piece::AllegienceEnum);
 

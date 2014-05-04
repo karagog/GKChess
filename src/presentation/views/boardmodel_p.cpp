@@ -28,6 +28,7 @@ BoardModel_p::BoardModel_p(ObservableBoard *b, QObject *parent)
             this, SLOT(_square_updated(const GKChess::Square &)));
     connect(b, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
             this, SLOT(_piece_moved(const GKChess::MoveData &)));
+    connect(b, SIGNAL(NotifyBoardReset()), this, SLOT(_board_updated()));
 }
 
 Square const *BoardModel_p::ConvertIndexToSquare(const QModelIndex &i) const
@@ -225,6 +226,11 @@ void BoardModel_p::_piece_moved(const MoveData &md)
     //  but they are always along the rank of the source square.
     emit dataChanged(index(md.Source->GetRow(), 0), index(md.Source->GetRow(), columnCount() - 1));
     emit dataChanged(i, i);
+}
+
+void BoardModel_p::_board_updated()
+{
+    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
 Qt::ItemFlags BoardModel_p::flags(const QModelIndex &ind) const

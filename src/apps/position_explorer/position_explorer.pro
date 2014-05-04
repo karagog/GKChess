@@ -15,6 +15,7 @@ TOP_DIR = ../../..
 
 DESTDIR = $$TOP_DIR/bin
 DEFINES += DEBUG
+DEFINES += GUTIL_CORE_QT_ADAPTERS
 
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \
