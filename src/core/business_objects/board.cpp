@@ -1120,6 +1120,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             THROW_NEW_GUTIL_EXCEPTION(Exception);
         ret.Source = v[0];
         ret.Destination = &SquareAt(rook_loc, v[0]->GetRow());
+        ret.PieceMoved = Piece(Piece::King, turn);
     }
     else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
     {
@@ -1145,6 +1146,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             THROW_NEW_GUTIL_EXCEPTION(Exception);
         ret.Source = v[0];
         ret.Destination = &SquareAt(rook_loc, v[0]->GetRow());
+        ret.PieceMoved = Piece(Piece::King, turn);
     }
     else
     {
@@ -1459,7 +1461,7 @@ MoveData Board::GenerateMoveData(const Square &s,
         if(!s.GetPiece().IsNull())
             ret.PieceMoved = s.GetPiece();
 
-        if(!d.GetPiece().IsNull())
+        if(!d.GetPiece().IsNull() && ret.CastleType == MoveData::NoCastle)
             ret.PieceCaptured = d.GetPiece();
     }
 

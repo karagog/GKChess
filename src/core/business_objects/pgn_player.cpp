@@ -101,29 +101,21 @@ void PGN_Player::LoadPGN(const String &s)
         List<MoveData> move_data;
         const PGN_GameData &gd = games[0];
 
-        // We need to create a list of move data from the pgn data
-
-        // This temporary board will help us simulate the game and populate all the positions reached
-        Board b;
-
         // Set the initial position of the board
         if(gd.Tags.Contains("setup") && gd.Tags.At("setup") == "1"){
             GASSERT(gd.Tags.Contains("fen"));
-            b.FromFEN(gd.Tags.At("fen"));
+            d->board->FromFEN(gd.Tags.At("fen"));
         }
         else
-            b.SetupNewGame(Board::SetupStandardChess);
+            d->board->SetupNewGame(Board::SetupStandardChess);
 
-        __add_move_data(b, move_data, gd.Moves);
+        // We need to create a list of move data from the pgn data
+        __add_move_data(*d->board, move_data, gd.Moves);
+
         d->pgn_text = s;
         d->game_data = gd;
         d->move_data = move_data;
         d->move_index = move_data.Length() - 1;
-
-        if(d->move_index > 0){
-            d->board->FromFEN(d->move_data[d->move_index].Position);
-            d->board->Move(d->move_data[d->move_index]);
-        }
     }
 }
 
@@ -147,26 +139,28 @@ void PGN_Player::Next()
 void PGN_Player::Previous()
 {
     G_D;
-    if(d->move_index > 0){
-        --(d->move_index);
+    if(d->move_index >= 0){
         d->board->FromFEN(d->move_data[d->move_index].Position);
-        d->board->Move(d->move_data[d->move_index]);
+        --(d->move_index);
     }
 }
 
 void PGN_Player::First()
 {
     G_D;
-    if(d->move_data.Length() > 0)
+    if(d->move_data.Length() > 0){
+        d->move_index = -1;
         d->board->FromFEN(d->move_data[0].Position);
+    }
 }
 
 void PGN_Player::Last()
 {
     G_D;
     if(d->move_data.Length() > 0){
-        d->board->FromFEN(d->move_data[d->move_data.Length() - 1].Position);
-        d->board->Move(d->move_data[d->move_data.Length() - 1]);
+        d->move_index = d->move_data.Length() - 1;
+        d->board->FromFEN(d->move_data[d->move_index].Position);
+        d->board->Move(d->move_data[d->move_index]);
     }
 }
 

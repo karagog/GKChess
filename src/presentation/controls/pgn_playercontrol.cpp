@@ -36,6 +36,7 @@ PGN_PlayerControl::PGN_PlayerControl(Board *b, QWidget *parent)
     G_D;
     d->ui = new Ui::PGN_PlayerControl;
     d->ui->setupUi(this);
+    setEnabled(false);
     d->player = new PGN_Player(b);
 }
 
@@ -59,11 +60,23 @@ void PGN_PlayerControl::LoadPGN(const String &s)
                                   .arg(pgd.Tags.At("black")));
 
     if(pgd.Tags.Contains("date"))
-        d->ui->lbl_date->setText(pgd.Tags.At("date"));
+        d->ui->lbl_date->setText(QString("Date: %1").arg(pgd.Tags.At("date")));
     if(pgd.Tags.Contains("result"))
-        d->ui->lbl_result->setText(pgd.Tags.At("result"));
+        d->ui->lbl_result->setText(QString("Result: %1").arg(pgd.Tags.At("result")));
 
     d->ui->pgn_view->setText(d->player->GetPGNText());
+    setEnabled(true);
+}
+
+void PGN_PlayerControl::Clear()
+{
+    G_D;
+    d->player->Clear();
+    d->ui->pgn_view->clear();
+    d->ui->lbl_title->clear();
+    d->ui->lbl_date->clear();
+    d->ui->lbl_result->clear();
+    setEnabled(false);
 }
 
 void PGN_PlayerControl::GotoNext()

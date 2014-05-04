@@ -43,7 +43,7 @@ public:
     /** Loads the pgn string. */
     void LoadPGN(const GUtil::String &);
 
-    /** Returns game data used by the player.  This will be empty if data has not been set. */
+    /** Returns move data used by the player. */
     GUtil::List<MoveData> const &GetMoveData() const;
 
     /** Returns the pgn game data used by the player. This stores more meta-data about the game, like

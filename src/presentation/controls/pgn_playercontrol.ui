@@ -16,8 +16,15 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="lbl_title">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="text">
-      <string>Match Title</string>
+      <string/>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -27,14 +34,14 @@
    <item>
     <widget class="QLabel" name="lbl_date">
      <property name="text">
-      <string>Date</string>
+      <string/>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QLabel" name="lbl_result">
      <property name="text">
-      <string>Result</string>
+      <string/>
      </property>
     </widget>
    </item>

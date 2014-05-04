@@ -33,7 +33,11 @@ public:
     explicit PGN_PlayerControl(Board *, QWidget *parent = 0);
     ~PGN_PlayerControl();
 
+    /** Loads the PGN string into the player.  Nothing will work until you call this. */
     void LoadPGN(const GUtil::String &);
+
+    /** Removes all data from the player and disables it. */
+    void Clear();
 
 
 public slots:
