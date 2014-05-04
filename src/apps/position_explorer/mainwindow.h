@@ -42,6 +42,7 @@ public:
 private slots:
 
     void _load_fen_clipboard();
+    void _load_pgn_clipboard();
 
 #ifdef DEBUG
     void _piece_moved(const GKChess::MoveData &);
@@ -51,6 +52,7 @@ private slots:
 private:
 
     void _load_fen_string(const GUtil::String &);
+    void _load_pgn_string(const GUtil::String &);
 
     bool eventFilter(QObject *, QEvent *);
 

@@ -34,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
     connect(ui->actionLoad_FEN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_fen_clipboard()));
+    connect(ui->actionLoad_PGN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_pgn_clipboard()));
 
     m_board.SetupNewGame(Board::SetupStandardChess);
     //m_board.SetupNewGame(Board::SetupChess960);
@@ -98,6 +99,11 @@ void MainWindow::_load_fen_clipboard()
     return _load_fen_string(String::FromQString(__get_clipboard_data().trimmed()));
 }
 
+void MainWindow::_load_pgn_clipboard()
+{
+    return _load_pgn_string(String::FromQString(__get_clipboard_data().trimmed()));
+}
+
 void MainWindow::_load_fen_string(const String &s)
 {
     Board new_board;
@@ -105,6 +111,11 @@ void MainWindow::_load_fen_string(const String &s)
 
     // We assign only after making sure that the fen string is correct
     m_board = new_board;
+}
+
+void MainWindow::_load_pgn_string(const String &s)
+{
+
 }
 
 
