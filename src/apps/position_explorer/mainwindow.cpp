@@ -15,20 +15,29 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "gkchess_pgn_parser.h"
+#include "gkchess_pgn_playercontrol.h"
 #include <QClipboard>
 #include <QContextMenuEvent>
+#include <QDockWidget>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
+USING_NAMESPACE_GKCHESS1(UI);
 
 MainWindow::MainWindow(QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),
       m_board(),
       //m_board(10),
-      m_uci(new UCI_Client("/usr/games/stockfish")),
+      m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
+      //m_uci(new UCI_Client("/usr/games/stockfish")),
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
 {
     ui->setupUi(this);
+
+    // Add the pgn control dock widget
+    QDockWidget *dock_widget = new QDockWidget(tr("PGN Control"), this);
+    dock_widget->setWidget(m_pgnPlayer);
+    addDockWidget(Qt::LeftDockWidgetArea, dock_widget);
 
     ui->boardView->installEventFilter(this);
 
@@ -42,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    ui->engine_control->Initialize(m_uci, &m_board);
+    //ui->engine_control->Initialize(m_uci, &m_board);
 
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
@@ -115,7 +124,7 @@ void MainWindow::_load_fen_string(const String &s)
 
 void MainWindow::_load_pgn_string(const String &s)
 {
-
+    m_pgnPlayer->LoadPGN(s);
 }
 
 

@@ -28,10 +28,10 @@ struct MoveData
     /** The half-move number for the move. */
     int PlyNumber;
 
-    /** The starting square.  If the move was a castle this will be null. */
+    /** The starting square.  If the move was a castle this will be the king square. */
     Square const *Source;
 
-    /** The ending square.  If the move was a castle this will be null. */
+    /** The ending square.  If the move was a castle this will be the rook square. */
     Square const *Destination;
 
     /** The type of castle. */
@@ -58,6 +58,11 @@ struct MoveData
     /** The piece that was promoted, if any. If this is type NoPiece then the
      *  move did not involve a promotion. */
     Piece PiecePromoted;
+
+    /** Stores the initial position before the move. */
+    GUtil::String Position;
+
+    GUtil::List<MoveData> Variants;
 
     /** Returns true if this is a null move data (default constructed). */
     bool IsNull() const{ return -1 == PlyNumber; }

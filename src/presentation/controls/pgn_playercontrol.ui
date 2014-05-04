@@ -136,5 +136,93 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>btn_first</sender>
+   <signal>released()</signal>
+   <receiver>PGN_PlayerControl</receiver>
+   <slot>GotoFirst()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>57</x>
+     <y>85</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>2</x>
+     <y>75</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btn_prev</sender>
+   <signal>released()</signal>
+   <receiver>PGN_PlayerControl</receiver>
+   <slot>GotoPrevious()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>154</x>
+     <y>85</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>90</x>
+     <y>97</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btn_next</sender>
+   <signal>released()</signal>
+   <receiver>PGN_PlayerControl</receiver>
+   <slot>GotoNext()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>258</x>
+     <y>78</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>293</x>
+     <y>98</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btn_last</sender>
+   <signal>released()</signal>
+   <receiver>PGN_PlayerControl</receiver>
+   <slot>GotoLast()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>357</x>
+     <y>80</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>382</x>
+     <y>98</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spin_moveNumber</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>PGN_PlayerControl</receiver>
+   <slot>GotoIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>82</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>184</x>
+     <y>99</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>GotoFirst()</slot>
+  <slot>GotoLast()</slot>
+  <slot>GotoNext()</slot>
+  <slot>GotoPrevious()</slot>
+  <slot>GotoIndex(int)</slot>
+ </slots>
 </ui>

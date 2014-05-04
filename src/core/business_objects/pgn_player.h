@@ -15,15 +15,17 @@ limitations under the License.*/
 #ifndef GKCHESS_PGN_PLAYER_H
 #define GKCHESS_PGN_PLAYER_H
 
-#include "gkchess_pgn_parser.h"
 #include "gutil_strings.h"
 #include "gutil_map.h"
 #include "gutil_flags.h"
 #include "gutil_smartpointer.h"
+#include "gkchess_globals.h"
 
 NAMESPACE_GKCHESS;
 
 class Board;
+class MoveData;
+class PGN_GameData;
 
 
 /** Plays a PGN file.
@@ -31,18 +33,26 @@ class Board;
 */
 class PGN_Player
 {
-    Board *m_board;
-    GUtil::SmartPointer<PGN_Parser::GameData> m_pgnData;
+    void *d;
 public:
 
     /** Constructs a PGN player with the given game logic.  It will not take ownership. */
     PGN_Player(Board *);
+    ~PGN_Player();
 
-    /** Sets the PGN game data to be played. */
-    void SetGameData(const PGN_Parser::GameData &);
+    /** Loads the pgn string. */
+    void LoadPGN(const GUtil::String &);
 
-    /** Returns game data used by the player.  This will be null if data has not been set. */
-    PGN_Parser::GameData const *GetGameData() const{ return m_pgnData; }
+    /** Returns game data used by the player.  This will be empty if data has not been set. */
+    GUtil::List<MoveData> const &GetMoveData() const;
+
+    /** Returns the pgn game data used by the player. This stores more meta-data about the game, like
+     *  who was playing at what event, and so on.
+    */
+    PGN_GameData const &GetGameData() const;
+
+    /** Returns the pgn text that has been loaded. */
+    const GUtil::String &GetPGNText() const;
 
     /** Unloads the PGN data.  After calling this, "IsLoaded()" returns false. */
     void Clear();
@@ -53,11 +63,14 @@ public:
     /** After loading a PGN string, you can step back through the moves with this. */
     void Previous();
 
-    /** Returns the game board object used by the PGN player. */
-    const Board &GetBoard() const{ return *m_board; }
+    /** After loading a PGN string, you can jump to the first move with this. */
+    void First();
+
+    /** After loading a PGN string, you can jump to the last move with this. */
+    void Last();
 
     /** Returns the game board object used by the PGN player. */
-    Board &GetBoard(){ return *m_board; }
+    const Board &GetBoard() const;
 
 };
 

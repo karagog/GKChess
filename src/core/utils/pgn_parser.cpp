@@ -16,13 +16,12 @@ limitations under the License.*/
 #include "gutil_file.h"
 USING_NAMESPACE_GUTIL;
 
-#define SETUP_TAG "SetUp"
-#define FEN_TAG "FEN"
+#define TAG_RESULT "result"
 
 NAMESPACE_GKCHESS;
 
 
-PGN_Parser::MoveData::MoveData()
+PGN_MoveData::PGN_MoveData()
     :MoveNumber(0),
       PieceMoved(0),
       PiecePromoted(0),
@@ -58,7 +57,7 @@ static const char *__convert_piece_char_to_name(char c)
     }
 }
 
-String PGN_Parser::MoveData::ToString() const
+String PGN_MoveData::ToString() const
 {
     String ret(25);
     if(Flags.TestFlag(CastleHSide))
@@ -117,7 +116,7 @@ String PGN_Parser::MoveData::ToString() const
 
 
 /** Populates the heading tags and updates the iterator to the start of the move data section. */
-static void __parse_heading(PGN_Parser::GameData &gm,
+static void __parse_heading(PGN_GameData &gm,
                             typename String::const_iterator &iter,
                             const typename String::const_iterator &end)
 {
@@ -149,7 +148,7 @@ static void __parse_heading(PGN_Parser::GameData &gm,
                                                "Invalid nested brackets");
                     break;
                 case ']':
-                    gm.Tags.Insert(tmp_key, tmp_value);
+                    gm.Tags.Insert(tmp_key.ToLower(), tmp_value);
                     inside_tag = false;
                     skip_char = true;
                     //GDEBUG(String::Format("Found tag: %s-%s", tmp_key.ConstData(), tmp_value.ConstData()));
@@ -238,17 +237,17 @@ static bool __is_invalid_promotion_piece(char c)
     return c != 'Q' && c != 'N' && c != 'R' && c != 'B';
 }
 
-PGN_Parser::MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
+PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
 {
-    MoveData ret;
+    PGN_MoveData ret;
     ret.MoveText = s;
 
     //GDEBUG(String::Format("Parsing '%s'", ret.MoveText.ConstData()));
 
     if(-1 != ret.MoveText.ToUpper().IndexOf("O-O-O"))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::CastleQueenSide, true);
+        ret.Flags.SetFlag(PGN_MoveData::CastleQueenSide, true);
     else if(-1 != ret.MoveText.ToUpper().IndexOf("O-O"))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::CastleHSide, true);
+        ret.Flags.SetFlag(PGN_MoveData::CastleHSide, true);
     else
     {
         typename String::const_iterator iter(ret.MoveText.begin());
@@ -279,7 +278,7 @@ PGN_Parser::MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
             }
             else if('x' == c)
             {
-                ret.Flags.SetFlag(PGN_Parser::MoveData::Capture, true);
+                ret.Flags.SetFlag(PGN_MoveData::Capture, true);
             }
             else if('-' == c)
             {
@@ -323,29 +322,29 @@ PGN_Parser::MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
 
     // See if the move puts the king in check or checkmate
     if(-1 != ret.MoveText.IndexOf('#'))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::CheckMate, true);
+        ret.Flags.SetFlag(PGN_MoveData::CheckMate, true);
     else if(-1 != ret.MoveText.IndexOf('+'))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Check, true);
+        ret.Flags.SetFlag(PGN_MoveData::Check, true);
 
     // See if the annotator has an assessment of this move
     if(-1 != ret.MoveText.IndexOf("??"))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Blunder, true);
+        ret.Flags.SetFlag(PGN_MoveData::Blunder, true);
     else if(-1 != ret.MoveText.IndexOf("!!"))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Brilliant, true);
+        ret.Flags.SetFlag(PGN_MoveData::Brilliant, true);
     else if(-1 != ret.MoveText.IndexOf("!?"))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Interesting, true);
+        ret.Flags.SetFlag(PGN_MoveData::Interesting, true);
     else if(-1 != ret.MoveText.IndexOf("?!"))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Dubious, true);
+        ret.Flags.SetFlag(PGN_MoveData::Dubious, true);
     else if(-1 != ret.MoveText.IndexOf('?'))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Mistake, true);
+        ret.Flags.SetFlag(PGN_MoveData::Mistake, true);
     else if(-1 != ret.MoveText.IndexOf('!'))
-        ret.Flags.SetFlag(PGN_Parser::MoveData::Good, true);
+        ret.Flags.SetFlag(PGN_MoveData::Good, true);
 
     return ret;
 }
 
 /** Populates the move data and updates the iterator to the start of the next game, or the end of the string. */
-static void __parse_moves(PGN_Parser::GameData &gm,
+static void __parse_moves(PGN_GameData &gm,
                           typename String::const_iterator &iter,
                           const typename String::const_iterator &end)
 {
@@ -382,7 +381,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
     int dot_count = 0;
 
     String tmps;
-    PGN_Parser::MoveData md;
+    PGN_MoveData md;
 
     for(; iter != end; ++iter)
     {
@@ -545,7 +544,7 @@ static void __parse_moves(PGN_Parser::GameData &gm,
 
 
 
-List<PGN_Parser::GameData> PGN_Parser::ParseFile(const String &filename)
+List<PGN_GameData> PGN_Parser::ParseFile(const String &filename)
 {
     String s;
     {
@@ -556,21 +555,19 @@ List<PGN_Parser::GameData> PGN_Parser::ParseFile(const String &filename)
     return ParseString(s);
 }
 
-#define TAG_RESULT "Result"
-
-List<PGN_Parser::GameData> PGN_Parser::ParseString(String const &s)
+List<PGN_GameData> PGN_Parser::ParseString(String const &s)
 {
     if(!s.IsValidUTF8())
         THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
                                    "The data contains an invalid UTF-8 sequence");
 
-    List<GameData> ret;
+    List<PGN_GameData> ret;
     typename String::const_iterator iter(s.begin());
     typename String::const_iterator end(s.end());
     while(iter != end)
     {
-        ret.Append(GameData());
-        GameData &gd = ret.Back();
+        ret.Append(PGN_GameData());
+        PGN_GameData &gd = ret.Back();
 
         // Parse the heading section for tags-value pairs
         __parse_heading(gd, iter, end);

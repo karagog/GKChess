@@ -334,6 +334,7 @@ void Board::move_p(const MoveData &md)
     else
     {
         int rook_col_src, rook_col_dest;
+        int king_col_dest;
         int rank;
         if(Piece::White == piece_orig.GetAllegience())
         {
@@ -342,11 +343,13 @@ void Board::move_p(const MoveData &md)
             {
                 rook_col_src = GetCastleWhiteA();
                 rook_col_dest = 3;
+                king_col_dest = 2;
             }
             else
             {
                 rook_col_src = GetCastleWhiteH();
                 rook_col_dest = 5;
+                king_col_dest = 6;
             }
         }
         else
@@ -356,11 +359,13 @@ void Board::move_p(const MoveData &md)
             {
                 rook_col_src = GetCastleBlackA();
                 rook_col_dest = 3;
+                king_col_dest = 2;
             }
             else
             {
                 rook_col_src = GetCastleBlackH();
                 rook_col_dest = 5;
+                king_col_dest = 6;
             }
         }
 
@@ -369,7 +374,7 @@ void Board::move_p(const MoveData &md)
         SetPiece(Piece(Piece::Rook, piece_orig.GetAllegience()), square_at(rook_col_dest, rank));
 
         // Move the King
-        SetPiece(piece_orig, dest);
+        SetPiece(piece_orig, square_at(king_col_dest, rank));
         SetPiece(Piece(), src);
     }
 
@@ -915,6 +920,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         return InvalidTechnical;
 
     bool technically_ok = false;
+    bool castling = false;
     int col_diff = d.GetColumn() - s.GetColumn();
     int row_diff = d.GetRow() - s.GetRow();
     int col_diff_abs = Abs(col_diff);
@@ -984,19 +990,67 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
             // The king can move more than one square if he's castling
             if(Piece::White == p.GetAllegience()){
                 if(s.GetRow() == 0){
-                    if((d.GetColumn() == 2 && GetCastleWhiteA() != -1) ||
-                            (d.GetColumn() == 6 && GetCastleWhiteH() != -1))
+                    if((GetCastleWhiteA() != -1 && d.GetColumn() == GetCastleWhiteA()) ||
+                            (GetCastleWhiteH() != -1 && d.GetColumn() == GetCastleWhiteH()))
                     {
-                        technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
+                        Square const *king_src = &s;
+                        Square const *king_dest;
+                        Square const *rook_dest;
+                        Square const *rook_src;
+                        if(d.GetColumn() == GetCastleWhiteA()){
+                            king_dest = &SquareAt(2, 0);
+                            rook_src = &SquareAt(GetCastleWhiteA(), 0);
+                            rook_dest = &SquareAt(3, 0);
+                        }
+                        else if(d.GetColumn() == GetCastleWhiteH()){
+                            king_dest = &SquareAt(6, 0);
+                            rook_src = &SquareAt(GetCastleWhiteH(), 0);
+                            rook_dest = &SquareAt(5, 0);
+                        }
+
+                        bool threats = false;
+                        for(int i = king_src->GetColumn(); !threats && 0 <= i && i <= king_dest->GetColumn();
+                            king_dest->GetColumn() - king_src->GetColumn() > 0 ? ++i : --i)
+                        {
+                            threats = SquareAt(i, 0).GetThreatCount(Piece::Black) > 0;
+                        }
+                        technically_ok = !threats &&
+                                !__is_path_blocked(*this, *king_src, *king_dest, Piece::White) &&
+                                !__is_path_blocked(*this, *rook_src, *rook_dest, Piece::White);
+                        castling = true;
                     }
                 }
             }
             else{
                 if(s.GetRow() == 7){
-                    if((d.GetColumn() == 2 && GetCastleBlackA() != -1) ||
-                            (d.GetColumn() == 6 && GetCastleBlackH() != -1))
+                    if((GetCastleBlackA() != -1 && d.GetColumn() == GetCastleBlackA()) ||
+                            (GetCastleBlackH() != -1 && d.GetColumn() == GetCastleBlackH()))
                     {
-                        technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
+                        Square const *king_src = &s;
+                        Square const *king_dest;
+                        Square const *rook_dest;
+                        Square const *rook_src;
+                        if(d.GetColumn() == GetCastleBlackA()){
+                            king_dest = &SquareAt(2, 7);
+                            rook_src = &SquareAt(GetCastleBlackA(), 7);
+                            rook_dest = &SquareAt(3, 7);
+                        }
+                        else if(d.GetColumn() == GetCastleBlackH()){
+                            king_dest = &SquareAt(6, 7);
+                            rook_src = &SquareAt(GetCastleBlackH(), 7);
+                            rook_dest = &SquareAt(5, 7);
+                        }
+
+                        bool threats = false;
+                        for(int i = king_src->GetColumn(); !threats && 0 <= i && i <= king_dest->GetColumn();
+                            king_dest->GetColumn() - king_src->GetColumn() > 0 ? ++i : --i)
+                        {
+                            threats = SquareAt(i, 7).GetThreatCount(Piece::White) > 0;
+                        }
+                        technically_ok = !threats &&
+                                !__is_path_blocked(*this, *king_src, *king_dest, Piece::Black) &&
+                                !__is_path_blocked(*this, *rook_src, *rook_dest, Piece::Black);
+                        castling = true;
                     }
                 }
             }
@@ -1010,7 +1064,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
     if(!technically_ok)
         return InvalidTechnical;
 
-    if(!d.GetPiece().IsNull() && d.GetPiece().GetAllegience() == p.GetAllegience())
+    if(!castling && !d.GetPiece().IsNull() && d.GetPiece().GetAllegience() == p.GetAllegience())
         return InvalidTechnical;
 
     // Now check if the king is safe, otherwise it's an invalid move
@@ -1032,15 +1086,66 @@ Vector<Square const *> Board::GetValidMovesForSquare(const Square &) const
     return ret;
 }
 
-MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
+MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
 {
     MoveData ret;
     Piece::AllegienceEnum turn = GetWhoseTurn();
 
-    if(m.Flags.TestFlag(PGN_Parser::MoveData::CastleHSide))
+    ret.Position = ToFEN();
+    ret.PlyNumber = m.MoveNumber * 2 - 1;
+    if(Piece::Black == turn)
+        ++ret.PlyNumber;
+
+    if(m.Flags.TestFlag(PGN_MoveData::CastleHSide))
+    {
         ret.CastleType = MoveData::CastleHSide;
-    else if(m.Flags.TestFlag(PGN_Parser::MoveData::CastleQueenSide))
+
+        int rook_loc = -1;
+        switch(turn)
+        {
+        case Piece::White:
+            rook_loc = GetCastleWhiteH();
+            break;
+        case Piece::Black:
+            rook_loc = GetCastleBlackH();
+            break;
+        default: break;
+        }
+
+        if(-1 == rook_loc)
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unable to castle on that side");
+
+        Vector<Square const *> v = FindPieces(Piece(Piece::King, turn));
+        if(v.Length() != 1)
+            THROW_NEW_GUTIL_EXCEPTION(Exception);
+        ret.Source = v[0];
+        ret.Destination = &SquareAt(rook_loc, v[0]->GetRow());
+    }
+    else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
+    {
         ret.CastleType = MoveData::CastleASide;
+
+        int rook_loc = -1;
+        switch(turn)
+        {
+        case Piece::White:
+            rook_loc = GetCastleWhiteA();
+            break;
+        case Piece::Black:
+            rook_loc = GetCastleBlackA();
+            break;
+        default: break;
+        }
+
+        if(-1 == rook_loc)
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unable to castle on that side");
+
+        Vector<Square const *> v = FindPieces(Piece(Piece::King, turn));
+        if(v.Length() != 1)
+            THROW_NEW_GUTIL_EXCEPTION(Exception);
+        ret.Source = v[0];
+        ret.Destination = &SquareAt(rook_loc, v[0]->GetRow());
+    }
     else
     {
         // Validate the inputs
@@ -1050,7 +1155,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "The destination rank is invalid");
         if(0 != m.SourceFile && ('a' > m.SourceFile || m.SourceFile > 'h'))
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "The source file is invalid");
-        if(-1 != m.SourceRank && (0 >= m.SourceRank || m.SourceRank > 8))
+        if(0 != m.SourceRank && (0 > m.SourceRank || m.SourceRank >= 8))
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "The source rank is invalid");
 
 
@@ -1058,7 +1163,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
         Square const *dest = &SquareAt(m.DestFile - 'a', m.DestRank - 1);
         ret.Destination = dest;
 
-        if(m.Flags.TestFlag(PGN_Parser::MoveData::Capture))
+        if(m.Flags.TestFlag(PGN_MoveData::Capture))
         {
             if(!dest->GetPiece().IsNull() && dest->GetPiece().GetAllegience() != turn)
                 ret.PieceCaptured = dest->GetPiece();
@@ -1091,10 +1196,11 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
             // The possible source squares depend on the piece being moved
             switch(m.PieceMoved)
             {
-            case Piece::Pawn:
+            case 0:
+            case 'P':
                 // The pawn takes the most code, because it moves differently depending on if it's
                 //  capturing or not.  It can also move two squares instead of one on the first move.
-                if(m.Flags.TestFlag(PGN_Parser::MoveData::Capture))
+                if(m.Flags.TestFlag(PGN_MoveData::Capture))
                 {
                     // If the pawn is capturing then it can only be from either of the two files
                     //  next to the destination
@@ -1158,14 +1264,14 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
                             s->GetPiece().GetType() != Piece::Pawn)
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
 
-                    if(ret.Destination->GetPiece().IsNull())
+                    if(!ret.Destination->GetPiece().IsNull())
                         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Destination square occupied");
 
                     ret.Source = s;
                 }
 
                 break;
-            case Piece::Knight:
+            case 'N':
             {
                 // Knights are easy, because they cannot be blocked. If they are in range of
                 //  the square then it is a valid move.
@@ -1194,7 +1300,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
                 }
             }
                 break;
-            case Piece::Bishop:
+            case 'B':
             {
                 Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
@@ -1221,7 +1327,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
                 }
             }
                 break;
-            case Piece::Rook:
+            case 'R':
             {
                 Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
@@ -1248,7 +1354,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
                 }
             }
                 break;
-            case Piece::Queen:
+            case 'Q':
             {
                 Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                 for(GINT32 i = 0; i < possible_sources.Length(); ++i)
@@ -1275,7 +1381,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
                 }
             }
                 break;
-            case Piece::King:
+            case 'K':
             {
                 Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
 
@@ -1299,7 +1405,7 @@ MoveData Board::GenerateMoveData(const PGN_Parser::MoveData &m) const
         GASSERT(!ret.PieceMoved.IsNull());
 
         // Add a promoted piece, if necessary
-        if(Piece::Pawn != m.PiecePromoted)
+        if(m.PiecePromoted)
         {
             if(Piece::Pawn != m.PieceMoved)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Only pawns can be promoted");
@@ -1334,11 +1440,10 @@ MoveData Board::GenerateMoveData(const Square &s,
                     ok = false;
             }
         }
-        else if(s.GetPiece().GetType() == Piece::King)
+        else if(s.GetPiece().GetType() == Piece::King && d.GetPiece().GetType() == Piece::Rook &&
+                s.GetPiece().GetAllegience() == d.GetPiece().GetAllegience())
         {
-            // Check if there is a castle
-            if(Abs(s.GetColumn() - d.GetColumn()) == 2)
-                ret.CastleType = d.GetColumn() == CASTLE_A_KING_DEST ? MoveData::CastleASide : MoveData::CastleHSide;
+            ret.CastleType = d.GetColumn() - s.GetColumn() > 0 ? MoveData::CastleHSide : MoveData::CastleASide;
         }
     }
 

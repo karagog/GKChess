@@ -63,36 +63,6 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <widget class="QDockWidget" name="dockWidget">
-   <property name="features">
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
-   </property>
-   <property name="windowTitle">
-    <string>PGN Control</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>1</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="GKChess::UI::PGN_PlayerControl" name="pgn_player_controller" native="true"/>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <widget class="QDockWidget" name="dockWidget_2">
    <property name="features">
     <set>QDockWidget::AllDockWidgetFeatures</set>
@@ -156,12 +126,6 @@
    <class>GKChess::UI::EngineControl</class>
    <extends>QWidget</extends>
    <header>gkchess_enginecontrol.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>GKChess::UI::PGN_PlayerControl</class>
-   <extends>QWidget</extends>
-   <header>gkchess_pgn_playercontrol.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

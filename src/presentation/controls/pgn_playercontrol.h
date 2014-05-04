@@ -15,25 +15,35 @@ limitations under the License.*/
 #ifndef PGN_PLAYERCONTROL_H
 #define PGN_PLAYERCONTROL_H
 
+#include "gutil_strings.h"
 #include <QWidget>
 
-namespace Ui {
-class PGN_PlayerControl;
-}
+namespace GKChess{
+class Board;
 
-namespace GKChess{ namespace UI{
+namespace UI{
 
 
 class PGN_PlayerControl : public QWidget
 {
     Q_OBJECT
-
+    void *d;
 public:
-    explicit PGN_PlayerControl(QWidget *parent = 0);
+
+    explicit PGN_PlayerControl(Board *, QWidget *parent = 0);
     ~PGN_PlayerControl();
 
-private:
-    Ui::PGN_PlayerControl *ui;
+    void LoadPGN(const GUtil::String &);
+
+
+public slots:
+
+    void GotoNext();
+    void GotoPrevious();
+    void GotoFirst();
+    void GotoLast();
+    void GotoIndex(int);
+
 };
 
 

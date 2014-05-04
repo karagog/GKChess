@@ -261,7 +261,7 @@ public:
     virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse * = 0) const;
 
     /** Creates a MoveData object from a PGN MoveData object. */
-    virtual MoveData GenerateMoveData(const PGN_Parser::MoveData &) const;
+    virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
 
     /** Validates the move. */
     virtual MoveValidationEnum ValidateMove(const Square &, const Square &) const;

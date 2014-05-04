@@ -15,20 +15,84 @@ limitations under the License.*/
 #include "pgn_playercontrol.h"
 #include "ui_pgn_playercontrol.h"
 #include "gkchess_globals.h"
+#include "gkchess_pgn_player.h"
+#include "gkchess_pgn_parser.h"
+USING_NAMESPACE_GKCHESS;
+USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS1(UI);
 
 
-PGN_PlayerControl::PGN_PlayerControl(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::PGN_PlayerControl)
+struct d_t
 {
-    ui->setupUi(this);
+    Ui::PGN_PlayerControl *ui;
+    PGN_Player *player;
+};
+
+PGN_PlayerControl::PGN_PlayerControl(Board *b, QWidget *parent)
+    :QWidget(parent)
+{
+    G_D_INIT();
+    G_D;
+    d->ui = new Ui::PGN_PlayerControl;
+    d->ui->setupUi(this);
+    d->player = new PGN_Player(b);
 }
 
 PGN_PlayerControl::~PGN_PlayerControl()
 {
-    delete ui;
+    G_D;
+    delete d->ui;
+    delete d->player;
+    G_D_UNINIT();
+}
+
+void PGN_PlayerControl::LoadPGN(const String &s)
+{
+    G_D;
+    d->player->LoadPGN(s);
+    const PGN_GameData &pgd = d->player->GetGameData();
+
+    if(pgd.Tags.Contains("white") && pgd.Tags.Contains("black"))
+        d->ui->lbl_title->setText(QString("%1 vs. %2")
+                                  .arg(pgd.Tags.At("white"))
+                                  .arg(pgd.Tags.At("black")));
+
+    if(pgd.Tags.Contains("date"))
+        d->ui->lbl_date->setText(pgd.Tags.At("date"));
+    if(pgd.Tags.Contains("result"))
+        d->ui->lbl_result->setText(pgd.Tags.At("result"));
+
+    d->ui->pgn_view->setText(d->player->GetPGNText());
+}
+
+void PGN_PlayerControl::GotoNext()
+{
+    G_D;
+    d->player->Next();
+}
+
+void PGN_PlayerControl::GotoPrevious()
+{
+    G_D;
+    d->player->Previous();
+}
+
+void PGN_PlayerControl::GotoFirst()
+{
+    G_D;
+    d->player->First();
+}
+
+void PGN_PlayerControl::GotoLast()
+{
+    G_D;
+    d->player->Last();
+}
+
+void PGN_PlayerControl::GotoIndex(int)
+{
+
 }
 
 

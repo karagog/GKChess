@@ -818,8 +818,12 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
             Piece active_piece = m_activeSquare.data(BoardModel_p::PieceRole).value<Piece>();
             m_wasSquareActiveWhenPressed = m_activeSquare == ind;
 
-            if(target_piece.GetAllegience() != active_piece.GetAllegience())
+            if(target_piece.GetAllegience() != active_piece.GetAllegience() ||
+                    (active_piece.GetType() == Piece::King &&
+                     target_piece.GetType() == Piece::Rook))
+            {
                 return;
+            }
         }
 
         m_activeSquare = ind;

@@ -18,11 +18,17 @@ limitations under the License.*/
 #include "gkchess_board.h"
 #include "gkchess_coloredpieceiconfactory.h"
 #include "gkchess_uci_client.h"
+#include "gkchess_pgn_player.h"
 #include <QMainWindow>
 
 namespace Ui {
 class MainWindow;
 }
+
+namespace GKChess{ namespace UI{
+class PGN_PlayerControl;
+}}
+
 
 class MainWindow : public QMainWindow
 {
@@ -30,6 +36,7 @@ class MainWindow : public QMainWindow
 
     Ui::MainWindow *ui;
     GKChess::ObservableBoard m_board;
+    GKChess::UI::PGN_PlayerControl *m_pgnPlayer;
     GKChess::UCI_Client *m_uci;
 
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;

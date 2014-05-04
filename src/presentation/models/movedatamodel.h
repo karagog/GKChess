@@ -62,7 +62,7 @@ public:
     /** Initializes the model from a list of pgn moves.
         These PGN moves are created by the PGN_Parser.
     */
-    void InitFromPGN(const GUtil::Vector<PGN_Parser::MoveData> &);
+    void InitFromPGN(const GUtil::Vector<PGN_MoveData> &);
 
     /** QAbstractItemModel interface
         \{
