@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>482</width>
-    <height>112</height>
+    <height>142</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,22 +16,32 @@
   <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QLabel" name="lbl_positionNumber">
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label1">
      <property name="text">
-      <string>Position</string>
+      <string>Position#:</string>
      </property>
     </widget>
    </item>
-   <item>
-    <widget class="QLabel" name="lbl_fen">
+   <item row="1" column="0">
+    <widget class="QLabel" name="label">
      <property name="text">
-      <string>FEN</string>
+      <string>FEN:</string>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
     <widget class="QWidget" name="widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
@@ -76,13 +86,17 @@
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="1" column="1">
+    <widget class="QLabel" name="lbl_fen">
+     <property name="text">
+      <string/>
      </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Close</set>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QSpinBox" name="spin_posNumber">
+     <property name="maximum">
+      <number>959</number>
      </property>
     </widget>
    </item>
@@ -97,8 +111,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>227</x>
-     <y>94</y>
+     <x>236</x>
+     <y>117</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -129,8 +143,8 @@
    <slot>Generate()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>322</x>
-     <y>59</y>
+     <x>350</x>
+     <y>88</y>
     </hint>
     <hint type="destinationlabel">
      <x>133</x>
@@ -145,8 +159,8 @@
    <slot>CopyToClipboard()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>387</x>
-     <y>63</y>
+     <x>472</x>
+     <y>88</y>
     </hint>
     <hint type="destinationlabel">
      <x>478</x>
@@ -154,9 +168,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>spin_posNumber</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>Chess960Generator</receiver>
+   <slot>Generate(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>105</x>
+     <y>21</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>71</x>
+     <y>3</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>Generate()</slot>
+  <slot>Generate(int)</slot>
   <slot>CopyToClipboard()</slot>
  </slots>
 </ui>

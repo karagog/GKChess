@@ -28,6 +28,7 @@ class Chess960Generator : public QDialog
 {
     Q_OBJECT
     QString m_fen;
+    bool m_ignoreSpinbox;
 public:
     explicit Chess960Generator(QWidget *parent = 0);
     ~Chess960Generator();
@@ -37,7 +38,10 @@ public:
 
 public slots:
 
-    void Generate();
+    /** Generates a random position if index is == -1.  Gets the specific position if it's >= 0 */
+    void Generate(int index = -1);
+
+    /** Copies the current FEN string to clipboard. */
     void CopyToClipboard();
 
 

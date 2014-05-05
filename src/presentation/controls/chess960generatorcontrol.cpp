@@ -34,12 +34,22 @@ Chess960Generator::~Chess960Generator()
     delete ui;
 }
 
-void Chess960Generator::Generate()
+void Chess960Generator::Generate(int idx)
 {
-    int n;
-    m_fen = Chess960::GetRandomStartingPosition(&n).ToQString();
-    ui->lbl_positionNumber->setText(QString(tr("Position #%1:").arg(n)));
+    if(m_ignoreSpinbox)
+        return;
+
+    if(idx == -1){
+        m_fen = Chess960::GetRandomStartingPosition(&idx).ToQString();
+    }
+    else if(0 <= idx && idx < 960){
+        m_fen = Chess960::GetStartingPosition(idx).ToQString();
+    }
     ui->lbl_fen->setText(m_fen);
+
+    m_ignoreSpinbox = true;
+    ui->spin_posNumber->setValue(idx);
+    m_ignoreSpinbox = false;
 }
 
 void Chess960Generator::CopyToClipboard()
