@@ -143,7 +143,7 @@ void MainWindow::_piece_moved(const GKChess::MoveData &)
              GUtil::String::Format("%s != %s",
                                    fen_string1.ConstData(),
                                    fen_string2.ConstData()).ConstData());
-    GDEBUG(fen_string1);
+    GDEBUG(fen_string2);
 
     //m_board.ShowIndex();
 }

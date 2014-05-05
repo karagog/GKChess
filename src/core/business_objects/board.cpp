@@ -537,14 +537,20 @@ void Board::FromFEN(const String &s)
             {
                 // Find the outermost rook on the H-side
                 const String *s = Piece::White == a ? &backRank_white : &backRank_black;
+                int distance_from_h = 0;
                 for(int i = s->Length() - 1; i >= 0; --i){
                     char cur = (*s)[i];
-                    if(cur == rook_char){
-                        c = 'A' + i;
+                    if(String::IsNumber(cur)){
+                        distance_from_h += String(cur).ToInt();
+                    }
+                    else if(cur == rook_char){
+                        c = 'H' - distance_from_h;
                         break;
                     }
                     else if(cur == king_char)
                         break;
+                    else
+                        ++distance_from_h;
                 }
             }
                 break;
@@ -552,14 +558,20 @@ void Board::FromFEN(const String &s)
             {
                 // Find the outermost rook on the A-side
                 const String *s = Piece::White == a ? &backRank_white : &backRank_black;
+                int distance_from_a = 0;
                 for(int i = 0; i < s->Length(); ++i){
                     char cur = (*s)[i];
-                    if(cur == rook_char){
-                        c = 'A' + i;
+                    if(String::IsNumber(cur)){
+                        distance_from_a += String(cur).ToInt();
+                    }
+                    else if(cur == rook_char){
+                        c = 'A' + distance_from_a;
                         break;
                     }
                     else if(cur == king_char)
                         break;
+                    else
+                        ++distance_from_a;
                 }
             }
                 break;
