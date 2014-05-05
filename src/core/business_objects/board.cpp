@@ -1374,7 +1374,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         // Add a promoted piece, if necessary
         if(m.PiecePromoted)
         {
-            if(Piece::Pawn != m.PieceMoved)
+            if('P' != m.PieceMoved && 0 != m.PieceMoved)
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Only pawns can be promoted");
 
             ret.PiecePromoted = Piece(Piece::GetTypeFromPGN(m.PiecePromoted), turn);
