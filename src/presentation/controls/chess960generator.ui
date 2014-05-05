@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>482</width>
-    <height>142</height>
+    <height>86</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,20 @@
    <bool>true</bool>
   </property>
   <layout class="QFormLayout" name="formLayout">
+   <property name="fieldGrowthPolicy">
+    <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+   </property>
    <item row="0" column="0">
     <widget class="QLabel" name="label1">
      <property name="text">
       <string>Position#:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QSpinBox" name="spin_posNumber">
+     <property name="maximum">
+      <number>959</number>
      </property>
     </widget>
    </item>
@@ -31,18 +41,21 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Close</set>
+   <item row="1" column="1">
+    <widget class="QLabel" name="lbl_fen">
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="2" column="0" colspan="2">
     <widget class="QWidget" name="widget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
        <number>0</number>
@@ -57,6 +70,26 @@
        <number>0</number>
       </property>
       <item>
+       <widget class="QPushButton" name="pushButton">
+        <property name="text">
+         <string>Generate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Copy to Clipboard</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -70,34 +103,13 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pushButton_3">
         <property name="text">
-         <string>Generate</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_2">
-        <property name="text">
-         <string>Copy to Clipboard</string>
+         <string>Close</string>
         </property>
        </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLabel" name="lbl_fen">
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QSpinBox" name="spin_posNumber">
-     <property name="maximum">
-      <number>959</number>
-     </property>
     </widget>
    </item>
   </layout>
@@ -105,46 +117,14 @@
  <resources/>
  <connections>
   <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>Chess960Generator</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>236</x>
-     <y>117</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>111</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>Chess960Generator</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>295</x>
-     <y>100</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>111</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>pushButton</sender>
    <signal>released()</signal>
    <receiver>Chess960Generator</receiver>
    <slot>Generate()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>350</x>
-     <y>88</y>
+     <x>83</x>
+     <y>82</y>
     </hint>
     <hint type="destinationlabel">
      <x>133</x>
@@ -159,8 +139,8 @@
    <slot>CopyToClipboard()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>472</x>
-     <y>88</y>
+     <x>183</x>
+     <y>82</y>
     </hint>
     <hint type="destinationlabel">
      <x>478</x>
@@ -181,6 +161,22 @@
     <hint type="destinationlabel">
      <x>71</x>
      <y>3</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_3</sender>
+   <signal>released()</signal>
+   <receiver>Chess960Generator</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>432</x>
+     <y>73</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>366</x>
+     <y>55</y>
     </hint>
    </hints>
   </connection>
