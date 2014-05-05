@@ -51,6 +51,8 @@ private slots:
     void _load_fen_clipboard();
     void _load_pgn_clipboard();
 
+    void _random_chess960_position();
+
 #ifdef DEBUG
     void _piece_moved(const GKChess::MoveData &);
 #endif

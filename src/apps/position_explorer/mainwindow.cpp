@@ -16,6 +16,7 @@ limitations under the License.*/
 #include "ui_mainwindow.h"
 #include "gkchess_pgn_parser.h"
 #include "gkchess_pgn_playercontrol.h"
+#include "gkchess_chess960generatorcontrol.h"
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDockWidget>
@@ -44,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
     connect(ui->actionLoad_FEN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_fen_clipboard()));
     connect(ui->actionLoad_PGN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_pgn_clipboard()));
+    connect(ui->actionRandom_Chess960_Position, SIGNAL(triggered()), this, SLOT(_random_chess960_position()));
 
     m_board.SetupNewGame(Board::SetupStandardChess);
     //m_board.SetupNewGame(Board::SetupChess960);
@@ -125,6 +127,12 @@ void MainWindow::_load_fen_string(const String &s)
 void MainWindow::_load_pgn_string(const String &s)
 {
     m_pgnPlayer->LoadPGN(s);
+}
+
+void MainWindow::_random_chess960_position()
+{
+    UI::Chess960Generator *dlg = new UI::Chess960Generator(this);
+    dlg->show();
 }
 
 
