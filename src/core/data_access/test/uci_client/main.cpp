@@ -16,8 +16,10 @@ limitations under the License.*/
 #include <QCoreApplication>
 #include "gutil_consolelogger.h"
 #include "gkchess_globals.h"
+#include "gutil_thread.h"
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GUTIL1(QT);
 
 int main(int argc, char *argv[])
 {
@@ -80,7 +82,15 @@ int main(int argc, char *argv[])
             break;
         }
     }
-
+    
+    // Now see if we can make it think:
+    cli->SetPosition("startpos");
+    
+    UCI_Client::GoParams parms;
+    cli->Go(parms);
+    Thread::sleep(5);
+    cli->Stop();
+    
     return 0;
 
 //    return a.exec();

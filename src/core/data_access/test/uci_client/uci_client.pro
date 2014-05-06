@@ -11,6 +11,7 @@ LIBS += \
     -L$$TOP_DIR/gutil/lib \
     -L$$TOP_DIR/lib \
     -lGUtil \
+    -lGUtilQt \
     -lGKChess
 
 QT       += core
@@ -18,7 +19,7 @@ QT       += core
 QT       -= gui
 
 TARGET = uci_client
-#CONFIG   += console
+CONFIG   += console
 CONFIG   -= app_bundle
 
 TEMPLATE = app

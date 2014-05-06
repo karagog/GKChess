@@ -33,8 +33,6 @@ struct d_t
     bool debug_output_enabled;
     bool analysis_mode;
 
-    bool unexpected_crash;
-
     // This data is protected by the lock and wait condition
     QList<QByteArray> outqueue;
     bool cancel_thread;
@@ -46,7 +44,6 @@ struct d_t
     d_t()
         :debug_output_enabled(false),
           analysis_mode(false),
-          unexpected_crash(true),
           cancel_thread(false)
     {}
 };
@@ -274,7 +271,13 @@ UCI_Client::UCI_Client(const QString &path_to_engine, QObject *parent)
 UCI_Client::~UCI_Client()
 {
     G_D;
-    d->unexpected_crash = false;
+    
+    // Disconnect all signals from the process
+    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+    disconnect(&d->process, SIGNAL(error(QProcess::ProcessError)),
+               this, SLOT(_engine_error(QProcess::ProcessError)));
+    disconnect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
+    
     _append_to_write_queue("quit");
 
     d->lock.lock();
@@ -283,8 +286,15 @@ UCI_Client::~UCI_Client()
     d->lock.unlock();
 
     d->writer_thread.waitForFinished();
-    d->process.close();
-    d->process.waitForFinished();
+    
+    // Give the process time to exit gracefully
+    if(!d->process.waitForFinished(5000))
+    {
+        // If it doesn't exit, then kill it
+        d->process.kill();
+        d->process.waitForFinished();
+    }
+    
     G_D_UNINIT();
 }
 
@@ -346,19 +356,17 @@ void UCI_Client::_engine_stopped(int ec)
 {
     G_D;
     GUTIL_UNUSED(ec);
-    if(d->unexpected_crash)
-    {
-        // Have to disconnect this while we restart the engine
-        disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+    
+    // Have to disconnect this while we restart the engine
+    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
 
-        emit NotifyEngineCrashed();
-        __start_and_validate_engine(d, false);
+    emit NotifyEngineCrashed();
+    __start_and_validate_engine(d, false);
 
-        connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+    connect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
 
-        // Wake up the background thread if it was waiting to do a command
-        d->wc.wakeOne();
-    }
+    // Wake up the background thread if it was waiting to do a command
+    d->wc.wakeOne();
 }
 
 void UCI_Client::_writer_thread()
@@ -367,8 +375,7 @@ void UCI_Client::_writer_thread()
     d->lock.lock();
     while(!d->cancel_thread)
     {
-        while(!d->cancel_thread &&
-              (d->process.state() != QProcess::Running || d->outqueue.length() == 0)){
+        while(!d->cancel_thread && d->outqueue.length() == 0){
             d->wc.wait(&d->lock);
         }
 
@@ -430,11 +437,12 @@ void UCI_Client::_data_available()
 
 void UCI_Client::SetPosition(const char *data)
 {
-    G_D;
-    d->lock.lock();
-    d->outqueue.append(String::Format("position fen %s", data).ConstData());
-    d->lock.unlock();
-    d->wc.wakeOne();
+    QByteArray ba;
+    if(0 == String::Compare(data, "startpos"))
+        ba = String::Format("position %s", data).ConstData();
+    else
+        ba = String::Format("position fen %s", data).ConstData();
+    _append_to_write_queue(ba);
 }
 
 void UCI_Client::Go(const UCI_Client::GoParams &p)
