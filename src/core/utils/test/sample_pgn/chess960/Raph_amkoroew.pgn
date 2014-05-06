@@ -1,0 +1,29 @@
+[Event "ICS rated wild/fr match"]
+[Site "freechess.org"]
+[Date "2014.05.05"]
+[Round "-"]
+[White "Raph"]
+[Black "amkoroew"]
+[Result "0-1"]
+[WhiteElo "1957"]
+[BlackElo "1632"]
+[TimeControl "300"]
+[Variant "fischerandom"]
+[FEN "nbrkbnrq/pppppppp/8/8/8/8/PPPPPPPP/NBRKBNRQ w GCgc - 0 1"]
+[SetUp "1"]
+
+{--------------
+n b r k b n r q
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+P P P P P P P P
+N B R K B N R Q
+white to play
+--------------}
+1. g3 c6 2. c3 Nb6 3. b3 Bc7 4. Be4 O-O-O 5. f4 d5 6. Bg2 Ne6 7. Ne3 g6 8.
+Bf2 d4 9. cxd4 Nxd4 10. Nc4 Nxc4 11. bxc4 Nxe2 12. Rb1 Qc3 13. Be1 Qxc4 14.
+Bf2 Nc3+ 15. Ke1 Qe2#
+{Raph checkmated} 0-1
