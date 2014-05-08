@@ -295,6 +295,15 @@ void Board::_update_gamestate(const MoveData &md)
                     SetCastleWhiteH(-1);
             }
         }
+
+        // If they captured a rook then it could ruin their opponent's castle
+        if(Piece::Rook == md.PieceCaptured.GetType() && 7 == md.Destination->GetRow())
+        {
+            if(-1 != GetCastleBlackA() && GetCastleBlackA() == md.Destination->GetColumn())
+                SetCastleBlackA(-1);
+            else if(-1 != GetCastleBlackH() && GetCastleBlackH() == md.Destination->GetColumn())
+                SetCastleBlackH(-1);
+        }
     }
     else
     {
@@ -315,6 +324,15 @@ void Board::_update_gamestate(const MoveData &md)
                 if(GetCastleBlackH() == md.Source->GetColumn() && 7 == md.Source->GetRow())
                     SetCastleBlackH(-1);
             }
+        }
+
+        // If they captured a rook then it could ruin their opponent's castle
+        if(Piece::Rook == md.PieceCaptured.GetType() && 0 == md.Destination->GetRow())
+        {
+            if(-1 != GetCastleWhiteA() && GetCastleWhiteA() == md.Destination->GetColumn())
+                SetCastleWhiteA(-1);
+            else if(-1 != GetCastleWhiteH() && GetCastleWhiteH() == md.Destination->GetColumn())
+                SetCastleWhiteH(-1);
         }
     }
 }
