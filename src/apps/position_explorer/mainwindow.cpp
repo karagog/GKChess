@@ -17,9 +17,11 @@ limitations under the License.*/
 #include "gkchess_pgn_parser.h"
 #include "gkchess_pgn_playercontrol.h"
 #include "gkchess_chess960generatorcontrol.h"
+#include "gutil_file.h"
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDockWidget>
+#include <QFileDialog>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
@@ -45,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
     connect(ui->actionLoad_FEN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_fen_clipboard()));
     connect(ui->actionLoad_PGN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_pgn_clipboard()));
+    connect(ui->actionLoadPGN_File, SIGNAL(triggered()), this, SLOT(_load_pgn_file()));
     connect(ui->actionRandom_Chess960_Position, SIGNAL(triggered()), this, SLOT(_random_chess960_position()));
 
     m_board.SetupNewGame(Board::SetupStandardChess);
@@ -107,12 +110,23 @@ static QString __get_clipboard_data()
 
 void MainWindow::_load_fen_clipboard()
 {
-    return _load_fen_string(String::FromQString(__get_clipboard_data().trimmed()));
+    _load_fen_string(String::FromQString(__get_clipboard_data().trimmed()));
 }
 
 void MainWindow::_load_pgn_clipboard()
 {
-    return _load_pgn_string(String::FromQString(__get_clipboard_data().trimmed()));
+    _load_pgn_string(String::FromQString(__get_clipboard_data().trimmed()));
+}
+
+void MainWindow::_load_pgn_file()
+{
+    QString fn = QFileDialog::getOpenFileName(this, "Select PGN", QString(), "*.pgn");
+    QFile f(fn);
+    if(!f.open(QFile::ReadOnly))
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Could not open file: %s", fn.toUtf8().constData()));
+    QString s = f.readAll();
+    f.close();
+    _load_pgn_string(String::FromQString(s));
 }
 
 void MainWindow::_load_fen_string(const String &s)

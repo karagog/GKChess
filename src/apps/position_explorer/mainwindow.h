@@ -50,6 +50,7 @@ private slots:
 
     void _load_fen_clipboard();
     void _load_pgn_clipboard();
+    void _load_pgn_file();
 
     void _random_chess960_position();
 
