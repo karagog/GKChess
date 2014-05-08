@@ -129,8 +129,7 @@ Board::Board(int num_cols, int num_rows)
       _p_CastleBlackH(-1),
       _p_EnPassantSquare(0),
       _p_HalfMoveClock(0),
-      _p_FullMoveNumber(1),
-      _p_Result(Undecided)
+      _p_FullMoveNumber(1)
 {
     _init();
 }
@@ -145,8 +144,7 @@ Board::Board(const Board &o)
       _p_CastleBlackH(o.GetCastleBlackH()),
       _p_EnPassantSquare(o.GetEnPassantSquare()),
       _p_HalfMoveClock(o.GetHalfMoveClock()),
-      _p_FullMoveNumber(o.GetFullMoveNumber()),
-      _p_Result(o.GetResult())
+      _p_FullMoveNumber(o.GetFullMoveNumber())
 {
     _copy_construct(o);
 }
@@ -185,6 +183,16 @@ void Board::_copy_board(const Board &o)
         ++mine, ++theirs;
     }
     m_index.copy_from(o.m_index, *this);
+
+    SetCastleWhiteA(o.GetCastleWhiteA());
+    SetCastleWhiteH(o.GetCastleWhiteH());
+    SetCastleBlackA(o.GetCastleBlackA());
+    SetCastleBlackH(o.GetCastleBlackH());
+
+    SetWhoseTurn(o.GetWhoseTurn());
+    SetEnPassantSquare(o.GetEnPassantSquare());
+    SetHalfMoveClock(o.GetHalfMoveClock());
+    SetFullMoveNumber(o.GetFullMoveNumber());
 }
 
 Board::~Board()
@@ -342,7 +350,7 @@ void Board::move_p(const MoveData &md)
     Square &src(square_at(md.Source->GetColumn(), md.Source->GetRow()));
     Square &dest(square_at(md.Destination->GetColumn(), md.Destination->GetRow()));
 
-    Piece const &piece_orig = src.GetPiece();
+    Piece piece_orig = src.GetPiece();
 
     if(MoveData::NoCastle == md.CastleType)
     {
@@ -387,13 +395,17 @@ void Board::move_p(const MoveData &md)
             }
         }
 
-        // Move the rook
-        SetPiece(Piece(), square_at(rook_col_src, rank));
-        SetPiece(Piece(Piece::Rook, piece_orig.GetAllegience()), square_at(rook_col_dest, rank));
+        // Move the rook and king
+        Square const &king_dest = square_at(king_col_dest, rank);
+        Square const &rook_dest = square_at(rook_col_dest, rank);
+        SetPiece(Piece(Piece::Rook, piece_orig.GetAllegience()), rook_dest);
+        SetPiece(piece_orig, king_dest);
 
-        // Move the King
-        SetPiece(piece_orig, square_at(king_col_dest, rank));
-        SetPiece(Piece(), src);
+        Square const &rook_src = square_at(rook_col_src, rank);
+        if(rook_src != king_dest)
+            SetPiece(Piece(), rook_src);
+        if(src != rook_dest)
+            SetPiece(Piece(), src);
     }
 
     _update_gamestate(md);
@@ -1010,23 +1022,20 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
             technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
         break;
     case Piece::King:
-        if(1 >= col_diff_abs && 1 >= row_diff_abs)
+        // If it's a castle attempt
+        if(dp == Piece(Piece::Rook, p.GetAllegience()))
         {
-            // Normally the king can only move one square in any direction
-            technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
-        }
-        else if(0 == row_diff)
-        {
-            // The king can move more than one square if he's castling
             if(Piece::White == p.GetAllegience()){
                 if(s.GetRow() == 0){
                     if((GetCastleWhiteA() != -1 && d.GetColumn() == GetCastleWhiteA()) ||
                             (GetCastleWhiteH() != -1 && d.GetColumn() == GetCastleWhiteH()))
                     {
+                        castling = true;
                         Square const *king_src = &s;
                         Square const *king_dest;
                         Square const *rook_dest;
                         Square const *rook_src;
+
                         if(d.GetColumn() == GetCastleWhiteA()){
                             king_dest = &SquareAt(2, 0);
                             rook_src = &SquareAt(GetCastleWhiteA(), 0);
@@ -1038,16 +1047,20 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
                             rook_dest = &SquareAt(5, 0);
                         }
 
-                        bool threats = false;
-                        for(int i = king_src->GetColumn(); !threats && 0 <= i && i <= king_dest->GetColumn();
-                            king_dest->GetColumn() - king_src->GetColumn() > 0 ? ++i : --i)
+                        // The paths for the rook and king must be unblocked, and no threats
+                        //  on any squares the king passes through
+                        if(!__is_path_blocked(*this, *king_src, *king_dest, Piece::White) &&
+                                !__is_path_blocked(*this, *rook_src, *rook_dest, Piece::White))
                         {
-                            threats = SquareAt(i, 0).GetThreatCount(Piece::Black) > 0;
+                            bool threats = false;
+                            for(int i = king_src->GetColumn();
+                                !threats && 0 <= i && i <= king_dest->GetColumn();
+                                king_dest->GetColumn() - king_src->GetColumn() > 0 ? ++i : --i)
+                            {
+                                threats = SquareAt(i, 0).GetThreatCount(Piece::Black) > 0;
+                            }
+                            technically_ok = !threats;
                         }
-                        technically_ok = !threats &&
-                                !__is_path_blocked(*this, *king_src, *king_dest, Piece::White) &&
-                                !__is_path_blocked(*this, *rook_src, *rook_dest, Piece::White);
-                        castling = true;
                     }
                 }
             }
@@ -1084,6 +1097,15 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
                     }
                 }
             }
+        }
+        else if(1 >= col_diff_abs && 1 >= row_diff_abs)
+        {
+            // Normally the king can only move one square in any direction
+            technically_ok = !__is_path_blocked(*this, s, d, p.GetAllegience());
+        }
+        else if(0 == row_diff)
+        {
+
         }
         break;
     default:

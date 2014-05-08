@@ -327,9 +327,6 @@ public:
     /** Returns the current full move number. */
     PROPERTY(FullMoveNumber, int);
 
-    /** Returns the result of the game, or Undedided if it's not over yet. */
-    PROPERTY(Result, ResultTypeEnum);
-
     /** \} */
 
 
