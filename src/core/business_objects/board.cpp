@@ -17,6 +17,7 @@ limitations under the License.*/
 #include "square.h"
 #include "gkchess_pgn_parser.h"
 #include "gutil_euclideanvector.h"
+#include "gutil_range.h"
 #include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
 
@@ -402,9 +403,9 @@ void Board::move_p(const MoveData &md)
         SetPiece(piece_orig, king_dest);
 
         Square const &rook_src = square_at(rook_col_src, rank);
-        if(rook_src != king_dest)
+        if(rook_src != king_dest && rook_src != rook_dest)
             SetPiece(Piece(), rook_src);
-        if(src != rook_dest)
+        if(src != rook_dest && src != king_dest)
             SetPiece(Piece(), src);
     }
 
@@ -1025,75 +1026,69 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         // If it's a castle attempt
         if(dp == Piece(Piece::Rook, p.GetAllegience()))
         {
+            int back_rank, castle_a, castle_h;
             if(Piece::White == p.GetAllegience()){
-                if(s.GetRow() == 0){
-                    if((GetCastleWhiteA() != -1 && d.GetColumn() == GetCastleWhiteA()) ||
-                            (GetCastleWhiteH() != -1 && d.GetColumn() == GetCastleWhiteH()))
-                    {
-                        castling = true;
-                        Square const *king_src = &s;
-                        Square const *king_dest;
-                        Square const *rook_dest;
-                        Square const *rook_src;
-
-                        if(d.GetColumn() == GetCastleWhiteA()){
-                            king_dest = &SquareAt(2, 0);
-                            rook_src = &SquareAt(GetCastleWhiteA(), 0);
-                            rook_dest = &SquareAt(3, 0);
-                        }
-                        else if(d.GetColumn() == GetCastleWhiteH()){
-                            king_dest = &SquareAt(6, 0);
-                            rook_src = &SquareAt(GetCastleWhiteH(), 0);
-                            rook_dest = &SquareAt(5, 0);
-                        }
-
-                        // The paths for the rook and king must be unblocked, and no threats
-                        //  on any squares the king passes through
-                        if(!__is_path_blocked(*this, *king_src, *king_dest, Piece::White) &&
-                                !__is_path_blocked(*this, *rook_src, *rook_dest, Piece::White))
-                        {
-                            bool threats = false;
-                            for(int i = king_src->GetColumn();
-                                !threats && 0 <= i && i <= king_dest->GetColumn();
-                                king_dest->GetColumn() - king_src->GetColumn() > 0 ? ++i : --i)
-                            {
-                                threats = SquareAt(i, 0).GetThreatCount(Piece::Black) > 0;
-                            }
-                            technically_ok = !threats;
-                        }
-                    }
-                }
+                back_rank = 0;
+                castle_a = GetCastleWhiteA();
+                castle_h = GetCastleWhiteH();
             }
             else{
-                if(s.GetRow() == 7){
-                    if((GetCastleBlackA() != -1 && d.GetColumn() == GetCastleBlackA()) ||
-                            (GetCastleBlackH() != -1 && d.GetColumn() == GetCastleBlackH()))
-                    {
-                        Square const *king_src = &s;
-                        Square const *king_dest;
-                        Square const *rook_dest;
-                        Square const *rook_src;
-                        if(d.GetColumn() == GetCastleBlackA()){
-                            king_dest = &SquareAt(2, 7);
-                            rook_src = &SquareAt(GetCastleBlackA(), 7);
-                            rook_dest = &SquareAt(3, 7);
-                        }
-                        else if(d.GetColumn() == GetCastleBlackH()){
-                            king_dest = &SquareAt(6, 7);
-                            rook_src = &SquareAt(GetCastleBlackH(), 7);
-                            rook_dest = &SquareAt(5, 7);
-                        }
+                back_rank = 7;
+                castle_a = GetCastleBlackA();
+                castle_h = GetCastleBlackH();
+            }
 
+            if(s.GetRow() == back_rank)
+            {
+                if((castle_a != -1 && d.GetColumn() == castle_a) ||
+                        (castle_h != -1 && d.GetColumn() == castle_h))
+                {
+                    castling = true;
+                    Square const *king_src = &s;
+                    Square const *king_dest;
+                    Square const *rook_dest;
+                    Square const *rook_src;
+
+                    if(d.GetColumn() == castle_a){
+                        king_dest = &SquareAt(2, back_rank);
+                        rook_src = &SquareAt(castle_a, back_rank);
+                        rook_dest = &SquareAt(3, back_rank);
+                    }
+                    else if(d.GetColumn() == castle_h){
+                        king_dest = &SquareAt(6, back_rank);
+                        rook_src = &SquareAt(castle_h, back_rank);
+                        rook_dest = &SquareAt(5, back_rank);
+                    }
+
+                    // The paths for the rook and king must be unblocked, and no threats
+                    //  on any squares the king passes through
+                    Range<int> king_range = Range<int>::CreateDoubleBound(
+                                Min(king_src->GetColumn(), king_dest->GetColumn()),
+                                Max(king_src->GetColumn(), king_dest->GetColumn()));
+                    Range<int> rook_range = Range<int>::CreateDoubleBound(
+                                Min(rook_src->GetColumn(), rook_dest->GetColumn()),
+                                Max(rook_src->GetColumn(), rook_dest->GetColumn()));
+                    Range<int> sweep_range = *Region<int>(king_range).Union(rook_range).Ranges().begin();
+                    bool path_blocked = false;
+                    for(int i = sweep_range.LowerBound().Value();
+                        !path_blocked && i <= sweep_range.UpperBound().Value();
+                        ++i)
+                    {
+                        if(i != king_src->GetColumn() && i != rook_src->GetColumn() &&
+                                !SquareAt(i, back_rank).GetPiece().IsNull())
+                            path_blocked = true;
+                    }
+
+                    if(!path_blocked)
+                    {
                         bool threats = false;
-                        for(int i = king_src->GetColumn(); !threats && 0 <= i && i <= king_dest->GetColumn();
+                        for(int i = king_src->GetColumn();
+                            !threats && 0 <= i && i <= king_dest->GetColumn();
                             king_dest->GetColumn() - king_src->GetColumn() > 0 ? ++i : --i)
                         {
-                            threats = SquareAt(i, 7).GetThreatCount(Piece::White) > 0;
+                            threats = SquareAt(i, back_rank).GetThreatCount(p.GetOppositeAllegience()) > 0;
                         }
-                        technically_ok = !threats &&
-                                !__is_path_blocked(*this, *king_src, *king_dest, Piece::Black) &&
-                                !__is_path_blocked(*this, *rook_src, *rook_dest, Piece::Black);
-                        castling = true;
+                        technically_ok = !threats;
                     }
                 }
             }
