@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_pgn_playercontrol.h"
 #include "gkchess_chess960generatorcontrol.h"
 #include "gutil_file.h"
+#include "gutil_application.h"
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDockWidget>
@@ -49,6 +50,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionLoad_PGN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_pgn_clipboard()));
     connect(ui->actionLoadPGN_File, SIGNAL(triggered()), this, SLOT(_load_pgn_file()));
     connect(ui->actionRandom_Chess960_Position, SIGNAL(triggered()), this, SLOT(_random_chess960_position()));
+
+    connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
 
     m_board.SetupNewGame(Board::SetupStandardChess);
     //m_board.SetupNewGame(Board::SetupChess960);

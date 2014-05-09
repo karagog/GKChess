@@ -34,6 +34,7 @@ protected:
 
 private:
     virtual void about_to_quit();
+    virtual void show_about(QWidget *);
 };
 
 #endif // APPLICATION_H
