@@ -1,0 +1,56 @@
+PG_UTILS
+========
+
+A collection of utilities for manipulating Polyglot books.
+
+pg_query <book> "<fen>"
+        Prints the relative weights of a FEN in a PG book
+pg_add <source> "<fen>" <move> <dest>
+        Add a FEN to a PG book with zero weight
+pg_key "<fen>"	
+        Computes the PG key of a FEN (for debugging)
+
+
+Example
+=======
+
+(Linux or Cygwin Bash syntax)
+
+$ fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+$ pg_query performance.bin "$fen"
+move=e2e4 weight=33.33%
+move=d2d4 weight=33.33%
+move=c2c4 weight=33.33%
+$ pg_add performance.bin "$fen" a2a4 more_performance.bin
+$ ./pg_query more_performance.bin "$fen"
+move=e2e4 weight=33.33%
+move=d2d4 weight=33.33%
+move=c2c4 weight=33.33%
+move=a2a4 weight= 0.00%
+
+
+Copyright 2008 Michel Van den Bergh <michel.vandenbergh@uhasselt.be>. 
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above
+   copyright notice, this list of conditions and the following
+   disclaimer in the documentation and/or other materials provided
+   with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY MICHEL VAN DEN BERGH ``AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MICHEL VAN DEN BERGH 
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
