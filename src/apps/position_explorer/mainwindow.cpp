@@ -34,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
       //m_board(10),
       m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
       m_uci(new UCI_Client("/usr/games/stockfish")),
-      m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray)
+      m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray)
 {
     ui->setupUi(this);
 
@@ -69,8 +69,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->boardView->SetIconFactory(&m_iconFactory);
     ui->boardView->SetBoard(&m_board);
     ui->boardView->SetShowThreatCounts(true);
-
-    m_iconFactory.ChangeColors(Qt::yellow, Qt::gray);
 }
 
 MainWindow::~MainWindow()
