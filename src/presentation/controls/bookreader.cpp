@@ -76,7 +76,10 @@ void BookReader::board_position_changed()
     ui->tableWidget->setRowCount(moves.Length());
     G_FOREACH_CONST(IBookReader::Move const &m, moves){
         QTableWidgetItem *item1 = new QTableWidgetItem(m.Text.ToQString(), QVariant::String);
-        QTableWidgetItem *item2 = new QTableWidgetItem(QString("%1").arg(m.Weight), QVariant::Double);
+        QTableWidgetItem *item2 = new QTableWidgetItem;
+        item2->setData(Qt::DisplayRole, m.Weight);
+        item2->setData(Qt::TextAlignmentRole, Qt::AlignCenter);
+        item1->setData(Qt::TextAlignmentRole, Qt::AlignCenter);
         ui->tableWidget->setItem(row, 0, item1);
         ui->tableWidget->setItem(row, 1, item2);
         ++row;
