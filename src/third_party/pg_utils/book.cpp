@@ -1,4 +1,4 @@
-#include "types.h"
+#include "pg_types.h"
 #include "book.h"
 
 entry_t entry_none={0,0,0,0};
@@ -52,6 +52,8 @@ int entry_from_file(FILE *f, entry_t *entry){
 int find_key(FILE *f, uint64 key, entry_t *entry){
     int first, last, middle;
     entry_t first_entry=entry_none, last_entry,middle_entry;
+    (void)first_entry;  // squelch compiler warning
+
     first=-1;
     if(fseek(f,-16,SEEK_END)){
         *entry=entry_none;

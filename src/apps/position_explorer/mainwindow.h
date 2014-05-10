@@ -27,6 +27,7 @@ class MainWindow;
 
 namespace GKChess{ namespace UI{
 class PGN_PlayerControl;
+class BookReader;
 }}
 
 
@@ -51,6 +52,10 @@ private slots:
     void _load_fen_clipboard();
     void _load_pgn_clipboard();
     void _load_pgn_file();
+    void _opening_book_reader();
+
+    void _setup_standard_chess();
+    void _setup_random_chess960();
 
     void _random_chess960_position();
 

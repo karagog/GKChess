@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "types.h"
+#include "pg_types.h"
 
 typedef struct {
     uint64 key;

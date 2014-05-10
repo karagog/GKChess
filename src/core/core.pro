@@ -9,10 +9,12 @@ TARGET = GKChess
 
 DEFINES += DEBUG
 
-INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
+INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/src/third_party $$TOP_DIR/gutil/include
 LIBS += \
+    -L$$TOP_DIR/lib \
     -L$$TOP_DIR/gutil/lib \
-    -lGUtil
+    -lGUtil \
+    -lpg_utils
 
 unix {
     target.path = /usr/lib

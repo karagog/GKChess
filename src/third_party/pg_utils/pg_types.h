@@ -11,10 +11,13 @@ typedef unsigned int uint32;
   typedef unsigned long long int uint64;
 #endif
 
+#ifdef TRUE
+#undef TRUE
+#undef FALSE
+#endif
+
 #define TRUE  1
 #define FALSE 0
-
-typedef uint8 bool;
 
 #endif
 

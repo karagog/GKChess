@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "types.h"
+#include "pg_types.h"
 #include "board.h"
 
 #ifdef _MSC_VER
@@ -213,7 +213,7 @@ uint64 *RandomCastle    =Random64+768;
 uint64 *RandomEnPassant =Random64+772;
 uint64 *RandomTurn      =Random64+780;
 
-char *piece_names="pPnNbBrRqQkK";
+char piece_names[] = "pPnNbBrRqQkK";
 
 uint64 hash(board_t *board){
     uint64 key=0;

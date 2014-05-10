@@ -5,8 +5,10 @@ TEMPLATE = subdirs
 #   depend on libraries below it.
 SUBDIRS += \
     pre_build \
+    third_party \
     core \
     presentation \
+    plugins \
     apps \
     doc
 

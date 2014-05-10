@@ -1,7 +1,8 @@
 
 TEMPLATE = subdirs
 
-SUBDIRS +=
+SUBDIRS += \
+    pg_utils
 
 CONFIG += ordered
 

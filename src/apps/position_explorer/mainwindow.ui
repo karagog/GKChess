@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>1522</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -44,6 +44,9 @@
      <property name="title">
       <string>&amp;Load Position</string>
      </property>
+     <addaction name="actionStandard_Starting_Position"/>
+     <addaction name="actionChess960_Starting_Position"/>
+     <addaction name="separator"/>
      <addaction name="actionLoad_FEN_in_Clipboard"/>
      <addaction name="actionLoad_PGN_in_Clipboard"/>
      <addaction name="actionLoadPGN_File"/>
@@ -64,8 +67,15 @@
     </property>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuWindows">
+    <property name="title">
+     <string>&amp;Windows</string>
+    </property>
+    <addaction name="actionOpening_Book_Reader"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Tools"/>
+   <addaction name="menuWindows"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -132,6 +142,21 @@
   <action name="actionAbout">
    <property name="text">
     <string>&amp;About</string>
+   </property>
+  </action>
+  <action name="actionOpening_Book_Reader">
+   <property name="text">
+    <string>Opening &amp;Book Reader</string>
+   </property>
+  </action>
+  <action name="actionStandard_Starting_Position">
+   <property name="text">
+    <string>&amp;Standard Starting Position</string>
+   </property>
+  </action>
+  <action name="actionChess960_Starting_Position">
+   <property name="text">
+    <string>&amp;Chess960 Starting Position</string>
    </property>
   </action>
  </widget>

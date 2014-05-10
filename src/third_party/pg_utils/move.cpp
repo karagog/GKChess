@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "types.h"
+#include "pg_types.h"
 
-char *promote_pieces=" nbrq";
+char promote_pieces[] = " nbrq";
 
 int move_from_string(char move_s[6], uint16 *move){
     int fr,ff,tr,tf,p;
@@ -50,15 +50,6 @@ int move_to_string(char move_s[6], uint16 move){
         move_s[5]='\0';
     }else{
         move_s[4]='\0';
-    }
-    if(!strcmp(move_s,"e1h1")){
-        strcpy(move_s,"e1g1");
-    }else  if(!strcmp(move_s,"e1a1")){
-        strcpy(move_s,"e1c1");
-    }else  if(!strcmp(move_s,"e8h8")){
-        strcpy(move_s,"e8g8");
-    }else  if(!strcmp(move_s,"e8a8")){
-        strcpy(move_s,"e8c8");
     }
     return 0;
 }

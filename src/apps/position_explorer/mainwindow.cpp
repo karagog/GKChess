@@ -17,6 +17,7 @@ limitations under the License.*/
 #include "gkchess_pgn_parser.h"
 #include "gkchess_pgn_playercontrol.h"
 #include "gkchess_chess960generatorcontrol.h"
+#include "gkchess_bookreader.h"
 #include "gutil_file.h"
 #include "gutil_application.h"
 #include <QClipboard>
@@ -50,11 +51,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionLoad_PGN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_pgn_clipboard()));
     connect(ui->actionLoadPGN_File, SIGNAL(triggered()), this, SLOT(_load_pgn_file()));
     connect(ui->actionRandom_Chess960_Position, SIGNAL(triggered()), this, SLOT(_random_chess960_position()));
+    connect(ui->actionOpening_Book_Reader, SIGNAL(triggered()), this, SLOT(_opening_book_reader()));
+    connect(ui->actionStandard_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_standard_chess()));
+    connect(ui->actionChess960_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_random_chess960()));
 
     connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
 
-    m_board.SetupNewGame(Board::SetupStandardChess);
-    //m_board.SetupNewGame(Board::SetupChess960);
+    _setup_standard_chess();
 
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
@@ -148,6 +151,25 @@ void MainWindow::_random_chess960_position()
 {
     UI::Chess960Generator *dlg = new UI::Chess960Generator(this);
     dlg->show();
+}
+
+void MainWindow::_opening_book_reader()
+{
+    QDockWidget *d = new QDockWidget("Opening Book", this);
+    BookReader *br = new BookReader(m_board, this);
+    d->setWidget(br);
+    addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
+    br->show();
+}
+
+void MainWindow::_setup_standard_chess()
+{
+    m_board.SetupNewGame(Board::SetupStandardChess);
+}
+
+void MainWindow::_setup_random_chess960()
+{
+    m_board.SetupNewGame(Board::SetupChess960);
 }
 
 

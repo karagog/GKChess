@@ -3,6 +3,7 @@
 #include "board.h"
 #include "string.h"
 
+
 void board_init(board_t *board){
     uint8 r,f;
     for(r=0;r<=7;r++){
@@ -45,12 +46,13 @@ void board_print(board_t *board){
     }
 }
 
-int board_from_fen(board_t *board, char *fen){
+int board_from_fen(board_t *board, char const *fen){
     char board_s[72+1];
     char to_move_c;
     char castle_flags_s[4+1];
     char ep_square_s[2+1];
-    int ret,p,i;
+    int ret,i;
+    size_t p;
     char c;
     uint8 row, file;
     board_init(board);
@@ -92,8 +94,8 @@ int board_from_fen(board_t *board, char *fen){
         if(p>=strlen(castle_flags_s)) break;
         c=castle_flags_s[p++];
         switch(c){
-	    case '-' :
-	        break;
+        case '-' :
+            break;
             case 'K' :
                 SET_WHITE_CAN_CASTLE_SHORT(board->castle_flags);
                 break;
@@ -109,7 +111,7 @@ int board_from_fen(board_t *board, char *fen){
             default:
                 return 1;
                 break;
-          
+
         }
     }
     board->ep_file=NO_EP_FILE;
@@ -129,7 +131,6 @@ int board_from_fen(board_t *board, char *fen){
             }
         }
     }
-       
+
     return 0;
 }
-
