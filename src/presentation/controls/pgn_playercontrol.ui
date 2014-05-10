@@ -138,10 +138,17 @@
     </widget>
    </item>
    <item>
-    <widget class="QTextBrowser" name="pgn_view"/>
+    <widget class="GKChess::UI::PGNView" name="pgn_view"/>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GKChess::UI::PGNView</class>
+   <extends>QTextBrowser</extends>
+   <header>gkchess_pgnview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>
