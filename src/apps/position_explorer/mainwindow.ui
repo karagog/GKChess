@@ -71,6 +71,7 @@
     <property name="title">
      <string>&amp;Windows</string>
     </property>
+    <addaction name="actionMove_History"/>
     <addaction name="actionOpening_Book_Reader"/>
    </widget>
    <addaction name="menuFile"/>
@@ -157,6 +158,11 @@
   <action name="actionChess960_Starting_Position">
    <property name="text">
     <string>&amp;Chess960 Starting Position</string>
+   </property>
+  </action>
+  <action name="actionMove_History">
+   <property name="text">
+    <string>Move &amp;History</string>
    </property>
   </action>
  </widget>

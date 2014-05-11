@@ -82,7 +82,8 @@ static void __add_move_data(Board &b, List<MoveData> &l, const List<PGN_MoveData
         // Recursively populate any variants
         if(pmd.Variants.Length() > 0)
         {
-            __add_move_data(b, md.Variants, pmd.Variants);
+            md.Variants.Append(List<MoveData>());
+            __add_move_data(b, md.Variants.Back(), pmd.Variants);
 
             // After the last function returns the board could be in any state, so set it back now
             b.FromFEN(md.Position);

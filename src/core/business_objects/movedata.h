@@ -16,10 +16,12 @@ limitations under the License.*/
 #define GKCHESS_MOVEDATA_H
 
 #include "gkchess_piece.h"
+#include "gkchess_pgn_movedata.h"
 
 NAMESPACE_GKCHESS;
 
 class Square;
+class Board;
 
 
 /** Holds all the information we need to do a move on a Board object. */
@@ -62,13 +64,17 @@ struct MoveData
     /** Stores the initial position before the move. */
     GUtil::String Position;
 
-    GUtil::List<MoveData> Variants;
+    /** Stores a list of variant lines for this move. */
+    GUtil::List<GUtil::List<MoveData> > Variants;
 
     /** Returns true if this is a null move data (default constructed). */
     bool IsNull() const{ return -1 == PlyNumber; }
 
     /** Returns whose move this is, according to the ply number. */
     Piece::AllegienceEnum Whose() const{ return 0 == ((PlyNumber - 1) & 0x1) ? Piece::White : Piece::Black; }
+
+    /** Stores the PGN data for the move. */
+    PGN_MoveData PGNData;
 
     MoveData()
         :PlyNumber(-1),

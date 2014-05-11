@@ -21,100 +21,6 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS;
 
 
-PGN_MoveData::PGN_MoveData()
-    :MoveNumber(0),
-      PieceMoved(0),
-      PiecePromoted(0),
-      SourceFile(0),
-      SourceRank(0),
-      DestFile(0),
-      DestRank(0)
-{}
-
-static const char *__convert_piece_char_to_name(char c)
-{
-    switch(c)
-    {
-    case '\0':
-    case 'P':
-        return "Pawn";
-    case 'K':
-        return "King";
-    case 'Q':
-        return "Queen";
-    case 'B':
-        return "Bishop";
-    case 'N':
-        return "Knight";
-    case 'R':
-        return "Rook";
-    case 'A':
-        return "Archbishop";
-    case 'C':
-        return "Chancellor";
-    default:
-        return "";
-    }
-}
-
-String PGN_MoveData::ToString() const
-{
-    String ret(25);
-    if(Flags.TestFlag(CastleHSide))
-        ret.Append("Castle");
-    else if(Flags.TestFlag(CastleQueenSide))
-        ret.Append("Castle Queenside");
-    else
-    {
-        ret.Append(__convert_piece_char_to_name(PieceMoved));
-
-        if(0 != SourceFile || 0 != SourceRank)
-        {
-            ret.Append(" on ");
-            if(0 != SourceFile)
-                ret.Append(SourceFile);
-            if(0 != SourceRank)
-                ret.Append(String::FromInt(SourceRank));
-        }
-
-        if(Flags.TestFlag(Capture))
-            ret.Append(" takes ");
-        else
-            ret.Append(" to ");
-
-        ret.Append(String::Format("%c%d", DestFile, DestRank));
-
-        if(0 != PiecePromoted)
-            ret.Append(String::Format(" promotes to %s",
-                                      __convert_piece_char_to_name(PiecePromoted)));
-    }
-
-    if(Flags.TestFlag(Check))
-        ret.Append(" check");
-    else if(Flags.TestFlag(CheckMate))
-        ret.Append(" checkmate");
-
-    if(Flags.TestFlag(Blunder))
-        ret.Append(" (blunder)");
-    else if(Flags.TestFlag(Mistake))
-        ret.Append(" (mistake)");
-    else if(Flags.TestFlag(Dubious))
-        ret.Append(" (dubious move)");
-    else if(Flags.TestFlag(Interesting))
-        ret.Append(" (interesting move)");
-    else if(Flags.TestFlag(Good))
-        ret.Append(" (good move)");
-    else if(Flags.TestFlag(Brilliant))
-        ret.Append(" (brilliant move)");
-
-    if(!Comment.IsEmpty())
-        ret.Append(String::Format(" {%s}", Comment.ConstData()));
-
-    return ret;
-}
-
-
-
 /** Populates the heading tags and updates the iterator to the start of the move data section. */
 static void __parse_heading(PGN_GameData &gm,
                             typename String::const_iterator &iter,
@@ -240,17 +146,16 @@ static bool __is_invalid_promotion_piece(char c)
 PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
 {
     PGN_MoveData ret;
-    ret.MoveText = s;
 
-    //GDEBUG(String::Format("Parsing '%s'", ret.MoveText.ConstData()));
+    //GDEBUG(String::Format("Parsing '%s'", s.ConstData()));
 
-    if(-1 != ret.MoveText.ToUpper().IndexOf("O-O-O"))
-        ret.Flags.SetFlag(PGN_MoveData::CastleQueenSide, true);
-    else if(-1 != ret.MoveText.ToUpper().IndexOf("O-O"))
+    if(-1 != s.ToUpper().IndexOf("O-O-O"))
+        ret.Flags.SetFlag(PGN_MoveData::CastleASide, true);
+    else if(-1 != s.ToUpper().IndexOf("O-O"))
         ret.Flags.SetFlag(PGN_MoveData::CastleHSide, true);
     else
     {
-        typename String::const_iterator iter(ret.MoveText.begin());
+        typename String::const_iterator iter(s.begin());
 
         // The first character must be a piece type, or we don't record it
         if(String::IsUpper(*iter)){
@@ -261,7 +166,7 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
         // Parse the source and destination squares
         Vector<char> files(2);
         Vector<int> ranks(2);
-        for(; iter != ret.MoveText.end(); ++iter)
+        for(; iter != s.end(); ++iter)
         {
             char c = *iter.Current();
             int tmp_number = __get_valid_rank_number(c);
@@ -311,33 +216,33 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
             THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid rank info");
 
         // Is there a piece promotion?
-        GINT32 ind = ret.MoveText.IndexOf("=");
+        GINT32 ind = s.IndexOf("=");
         if(-1 != ind){
-            if(ind + 1 >= ret.MoveText.Length() ||
-                    __is_invalid_promotion_piece(ret.MoveText[ind+1]))
+            if(ind + 1 >= s.Length() ||
+                    __is_invalid_promotion_piece(s[ind+1]))
                 THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid promotion piece");
-            ret.PiecePromoted = ret.MoveText[ind+1];
+            ret.PiecePromoted = s[ind+1];
         }
     }
 
     // See if the move puts the king in check or checkmate
-    if(-1 != ret.MoveText.IndexOf('#'))
+    if(-1 != s.IndexOf('#'))
         ret.Flags.SetFlag(PGN_MoveData::CheckMate, true);
-    else if(-1 != ret.MoveText.IndexOf('+'))
+    else if(-1 != s.IndexOf('+'))
         ret.Flags.SetFlag(PGN_MoveData::Check, true);
 
     // See if the annotator has an assessment of this move
-    if(-1 != ret.MoveText.IndexOf("??"))
+    if(-1 != s.IndexOf("??"))
         ret.Flags.SetFlag(PGN_MoveData::Blunder, true);
-    else if(-1 != ret.MoveText.IndexOf("!!"))
+    else if(-1 != s.IndexOf("!!"))
         ret.Flags.SetFlag(PGN_MoveData::Brilliant, true);
-    else if(-1 != ret.MoveText.IndexOf("!?"))
+    else if(-1 != s.IndexOf("!?"))
         ret.Flags.SetFlag(PGN_MoveData::Interesting, true);
-    else if(-1 != ret.MoveText.IndexOf("?!"))
+    else if(-1 != s.IndexOf("?!"))
         ret.Flags.SetFlag(PGN_MoveData::Dubious, true);
-    else if(-1 != ret.MoveText.IndexOf('?'))
+    else if(-1 != s.IndexOf('?'))
         ret.Flags.SetFlag(PGN_MoveData::Mistake, true);
-    else if(-1 != ret.MoveText.IndexOf('!'))
+    else if(-1 != s.IndexOf('!'))
         ret.Flags.SetFlag(PGN_MoveData::Good, true);
 
     return ret;

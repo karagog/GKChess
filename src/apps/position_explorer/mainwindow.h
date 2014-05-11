@@ -19,6 +19,7 @@ limitations under the License.*/
 #include "gkchess_coloredpieceiconfactory.h"
 #include "gkchess_uci_client.h"
 #include "gkchess_pgn_player.h"
+#include "gkchess_movehistorycontrol.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -39,7 +40,7 @@ class MainWindow : public QMainWindow
     GKChess::ObservableBoard m_board;
     GKChess::UI::PGN_PlayerControl *m_pgnPlayer;
     GKChess::UCI_Client *m_uci;
-
+    GKChess::UI::MoveHistoryControl *m_moveHistory;
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
 public:
@@ -52,7 +53,9 @@ private slots:
     void _load_fen_clipboard();
     void _load_pgn_clipboard();
     void _load_pgn_file();
+
     void _opening_book_reader();
+    void _show_move_history();
 
     void _setup_standard_chess();
     void _setup_random_chess960();

@@ -54,6 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionOpening_Book_Reader, SIGNAL(triggered()), this, SLOT(_opening_book_reader()));
     connect(ui->actionStandard_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_standard_chess()));
     connect(ui->actionChess960_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_random_chess960()));
+    connect(ui->actionMove_History, SIGNAL(triggered()), this, SLOT(_show_move_history()));
 
     connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
 
@@ -63,6 +64,9 @@ MainWindow::MainWindow(QWidget *parent)
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
     ui->engine_control->Initialize(m_uci, &m_board);
+
+    m_moveHistory = new MoveHistoryControl(m_board, this),
+    _show_move_history();
 
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
@@ -160,6 +164,16 @@ void MainWindow::_opening_book_reader()
     d->setWidget(br);
     addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
     br->show();
+}
+
+void MainWindow::_show_move_history()
+{
+    if(!m_moveHistory->isVisible()){
+        QDockWidget *d = new QDockWidget("Move History", this);
+        d->setWidget(m_moveHistory);
+        addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
+        m_moveHistory->show();
+    }
 }
 
 void MainWindow::_setup_standard_chess()

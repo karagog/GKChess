@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MoveHistoryControl</class>
+ <widget class="QWidget" name="MoveHistoryControl">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>420</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="GKChess::UI::PGNView" name="pgnView"/>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GKChess::UI::PGNView</class>
+   <extends>QTextEdit</extends>
+   <header>gkchess_pgnview.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+ <slots>
+  <slot>goto_first()</slot>
+  <slot>go_back()</slot>
+  <slot>go_forward()</slot>
+ </slots>
+</ui>

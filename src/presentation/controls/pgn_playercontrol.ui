@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>409</width>
-    <height>495</height>
+    <height>107</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -137,18 +137,8 @@
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="GKChess::UI::PGNView" name="pgn_view"/>
-   </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>GKChess::UI::PGNView</class>
-   <extends>QTextBrowser</extends>
-   <header>gkchess_pgnview.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>

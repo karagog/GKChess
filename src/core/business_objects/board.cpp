@@ -44,12 +44,6 @@ Board::piece_index_t::piece_index_t()
 
 void Board::piece_index_t::copy_from(const piece_index_t &o, const Board &b)
 {
-    int probe1 = sizeof(pieces);
-    int probe2 = sizeof(pieces[0]);
-    int probe3 = probe1 / probe2;
-
-    int probe4 = sizeof(pieces[0][0]);
-    int probe5 = probe2/probe4;
     for(GUINT32 i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i)
     {
         for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j)
@@ -112,8 +106,8 @@ void Board::piece_index_t::update_piece(const Piece &p,
 
 void Board::piece_index_t::clear()
 {
-    for(int i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i){
-        for(int j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j){
+    for(GUINT32 i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i){
+        for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j){
             pieces[i][j].Empty();
         }
     }
@@ -435,11 +429,6 @@ Board::MoveValidationEnum Board::Move(const MoveData &md)
 Board::MoveValidationEnum Board::Move2(const Square &src, const Square &dest, IPlayerResponse *pr)
 {
     return Move(GenerateMoveData(src, dest, pr));
-}
-
-void Board::Resign(Piece::AllegienceEnum)
-{
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
 }
 
 void Board::Clear()
@@ -1119,7 +1108,9 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         // Copy this board to simulate the move, and see if we're in check.
         Board cpy(*this);
         cpy.move_p(cpy.GenerateMoveData(cpy.SquareAt(s.GetColumn(), s.GetRow()),
-                                        cpy.SquareAt(d.GetColumn(), d.GetRow())));
+                                        cpy.SquareAt(d.GetColumn(), d.GetRow()),
+                                        0,
+                                        false));
         if(cpy.IsInCheck(p.GetAllegience()))
             return InvalidCheck;
     }
@@ -1236,7 +1227,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         ret.Destination = &SquareAt(rook_loc, v[0]->GetRow());
         ret.PieceMoved = Piece(Piece::King, turn);
     }
-    else if(m.Flags.TestFlag(PGN_MoveData::CastleQueenSide))
+    else if(m.Flags.TestFlag(PGN_MoveData::CastleASide))
     {
         ret.CastleType = MoveData::CastleASide;
 
@@ -1428,12 +1419,15 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         }
     }
 
+    ret.PGNData = m;
+
     return ret;
 }
 
 MoveData Board::GenerateMoveData(const Square &s,
                                  const Square &d,
-                                 IPlayerResponse *uf) const
+                                 IPlayerResponse *uf,
+                                 bool pgn_data) const
 {
     MoveData ret;
     bool ok = true;
@@ -1475,6 +1469,77 @@ MoveData Board::GenerateMoveData(const Square &s,
 
         if(!d.GetPiece().IsNull() && ret.CastleType == MoveData::NoCastle)
             ret.PieceCaptured = d.GetPiece();
+
+        if(pgn_data)
+        {
+            // Create the PGN data for the move
+            ret.PGNData.MoveNumber = GetFullMoveNumber();
+            ret.PGNData.PieceMoved = s.GetPiece().ToPGN()[0];
+            if(!ret.PiecePromoted.IsNull())
+                ret.PGNData.PiecePromoted = ret.PiecePromoted.ToPGN()[0];
+
+            if(ret.CastleType == MoveData::CastleASide)
+                ret.PGNData.Flags.SetFlag(PGN_MoveData::CastleASide, true);
+            else if(ret.CastleType == MoveData::CastleHSide)
+                ret.PGNData.Flags.SetFlag(PGN_MoveData::CastleHSide, true);
+            else if(!ret.PieceCaptured.IsNull()){
+                ret.PGNData.Flags.SetFlag(PGN_MoveData::Capture, true);
+
+                // When pawns capture we always show the source file
+                if(Piece::Pawn == ret.PieceMoved.GetType())
+                    ret.PGNData.SourceFile = 'a' + ret.Source->GetColumn();
+            }
+
+            // Add the source rank/file info if necessary
+            if(ret.PGNData.SourceFile == 0)
+            {
+                // If more than one piece could reach the destination square
+                Vector<const Square *> pieces = m_index.find_pieces(ret.PieceMoved);
+                if(pieces.Length() > 1)
+                {
+                    Vector<const Square *> possible_movers;
+                    G_FOREACH_CONST(const Square *s, pieces){
+                        if(s != ret.Source && ValidMove == ValidateMove(*s, *ret.Destination))
+                            possible_movers.PushBack(s);
+                    }
+
+                    if(0 < possible_movers.Length())
+                    {
+                        bool row_match = false;
+                        for(int i = 0; i < possible_movers.Length(); ++i){
+                            if(ret.Source->GetRow() == possible_movers[i]->GetRow()){
+                                row_match = true;
+                                possible_movers.RemoveAt(i);
+                                break;
+                            }
+                        }
+
+                        bool col_match = false;
+                        for(int i = 0; i < possible_movers.Length(); ++i){
+                            if(ret.Source->GetColumn() == possible_movers[i]->GetColumn()){
+                                col_match = true;
+                                break;
+                            }
+                        }
+
+                        if(col_match)
+                            ret.PGNData.SourceRank = ret.Source->GetRow() + 1;
+                        if(row_match || (!col_match && !row_match))
+                            ret.PGNData.SourceFile = 'a' + ret.Source->GetColumn();
+                    }
+                }
+            }
+
+            ret.PGNData.DestFile = 'a' + ret.Destination->GetColumn();
+            ret.PGNData.DestRank = ret.Destination->GetRow() + 1;
+
+            Board cpy = *this;
+            cpy.move_p(ret);
+            if(cpy.IsInCheckMate(ret.PieceMoved.GetOppositeAllegience()))
+                ret.PGNData.Flags.SetFlag(PGN_MoveData::CheckMate, true);
+            else if(cpy.IsInCheck(ret.PieceMoved.GetOppositeAllegience()))
+                ret.PGNData.Flags.SetFlag(PGN_MoveData::Check, true);
+        }
     }
 
     return ret;
@@ -1656,6 +1721,12 @@ bool Board::IsInCheck(Piece::AllegienceEnum a) const
     return ret;
 }
 
+bool Board::IsInCheckMate(Piece::AllegienceEnum) const
+{
+    /** \todo Implement this */
+    return false;
+}
+
 
 
 
@@ -1717,6 +1788,14 @@ void ObservableBoard::SetPiece(const Piece &p, const Square &s)
     emit NotifySquareAboutToBeUpdated(s);
     Board::SetPiece(p, s);
     emit NotifySquareUpdated(s);
+}
+
+void ObservableBoard::FromFEN(const String &s)
+{
+    // This way we don't emit a signal every time a piece is placed
+    Board newboard;
+    newboard.FromFEN(s);
+    *this = newboard;
 }
 
 void ObservableBoard::move_p(const MoveData &md)

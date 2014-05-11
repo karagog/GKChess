@@ -15,17 +15,17 @@ limitations under the License.*/
 #ifndef GKCHESS_PGNVIEW_H
 #define GKCHESS_PGNVIEW_H
 
-#include <QTextBrowser>
+#include <QTextEdit>
 
 namespace GKChess{ namespace UI{
 
 
 /** A view that displays PGN data */
 class PGNView :
-        public QTextBrowser
+        public QTextEdit
 {
     Q_OBJECT
-    
+
     bool m_isMousePressed;
 public:
 
@@ -33,7 +33,7 @@ public:
     explicit PGNView(QWidget *parent = 0);
     ~PGNView();
 
-    
+
 protected:
 
     virtual void mousePressEvent(QMouseEvent *);
@@ -41,11 +41,11 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent *);
     virtual void mouseDoubleClickEvent(QMouseEvent *);
 
-    
+
 private:
 
     void _highlight_text_for_position(const QPoint &);
-    
+
 };
 
 

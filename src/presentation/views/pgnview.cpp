@@ -23,7 +23,7 @@ NAMESPACE_GKCHESS1(UI);
 
 
 PGNView::PGNView(QWidget *p)
-    :QTextBrowser(p),
+    :QTextEdit(p),
       m_isMousePressed(false)
 {
     setReadOnly(true);

@@ -190,7 +190,7 @@ public:
         implementations, but it is left virtual in case you want to optimize it
         for your board implementation.
     */
-    void FromFEN(const GUtil::String &);
+    virtual void FromFEN(const GUtil::String &);
 
     /** Serializes the board object into a FEN string.
         \note The default implementation should work for all board implementations,
@@ -258,7 +258,7 @@ public:
      *  \returns A move data object, which is always populated except in the case of a
      *  pawn promotion that was cancelled, in which case it will be null (test with isnull())
     */
-    virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse * = 0) const;
+    virtual MoveData GenerateMoveData(const Square &, const Square &, IPlayerResponse * = 0, bool include_pgn_data = true) const;
 
     /** Creates a MoveData object from a PGN MoveData object. */
     virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
@@ -279,12 +279,12 @@ public:
     /** A convenience function generates move data, validates and executes the move. */
     MoveValidationEnum Move2(const Square &src, const Square &dest, IPlayerResponse *pr = 0);
 
-    /** Indicate that the given side wants to resign. */
-    void Resign(Piece::AllegienceEnum);
-
 
     /** Returns true if there are currently threats on the given allegience's king. */
     bool IsInCheck(Piece::AllegienceEnum) const;
+
+    /** Returns true if the given allegience's king is in checkmate. */
+    bool IsInCheckMate(Piece::AllegienceEnum) const;
 
 
     /** \name Game State
@@ -383,6 +383,9 @@ public:
 
     /** Emits the proper signals when a piece is changed. */
     void SetPiece(Piece const &p, Square const &s);
+
+    /** Overridden to be more efficient by only notifying that the board was reset. */
+    void FromFEN(const GUtil::String &);
 
 
 signals:
