@@ -50,6 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionLoad_FEN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_fen_clipboard()));
     connect(ui->actionLoad_PGN_in_Clipboard, SIGNAL(triggered()), this, SLOT(_load_pgn_clipboard()));
     connect(ui->actionLoadPGN_File, SIGNAL(triggered()), this, SLOT(_load_pgn_file()));
+    connect(ui->actionPosition_to_Clipboard, SIGNAL(triggered()), this, SLOT(_position_to_clipboard()));
     connect(ui->actionRandom_Chess960_Position, SIGNAL(triggered()), this, SLOT(_random_chess960_position()));
     connect(ui->actionOpening_Book_Reader, SIGNAL(triggered()), this, SLOT(_opening_book_reader()));
     connect(ui->actionStandard_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_standard_chess()));
@@ -98,6 +99,7 @@ bool MainWindow::eventFilter(QObject *o, QEvent *ev)
 
             QMenu *menu = new QMenu(this);
             menu->addMenu(ui->menu_Load_Position);
+            menu->addMenu(ui->menuExport);
             menu->move(cmev->globalPos());
             menu->show();
 
@@ -186,6 +188,11 @@ void MainWindow::_setup_random_chess960()
     m_board.SetupNewGame(Board::SetupChess960);
 }
 
+void MainWindow::_position_to_clipboard()
+{
+    if(QApplication::clipboard())
+        QApplication::clipboard()->setText(m_board.ToFEN().ToQString());
+}
 
 
 

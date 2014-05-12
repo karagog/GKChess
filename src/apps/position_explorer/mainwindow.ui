@@ -51,7 +51,15 @@
      <addaction name="actionLoad_PGN_in_Clipboard"/>
      <addaction name="actionLoadPGN_File"/>
     </widget>
+    <widget class="QMenu" name="menuExport">
+     <property name="title">
+      <string>&amp;Export</string>
+     </property>
+     <addaction name="actionPosition_to_Clipboard"/>
+    </widget>
     <addaction name="menu_Load_Position"/>
+    <addaction name="separator"/>
+    <addaction name="menuExport"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -163,6 +171,11 @@
   <action name="actionMove_History">
    <property name="text">
     <string>Move &amp;History</string>
+   </property>
+  </action>
+  <action name="actionPosition_to_Clipboard">
+   <property name="text">
+    <string>Position to &amp;Clipboard (FEN)</string>
    </property>
   </action>
  </widget>

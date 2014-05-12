@@ -53,6 +53,7 @@ private slots:
     void _load_fen_clipboard();
     void _load_pgn_clipboard();
     void _load_pgn_file();
+    void _position_to_clipboard();
 
     void _opening_book_reader();
     void _show_move_history();
