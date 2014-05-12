@@ -351,6 +351,11 @@ void Board::move_p(const MoveData &md)
     {
         SetPiece(Piece(), src);
         SetPiece(md.PieceMoved, dest);
+
+        // If it was an enpassant move
+        if(md.PieceMoved.GetType() == Piece::Pawn &&
+                GetEnPassantSquare() && md.Destination == GetEnPassantSquare())
+            SetPiece(Piece(), SquareAt(md.Destination->GetColumn(), md.Source->GetRow()));
     }
     else
     {
@@ -1469,6 +1474,12 @@ MoveData Board::GenerateMoveData(const Square &s,
 
         if(!d.GetPiece().IsNull() && ret.CastleType == MoveData::NoCastle)
             ret.PieceCaptured = d.GetPiece();
+        else if(ret.PieceMoved.GetType() == Piece::Pawn &&
+                GetEnPassantSquare() &&
+                &d == GetEnPassantSquare())
+        {
+            ret.PieceCaptured = SquareAt(d.GetColumn(), s.GetRow()).GetPiece();
+        }
 
         if(pgn_data)
         {
