@@ -5,13 +5,18 @@
 #include "hash.h"
 #include <malloc.h>
 #include <stdio.h>
+#include <assert.h>
 
 #define MAX_MOVES 50
 
-PG_EXPORT move_t *lookup_moves(void *f, char const *fen, unsigned int *ret_length)
+PG_EXPORT pg_move_t *pg_lookup_moves(void *f, char const *fen, unsigned int *ret_length)
 {
-    move_t *ret = 0;
+    pg_move_t *ret = 0;
     board_t board;
+
+    if(ret_length)
+        *ret_length = 0;
+
     if(0 == board_from_fen(&board,fen))
     {
         int i;
@@ -42,10 +47,10 @@ PG_EXPORT move_t *lookup_moves(void *f, char const *fen, unsigned int *ret_lengt
                 total_weight+=entries[i].weight;
 
             // Allocate the return array
-            ret = (move_t *)malloc(count * sizeof(move_t));
+            ret = (pg_move_t *)malloc(count * sizeof(pg_move_t));
             if(ret)
             {
-                move_t *cur_move = ret;
+                pg_move_t *cur_move = ret;
                 entry_t *cur_entry = entries;
                 for(i = 0; i < count; ++i, ++cur_move, ++cur_entry)
                 {
@@ -61,7 +66,7 @@ PG_EXPORT move_t *lookup_moves(void *f, char const *fen, unsigned int *ret_lengt
     return ret;
 }
 
-PG_EXPORT void cleanup_moves(move_t *a)
+PG_EXPORT void pg_cleanup_moves(pg_move_t *a)
 {
     free(a);
 }
