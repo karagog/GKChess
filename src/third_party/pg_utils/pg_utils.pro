@@ -29,4 +29,5 @@ SOURCES += \
     move.c
 
 OTHER_FILES += \
-    README
+    README \
+    CHANGES

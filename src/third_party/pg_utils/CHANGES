@@ -1,0 +1,11 @@
+============================================================================
+Updated May, 2014 by George Karagoulis:
+
+Made a C library for direct use in applications.
+
+I simplified the lib interface to 4 exposed functions and 1 header
+you need to include.  In theory you can use this shared lib directly
+at runtime from any code, including interpreted or managed code, but I haven't
+tested this.
+
+
