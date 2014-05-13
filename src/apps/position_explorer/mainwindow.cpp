@@ -56,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionStandard_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_standard_chess()));
     connect(ui->actionChess960_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_random_chess960()));
     connect(ui->actionMove_History, SIGNAL(triggered()), this, SLOT(_show_move_history()));
+    connect(ui->action_Engine_Control, SIGNAL(triggered()), this, SLOT(_show_engine_control()));
 
     connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
 
@@ -64,7 +65,9 @@ MainWindow::MainWindow(QWidget *parent)
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    ui->engine_control->Initialize(m_uci, &m_board);
+    m_engineControl = new EngineControl(this);
+    m_engineControl->Initialize(m_uci, &m_board);
+    _show_engine_control();
 
     m_moveHistory = new MoveHistoryControl(m_board, this),
     _show_move_history();
@@ -97,11 +100,8 @@ bool MainWindow::eventFilter(QObject *o, QEvent *ev)
             // Display the context menu:
             QContextMenuEvent *cmev = static_cast<QContextMenuEvent *>(ev);
 
-            QMenu *menu = new QMenu(this);
-            menu->addMenu(ui->menu_Load_Position);
-            menu->addMenu(ui->menuExport);
-            menu->move(cmev->globalPos());
-            menu->show();
+            ui->menuBoard->move(cmev->globalPos());
+            ui->menuBoard->show();
 
             ev->accept();
             ret = true;
@@ -175,6 +175,16 @@ void MainWindow::_show_move_history()
         d->setWidget(m_moveHistory);
         addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
         m_moveHistory->show();
+    }
+}
+
+void MainWindow::_show_engine_control()
+{
+    if(!m_engineControl->isVisible()){
+        QDockWidget *d = new QDockWidget("Engine Control", this);
+        d->setWidget(m_engineControl);
+        addDockWidget(Qt::RightDockWidgetArea, d, Qt::Vertical);
+        m_engineControl->show();
     }
 }
 

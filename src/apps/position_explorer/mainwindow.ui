@@ -36,18 +36,16 @@
      <height>20</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
+   <widget class="QMenu" name="menuBoard">
     <property name="title">
-     <string>&amp;File</string>
+     <string>&amp;Board</string>
     </property>
     <widget class="QMenu" name="menu_Load_Position">
      <property name="title">
       <string>&amp;Load Position</string>
      </property>
-     <addaction name="actionStandard_Starting_Position"/>
-     <addaction name="actionChess960_Starting_Position"/>
-     <addaction name="separator"/>
      <addaction name="actionLoad_FEN_in_Clipboard"/>
+     <addaction name="separator"/>
      <addaction name="actionLoad_PGN_in_Clipboard"/>
      <addaction name="actionLoadPGN_File"/>
     </widget>
@@ -57,6 +55,14 @@
      </property>
      <addaction name="actionPosition_to_Clipboard"/>
     </widget>
+    <widget class="QMenu" name="menu_New_Position">
+     <property name="title">
+      <string>&amp;New Position</string>
+     </property>
+     <addaction name="actionStandard_Starting_Position"/>
+     <addaction name="actionChess960_Starting_Position"/>
+    </widget>
+    <addaction name="menu_New_Position"/>
     <addaction name="menu_Load_Position"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
@@ -77,12 +83,13 @@
    </widget>
    <widget class="QMenu" name="menuWindows">
     <property name="title">
-     <string>&amp;Windows</string>
+     <string>&amp;Widgets</string>
     </property>
     <addaction name="actionMove_History"/>
+    <addaction name="action_Engine_Control"/>
     <addaction name="actionOpening_Book_Reader"/>
    </widget>
-   <addaction name="menuFile"/>
+   <addaction name="menuBoard"/>
    <addaction name="menu_Tools"/>
    <addaction name="menuWindows"/>
    <addaction name="menuHelp"/>
@@ -96,33 +103,6 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <widget class="QDockWidget" name="dockWidget_2">
-   <property name="windowTitle">
-    <string>Engine Control</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="GKChess::UI::EngineControl" name="engine_control" native="true"/>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <action name="actionLoad_FEN_in_Clipboard">
    <property name="text">
     <string>&amp;FEN String in Clipboard</string>
@@ -145,7 +125,7 @@
   </action>
   <action name="actionRandom_Chess960_Position">
    <property name="text">
-    <string>&amp;Random Chess960 Position</string>
+    <string>&amp;Chess960 Position Generator</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -155,20 +135,23 @@
   </action>
   <action name="actionOpening_Book_Reader">
    <property name="text">
-    <string>Opening &amp;Book Reader</string>
+    <string>&amp;Book Reader</string>
    </property>
   </action>
   <action name="actionStandard_Starting_Position">
    <property name="text">
-    <string>&amp;Standard Starting Position</string>
+    <string>&amp;Standard</string>
    </property>
   </action>
   <action name="actionChess960_Starting_Position">
    <property name="text">
-    <string>&amp;Chess960 Starting Position</string>
+    <string>&amp;Chess960</string>
    </property>
   </action>
   <action name="actionMove_History">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Move &amp;History</string>
    </property>
@@ -178,6 +161,14 @@
     <string>Position to &amp;Clipboard (FEN)</string>
    </property>
   </action>
+  <action name="action_Engine_Control">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Engine Control</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -185,12 +176,6 @@
    <class>GKChess::UI::BoardView</class>
    <extends>QWidget</extends>
    <header>gkchess_boardview.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>GKChess::UI::EngineControl</class>
-   <extends>QWidget</extends>
-   <header>gkchess_enginecontrol.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
