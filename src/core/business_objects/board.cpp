@@ -36,6 +36,11 @@ static int __map_2d_indices_to_1d(GUINT32 col, GUINT32 row)
     return (col << 3) | row;
 }
 
+static int __back_rank(GKChess::Piece::AllegienceEnum a)
+{
+    return a == GKChess::Piece::White ? 0 : 7;
+}
+
 NAMESPACE_GKCHESS;
 
 
@@ -352,10 +357,18 @@ void Board::move_p(const MoveData &md)
         SetPiece(Piece(), src);
         SetPiece(md.PieceMoved, dest);
 
-        // If it was an enpassant move
-        if(md.PieceMoved.GetType() == Piece::Pawn &&
-                GetEnPassantSquare() && md.Destination == GetEnPassantSquare())
-            SetPiece(Piece(), SquareAt(md.Destination->GetColumn(), md.Source->GetRow()));
+        if(md.PieceMoved.GetType() == Piece::Pawn)
+        {
+            // If it was an enpassant move
+            if(GetEnPassantSquare() && md.Destination == GetEnPassantSquare())
+                SetPiece(Piece(), SquareAt(md.Destination->GetColumn(), md.Source->GetRow()));
+
+            // If it was a pawn promotion
+            else if(md.Destination->GetRow() == __back_rank(md.PieceMoved.GetOppositeAllegience())){
+                SetPiece(md.PiecePromoted, dest);
+                GASSERT(!md.PiecePromoted.IsNull());
+            }
+        }
     }
     else
     {
