@@ -16,6 +16,7 @@ void board_init(board_t *board){
     board->to_move=1;
 }
 
+/*
 void board_print(board_t *board){
     uint8 r,f;
     for(r=8;r>0;r--){
@@ -45,6 +46,7 @@ void board_print(board_t *board){
         printf("En passant file: %c\n",board->ep_file+'a');
     }
 }
+*/
 
 int board_from_fen(board_t *board, char const *fen){
     char board_s[72+1];
@@ -65,7 +67,7 @@ int board_from_fen(board_t *board, char const *fen){
     row=7;
     file=0;
     p=0;
-    while(TRUE){
+    while(1){
         if(p>=strlen(board_s)) break;
         c=board_s[p++];
         if(c=='/'){
@@ -90,7 +92,7 @@ int board_from_fen(board_t *board, char const *fen){
         board->to_move=BLACK;
     }
     p=0;
-    while(TRUE){
+    while(1){
         if(p>=strlen(castle_flags_s)) break;
         c=castle_flags_s[p++];
         switch(c){

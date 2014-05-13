@@ -1,7 +1,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "pg_types.h"
+#include "pg_utils.h"
 
 #define NO_EP_FILE 8
 #define WHITE_CAN_CASTLE_SHORT(flags) (flags & 1)
@@ -23,8 +23,8 @@ typedef struct {
 } board_t;
 
 void board_init(board_t *board);
-void board_print(board_t *board);
 int board_from_fen(board_t *board, char const *fen);
+//void board_print(board_t *board);
 
 #endif
 

@@ -7,18 +7,26 @@ TARGET = pg_utils
 
 #DEFINES += DEBUG
 
+DEFINES += DLL_EXPORT
+
+QMAKE_CFLAGS += -fvisibility=hidden
+
 HEADERS += \
     board.h \
     book.h \
     hash.h \
     move.h \
-    pg_types.h
+    lookup.h \
+    file.h \
+    pg_utils.h
 
 SOURCES += \
-    board.cpp \
-    book.cpp \
-    hash.cpp \
-    move.cpp
+    lookup.c \
+    file.c \
+    hash.c \
+    board.c \
+    book.c \
+    move.c
 
 OTHER_FILES += \
     README

@@ -1,9 +1,7 @@
 #ifndef BOOK_H
 #define BOOK_H
 
-#include <stdio.h>
-
-#include "pg_types.h"
+#include "pg_utils.h"
 
 typedef struct {
     uint64 key;
@@ -12,12 +10,8 @@ typedef struct {
     uint32 learn;
 } entry_t;
 
-extern entry_t entry_none;
-
-
-
-void entry_to_file(FILE *f, entry_t *entry);
-int entry_from_file(FILE *f, entry_t *entry);
-int find_key(FILE *f, uint64 key, entry_t *entry);
+//static void entry_to_file(void *handle, entry_t *entry);
+int entry_from_file(void *handle, entry_t *entry);
+int find_key(void *handle, uint64 key, entry_t *entry);
 
 #endif

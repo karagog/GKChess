@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "pg_types.h"
+#include "pg_utils.h"
 #include "board.h"
 
 #ifdef _MSC_VER
@@ -9,7 +9,7 @@
 #  define U64(u) (u##ULL)
 #endif
 
-uint64 Random64[781] = {
+static uint64 Random64[781] = {
    U64(0x9D39247E33776D41), U64(0x2AF7398005AAA5C7), U64(0x44DB015024623547), U64(0x9C15F73E62A76AE2),
    U64(0x75834465489C0C89), U64(0x3290AC3A203001BF), U64(0x0FBBAD1F61042279), U64(0xE83A908FF2FB60CA),
    U64(0x0D7E765D58755C10), U64(0x1A083822CEAFE02D), U64(0x9605D5F0E25EC3B0), U64(0xD021FF5CD13A2ED5),
@@ -208,12 +208,12 @@ uint64 Random64[781] = {
    U64(0xF8D626AAAF278509),
 };
 
-uint64 *RandomPiece     =Random64;
-uint64 *RandomCastle    =Random64+768;
-uint64 *RandomEnPassant =Random64+772;
-uint64 *RandomTurn      =Random64+780;
+static uint64 *RandomPiece     =Random64;
+static uint64 *RandomCastle    =Random64+768;
+static uint64 *RandomEnPassant =Random64+772;
+static uint64 *RandomTurn      =Random64+780;
 
-char piece_names[] = "pPnNbBrRqQkK";
+static char const piece_names[] = "pPnNbBrRqQkK";
 
 uint64 hash(board_t *board){
     uint64 key=0;

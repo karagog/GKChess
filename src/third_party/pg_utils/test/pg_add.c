@@ -69,13 +69,13 @@ int main(int argc, char *argv[]){
     }
     entries[0]=entry;
     count=1;
-    entry_queued=FALSE;
+    entry_queued=0;
     while(1){
         if(entry_from_file(b,&entry)){
 	    break;
         }
         if(entry.key!=key){
-            entry_queued=TRUE;
+            entry_queued=1;
             break;
         }
         if(count==MAX_MOVES){
@@ -87,11 +87,11 @@ int main(int argc, char *argv[]){
         entries[count++]=entry;
     }
         // move already there?
-    move_new=TRUE;
+    move_new=1;
     for(i=0;i<count;i++){
         if(entries[i].move==move){
 	    fprintf(stderr,"%s: Move already present (ignoring)\n",move_s);
-            move_new=FALSE;
+            move_new=0;
         }
     }
         // rescaling

@@ -1,10 +1,10 @@
-#include <string.h>
+//#include <string.h>
+#include "pg_utils.h"
 
-#include "pg_types.h"
+static char const promote_pieces[] = " nbrq";
 
-char promote_pieces[] = " nbrq";
-
-int move_from_string(char move_s[6], uint16 *move){
+/*
+int move_from_string(char const move_s[6], uint16 *move){
     int fr,ff,tr,tf,p;
     char c;
     char *p_enc;
@@ -30,8 +30,10 @@ int move_from_string(char move_s[6], uint16 *move){
     *move=(p<<12)+(fr<<9)+(ff<<6)+(tr<<3)+tf;
     return 0;
 }
+*/
 
-int move_to_string(char move_s[6], uint16 move){
+int move_to_string(char move_s[6], uint16 move)
+{
     int f,fr,ff,t,tr,tf,p;
     f=(move>>6)&077;
     fr=(f>>3)&0x7;

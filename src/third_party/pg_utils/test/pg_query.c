@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
     entries[0]=entry;
     count=1;
     fseek(b,16*(offset+1),SEEK_SET);
-    while(TRUE){
+    while(1){
         if(entry_from_file(b,&entry)){
             break;
         }
