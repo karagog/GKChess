@@ -2,7 +2,6 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    books
+    polyglot
 
 CONFIG += ordered
-

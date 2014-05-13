@@ -46,6 +46,9 @@ public:
     */
     virtual void OpenBook(const char *) = 0;
 
+    /** Returns true if the book is open. */
+    virtual bool IsBookOpen() const = 0;
+
     /** Returns the filename for the book that is currently open, or 0 if there is no book open. */
     virtual const char *GetBookFilename() const = 0;
 

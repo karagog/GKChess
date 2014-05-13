@@ -18,26 +18,26 @@ limitations under the License.*/
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
 #include <QFileDialog>
-//#include <QPluginLoader>
+#include <QPluginLoader>
 #include <QTableWidgetItem>
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS1(UI);
 
-//#ifdef Q_OS_UNIX
-//#define PLUGIN_PREFIX "lib"
-//#define PLUGIN_SUFFIX ".so"
-//#elif Q_OS_WIN
-//#define PLUGIN_PREFIX ""
-//#define PLUGIN_SUFFIX ".dll"
-//#endif
+#ifdef Q_OS_UNIX
+#define PLUGIN_PREFIX "lib"
+#define PLUGIN_SUFFIX ".so"
+#elif Q_OS_WIN
+#define PLUGIN_PREFIX ""
+#define PLUGIN_SUFFIX ".dll"
+#endif
 
 BookReader::BookReader(ObservableBoard &b, QWidget *parent)
     :QWidget(parent),
       ui(new Ui::BookReader),
       m_board(b),
-      i_bookreader(new PolyglotBookReader)
+      i_bookreader(0)
 {
     ui->setupUi(this);
 
@@ -61,14 +61,45 @@ void BookReader::SelectFile()
     }
 }
 
+void BookReader::CloseFile()
+{
+    if(!i_bookreader)
+        return;
+
+    if(i_bookreader->IsBookOpen())
+    {
+        i_bookreader->CloseBook();
+        i_bookreader = 0;
+        // Don't delete it, because the QPlugin abstraction takes care of it for us
+    }
+}
+
 void BookReader::file_selected()
 {
+    if(i_bookreader)
+    {
+        GASSERT(i_bookreader->IsBookOpen());
+        i_bookreader->CloseBook();
+    }
+    else
+    {
+        QPluginLoader pl(PLUGIN_PREFIX "polyglotReaderPlugin" PLUGIN_SUFFIX);
+        if(!pl.instance())
+            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot load book plugin");
+
+        i_bookreader = qobject_cast<IBookReader *>(pl.instance());
+        GASSERT(i_bookreader);
+    }
+
     i_bookreader->OpenBook(ui->lineEdit->text().trimmed().toUtf8().constData());
     board_position_changed();
 }
 
 void BookReader::board_position_changed()
 {
+    if(!i_bookreader)
+        return;
+
     String s = m_board.ToFEN();
     Vector<IBookReader::Move> moves = i_bookreader->LookupMoves(s);
     ui->tableWidget->clearContents();

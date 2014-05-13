@@ -36,7 +36,7 @@ class BookReader :
     Q_OBJECT
     GUtil::SmartPointer<Ui::BookReader> ui;
     Board &m_board;
-    GUtil::SmartPointer<GKChess::IBookReader> i_bookreader;
+    GKChess::IBookReader *i_bookreader;
 
 public:
 
@@ -47,6 +47,7 @@ public:
 public slots:
 
     void SelectFile();
+    void CloseFile();
 
 
 private slots:

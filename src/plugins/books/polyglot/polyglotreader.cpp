@@ -36,7 +36,8 @@ struct d_t
 namespace GKChess{
 
 
-PolyglotBookReader::PolyglotBookReader()
+PolyglotBookReader::PolyglotBookReader(QObject *p)
+    :QObject(p)
 {
     G_D_INIT();
 }
@@ -57,6 +58,12 @@ void PolyglotBookReader::OpenBook(const char *b)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Unable to open file: %s", b));
 
     d->filename = b;
+}
+
+bool PolyglotBookReader::IsBookOpen() const
+{
+    G_D;
+    return d->file;
 }
 
 const char *PolyglotBookReader::GetBookFilename() const
@@ -100,3 +107,5 @@ Vector<PolyglotBookReader::Move> PolyglotBookReader::LookupMoves(const char *fen
 
 
 }
+
+Q_EXPORT_PLUGIN2(polyglotReaderPlugin, GKChess::PolyglotBookReader)

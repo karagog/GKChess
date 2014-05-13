@@ -24,15 +24,19 @@ namespace GKChess{
  *  See the interface documentation for more info.
 */
 class PolyglotBookReader :
+        public QObject,
         public IBookReader
 {
+    Q_OBJECT
+    Q_INTERFACES(GKChess::IBookReader)
     void *d;
 public:
 
-    PolyglotBookReader();
+    PolyglotBookReader(QObject * = 0);
     ~PolyglotBookReader();
 
     void OpenBook(const char *);
+    bool IsBookOpen() const;
     const char *GetBookFilename() const;
     void CloseBook();
     GUtil::Vector<Move> LookupMoves(const char *fen);

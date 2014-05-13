@@ -22,7 +22,7 @@ IGNORE_PATHS = Test
 # File patterns to ignore
 IGNORE_FILES = *_p.h,ui_*.h
 
-HEADERGEN_TARGET_DIRS = core,presentation
+HEADERGEN_TARGET_DIRS = core,presentation,plugins
 
 
 headers.commands = $$HEADER_CMD \
