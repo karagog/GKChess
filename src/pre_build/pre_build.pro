@@ -20,7 +20,7 @@ HEADER_PREFIX = gkchess_
 IGNORE_PATHS = Test
 
 # File patterns to ignore
-IGNORE_FILES = *_p.h
+IGNORE_FILES = *_p.h,ui_*.h
 
 HEADERGEN_TARGET_DIRS = core,presentation
 
