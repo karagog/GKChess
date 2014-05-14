@@ -25,12 +25,12 @@ USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS1(UI);
 
-#ifdef Q_OS_UNIX
-#define PLUGIN_PREFIX "lib"
-#define PLUGIN_SUFFIX ".so"
-#elif Q_OS_WIN
-#define PLUGIN_PREFIX ""
-#define PLUGIN_SUFFIX ".dll"
+#if defined(Q_OS_UNIX)
+    #define PLUGIN_PREFIX "lib"
+    #define PLUGIN_SUFFIX ".so"
+#elif defined(Q_OS_WIN)
+    #define PLUGIN_PREFIX ""
+    #define PLUGIN_SUFFIX ".dll"
 #endif
 
 BookReader::BookReader(ObservableBoard &b, QWidget *parent)
