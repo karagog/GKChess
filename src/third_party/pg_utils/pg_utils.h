@@ -46,16 +46,13 @@ typedef unsigned int uint32;
 
 // Some stuff to expose certain functions of ours
 
-#if defined(_MSC_VER)
-    //  Microsoft
+#if defined(WIN32)
+    // Windows
     #define EXPORT __declspec(dllexport)
     #define IMPORT __declspec(dllimport)
-#elif defined(__GNUC__)
-    //  GCC
-    #define EXPORT __attribute__((visibility("default")))
-    #define IMPORT
 #else
-    #define EXPORT
+    // Linux
+    #define EXPORT __attribute__((visibility("default")))
     #define IMPORT
 #endif
 
