@@ -95,6 +95,12 @@ class Board
 
         // Removes all pieces from the index
         void clear();
+
+#ifdef DEBUG
+        // A debug function that shows the index
+        void show_index() const;
+#endif
+
     };
 
     piece_index_t m_index;

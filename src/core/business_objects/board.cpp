@@ -119,6 +119,21 @@ void Board::piece_index_t::clear()
 }
 
 
+#ifdef DEBUG
+
+void Board::piece_index_t::show_index() const
+{
+    Vector<Square const *> squares = all_pieces(Piece::AnyAllegience);
+    G_FOREACH_CONST(Square const *s, squares){
+        GDEBUG(String::Format("%c: %c%d", s->GetPiece().ToFEN(), 'a' + s->GetColumn(), 1 + s->GetRow()));
+    }
+    GDEBUG("\n");
+}
+
+#endif
+
+
+
 Board::Board(int num_cols, int num_rows)
     :m_columnCount(num_cols),
       m_rowCount(num_rows),
@@ -420,6 +435,8 @@ void Board::move_p(const MoveData &md)
         if(src != rook_dest && src != king_dest)
             SetPiece(Piece(), src);
     }
+
+    //m_index.show_index();
 
     _update_gamestate(md);
     _update_threat_counts();
