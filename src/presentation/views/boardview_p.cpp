@@ -32,7 +32,10 @@ limitations under the License.*/
 #include <QParallelAnimationGroup>
 #include <QVariantAnimation>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QAbstractItemView>
+#include <QDialog>
+#include <QPushButton>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
@@ -657,7 +660,7 @@ void BoardView_p::wheelEvent(QWheelEvent *ev)
 
 bool BoardView_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 {
-    return Board::ValidMove == GetBoardModel()->Move(s, d);
+    return Board::ValidMove == GetBoardModel()->Move(s, d, this);
 }
 
 void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
@@ -1040,3 +1043,102 @@ void BoardView_p::SetShowThreatCounts(bool b)
     m_showThreatCounts = b;
     viewport()->update();
 }
+
+
+#define PROMOTED_WIDGET_WIDTH 400
+#define PROMOTED_WIDGET_HEIGHT 100
+#define PROMOTED_BUTTON_SIZE 100
+
+class __promoted_piece_selector : public QDialog
+{
+    Q_OBJECT
+public:
+
+    __promoted_piece_selector(Piece::AllegienceEnum a, IFactory_PieceIcon *fac, QWidget *p = 0)
+        :QDialog(p),
+          _p_SelectedPiece(Piece::NoPiece, a)
+    {
+        setWindowTitle(tr("Select Promoted Piece"));
+        resize(PROMOTED_WIDGET_WIDTH, PROMOTED_WIDGET_HEIGHT);
+        new QHBoxLayout(this);
+
+        setWindowFlags(Qt::Dialog |
+                       Qt::CustomizeWindowHint |
+                       Qt::WindowTitleHint |
+                       Qt::WindowStaysOnTopHint);
+        setWindowModality(Qt::WindowModal);
+
+        QPushButton *btn_queen = new QPushButton(fac->GetIcon(Piece(Piece::Queen, a)), QString(), this);
+        QPushButton *btn_rook = new QPushButton(fac->GetIcon(Piece(Piece::Rook, a)), QString(), this);
+        QPushButton *btn_bishop = new QPushButton(fac->GetIcon(Piece(Piece::Bishop, a)), QString(), this);
+        QPushButton *btn_knight = new QPushButton(fac->GetIcon(Piece(Piece::Knight, a)), QString(), this);
+
+        QSizePolicy btn_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        btn_policy.setHorizontalStretch(1);
+        btn_policy.setVerticalStretch(1);
+        btn_queen->setSizePolicy(btn_policy);
+        btn_rook->setSizePolicy(btn_policy);
+        btn_bishop->setSizePolicy(btn_policy);
+        btn_knight->setSizePolicy(btn_policy);
+
+        btn_queen->resize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE);
+        btn_rook->resize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE);
+        btn_bishop->resize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE);
+        btn_knight->resize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE);
+
+        btn_queen->setIconSize(QSize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE));
+        btn_rook->setIconSize(QSize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE));
+        btn_bishop->setIconSize(QSize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE));
+        btn_knight->setIconSize(QSize(PROMOTED_BUTTON_SIZE, PROMOTED_BUTTON_SIZE));
+
+        layout()->addWidget(btn_queen);
+        layout()->addWidget(btn_rook);
+        layout()->addWidget(btn_bishop);
+        layout()->addWidget(btn_knight);
+
+        connect(btn_queen, SIGNAL(released()), this, SLOT(_queen_pressed()));
+        connect(btn_rook, SIGNAL(released()), this, SLOT(_rook_pressed()));
+        connect(btn_bishop, SIGNAL(released()), this, SLOT(_bishop_pressed()));
+        connect(btn_knight, SIGNAL(released()), this, SLOT(_knight_pressed()));
+    }
+
+    PROPERTY(SelectedPiece, Piece);
+
+private slots:
+
+    void _queen_pressed(){
+        _select_piece(Piece(Piece::Queen, GetSelectedPiece().GetAllegience()));
+    }
+    void _rook_pressed(){
+        _select_piece(Piece(Piece::Rook, GetSelectedPiece().GetAllegience()));
+    }
+    void _bishop_pressed(){
+        _select_piece(Piece(Piece::Bishop, GetSelectedPiece().GetAllegience()));
+    }
+    void _knight_pressed(){
+        _select_piece(Piece(Piece::Knight, GetSelectedPiece().GetAllegience()));
+    }
+
+private:
+
+    void _select_piece(const Piece &p){
+        SetSelectedPiece(p);
+        accept();
+    }
+
+};
+
+
+Piece BoardView_p::ChoosePromotedPiece(Piece::AllegienceEnum a)
+{
+    Piece ret(Piece::Queen, a);
+    __promoted_piece_selector dlg(a, i_factory);
+
+    if(QDialog::Accepted == dlg.exec())
+    {
+        ret = dlg.GetSelectedPiece();
+    }
+    return ret;
+}
+
+#include "boardview_p.moc"

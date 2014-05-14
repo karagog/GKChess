@@ -38,7 +38,8 @@ namespace UI{
  *  QAbstractItemView interface. This gives us better encapsulation.
 */
 class BoardView_p :
-        public QAbstractItemView
+        public QAbstractItemView,
+        public GKChess::IPlayerResponse
 {
     Q_OBJECT
 
@@ -99,6 +100,12 @@ public:
     void SetEditable(bool b){ m_editable = b; }
     void SetShowThreatCounts(bool);
     bool GetShowThreatCounts() const{ return m_showThreatCounts; }
+
+    /** \name IPlayerResponse interface
+     *  \{
+    */
+    virtual GKChess::Piece ChoosePromotedPiece(GKChess::Piece::AllegienceEnum);
+    /** \} */
 
 
     /** \name QAbstractItemView interface

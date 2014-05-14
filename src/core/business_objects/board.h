@@ -46,13 +46,6 @@ public:
     */
     virtual Piece ChoosePromotedPiece(Piece::AllegienceEnum) = 0;
 
-    /** This is used in Chess960 for situations in which it is not clear if you wish to castle
-     *  or simply move your king.
-     *
-     *  \returns True if the player wants to castle
-    */
-    virtual bool CastleYesNo() = 0;
-
 };
 
 
