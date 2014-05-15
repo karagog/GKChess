@@ -262,8 +262,11 @@ public:
     /** Creates a MoveData object from a PGN MoveData object. */
     virtual MoveData GenerateMoveData(const PGN_MoveData &) const;
 
-    /** Validates the move. */
-    virtual MoveValidationEnum ValidateMove(const Square &, const Square &) const;
+    /** Validates the move.
+        \param ignore_checks If true, the function allows moves that leave
+        the moving piece's king in check.  This is false by default.
+    */
+    virtual MoveValidationEnum ValidateMove(const Square &, const Square &, bool ignore_checks = false) const;
 
     /** Returns a list of valid squares that the piece on the given square can move to. */
     virtual GUtil::Vector<Square const *> GetValidMovesForSquare(const Square &) const;

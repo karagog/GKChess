@@ -971,7 +971,7 @@ void Board::SetupNewGame(Board::SetupTypeEnum ste)
     _update_threat_counts();
 }
 
-Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) const
+Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d, bool ignore_checks) const
 {
     Piece const &p(s.GetPiece());
     Piece const &dp(d.GetPiece());
@@ -1142,6 +1142,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d) 
         return InvalidTechnical;
 
     // Now check if the king is safe, otherwise it's an invalid move
+    if(!ignore_checks)
     {
         // Copy this board to simulate the move, and see if we're in check.
         Board cpy(*this);
@@ -1543,7 +1544,7 @@ MoveData Board::GenerateMoveData(const Square &s,
                 {
                     Vector<const Square *> possible_movers;
                     G_FOREACH_CONST(const Square *s, pieces){
-                        if(s != ret.Source && ValidMove == ValidateMove(*s, *ret.Destination))
+                        if(s != ret.Source && ValidMove == ValidateMove(*s, *ret.Destination, true))
                             possible_movers.PushBack(s);
                     }
 
