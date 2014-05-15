@@ -461,7 +461,7 @@ Board::MoveValidationEnum Board::Move(const MoveData &md)
     return ret;
 }
 
-Board::MoveValidationEnum Board::Move2(const Square &src, const Square &dest, IPlayerResponse *pr)
+Board::MoveValidationEnum Board::Move(const Square &src, const Square &dest, IPlayerResponse *pr)
 {
     MoveValidationEnum ret = ValidateMove(src, dest);
     if(ValidMove == ret)

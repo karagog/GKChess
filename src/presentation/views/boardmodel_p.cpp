@@ -345,7 +345,7 @@ Board::MoveValidationEnum BoardModel_p::ValidateMove(const QModelIndex &s, const
 
 Board::MoveValidationEnum BoardModel_p::Move(const QModelIndex &s, const QModelIndex &d, IPlayerResponse *pr)
 {
-    return m_board->Move2(*ConvertIndexToSquare(s),
-                          *ConvertIndexToSquare(d),
-                          pr);
+    return m_board->Move(*ConvertIndexToSquare(s),
+                         *ConvertIndexToSquare(d),
+                         pr);
 }

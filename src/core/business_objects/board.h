@@ -276,7 +276,7 @@ public:
     MoveValidationEnum Move(const MoveData &);
 
     /** Generates move data, validates and executes the move. */
-    MoveValidationEnum Move2(const Square &src, const Square &dest, IPlayerResponse *pr = 0);
+    MoveValidationEnum Move(const Square &src, const Square &dest, IPlayerResponse *pr = 0);
 
 
     /** Returns true if there are currently threats on the given allegience's king. */
