@@ -10,13 +10,13 @@ TARGET = GKChessUI
 
 DEFINES += \
     GUTIL_CORE_QT_ADAPTERS
-    
-build_pass:CONFIG(debug, debug|release) {
-    message(Preparing debug build)
+
+CONFIG(debug, debug|release) {
+    #message(Preparing debug build)
     DEFINES += DEBUG
 }
-else:build_pass {
-    message(Preparing release build)
+else {
+    #message(Preparing release build)
 }
 
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
