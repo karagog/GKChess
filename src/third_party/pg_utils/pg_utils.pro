@@ -5,9 +5,15 @@ TOP_DIR = ../../..
 DESTDIR = $$TOP_DIR/lib
 TARGET = pg_utils
 
-#DEFINES += DEBUG
-
 DEFINES += DLL_EXPORT
+
+build_pass:CONFIG(debug, debug|release) {
+    message(Preparing debug build)
+    DEFINES += DEBUG
+}
+else:build_pass {
+    message(Preparing release build)
+}
 
 unix{
 QMAKE_CFLAGS += -fvisibility=hidden

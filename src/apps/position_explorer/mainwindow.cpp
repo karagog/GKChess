@@ -34,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_board(),
       //m_board(10),
       m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
-      m_uci(new UCI_Client("/usr/games/stockfish")),
+      m_uci(new UCI_Client("stockfish.exe")),
       m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray)
 {
     ui->setupUi(this);
