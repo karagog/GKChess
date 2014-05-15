@@ -9,7 +9,9 @@ TARGET = pg_utils
 
 DEFINES += DLL_EXPORT
 
+unix{
 QMAKE_CFLAGS += -fvisibility=hidden
+}
 
 HEADERS += \
     board.h \
