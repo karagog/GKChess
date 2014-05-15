@@ -463,7 +463,10 @@ Board::MoveValidationEnum Board::Move(const MoveData &md)
 
 Board::MoveValidationEnum Board::Move2(const Square &src, const Square &dest, IPlayerResponse *pr)
 {
-    return Move(GenerateMoveData(src, dest, pr));
+    MoveValidationEnum ret = ValidateMove(src, dest);
+    if(ValidMove == ret)
+        move_p(GenerateMoveData(src, dest, pr));
+    return ret;
 }
 
 void Board::Clear()

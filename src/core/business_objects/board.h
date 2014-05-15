@@ -275,7 +275,7 @@ public:
     */
     MoveValidationEnum Move(const MoveData &);
 
-    /** A convenience function generates move data, validates and executes the move. */
+    /** Generates move data, validates and executes the move. */
     MoveValidationEnum Move2(const Square &src, const Square &dest, IPlayerResponse *pr = 0);
 
 
