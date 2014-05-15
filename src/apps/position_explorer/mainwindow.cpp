@@ -24,6 +24,7 @@ limitations under the License.*/
 #include <QContextMenuEvent>
 #include <QDockWidget>
 #include <QFileDialog>
+#include <QWhatsThis>
 USING_NAMESPACE_GUTIL;
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
@@ -38,6 +39,8 @@ MainWindow::MainWindow(QWidget *parent)
       m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray)
 {
     ui->setupUi(this);
+
+    ui->menuHelp->insertAction(ui->actionAbout, QWhatsThis::createAction(this));
 
     // Add the pgn control dock widget
     QDockWidget *dock_widget = new QDockWidget(tr("PGN Control"), this);

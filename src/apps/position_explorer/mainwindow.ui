@@ -64,10 +64,9 @@
     </widget>
     <addaction name="menu_New_Position"/>
     <addaction name="menu_Load_Position"/>
+    <addaction name="action_Recent_Positions"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
-    <addaction name="separator"/>
-    <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="title">
@@ -89,6 +88,13 @@
     <addaction name="action_Engine_Control"/>
     <addaction name="actionOpening_Book_Reader"/>
    </widget>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionQuit"/>
+   </widget>
+   <addaction name="menu_File"/>
    <addaction name="menuBoard"/>
    <addaction name="menu_Tools"/>
    <addaction name="menuWindows"/>
@@ -107,45 +113,72 @@
    <property name="text">
     <string>&amp;FEN String in Clipboard</string>
    </property>
+   <property name="whatsThis">
+    <string>Populates the board from a FEN string in your clipboard</string>
+   </property>
   </action>
   <action name="actionLoad_PGN_in_Clipboard">
    <property name="text">
     <string>&amp;PGN String in Clipboard</string>
+   </property>
+   <property name="whatsThis">
+    <string>Populates the board from a PGN string in your clipboard</string>
    </property>
   </action>
   <action name="actionLoadPGN_File">
    <property name="text">
     <string>PGN File</string>
    </property>
+   <property name="whatsThis">
+    <string>Populates the board from a PGN string in a file</string>
+   </property>
   </action>
   <action name="actionQuit">
    <property name="text">
     <string>&amp;Quit</string>
+   </property>
+   <property name="whatsThis">
+    <string>Quit the application</string>
    </property>
   </action>
   <action name="actionRandom_Chess960_Position">
    <property name="text">
     <string>&amp;Chess960 Position Generator</string>
    </property>
+   <property name="whatsThis">
+    <string>Generate Chess960 positions at random or choose specific ones</string>
+   </property>
   </action>
   <action name="actionAbout">
    <property name="text">
     <string>&amp;About</string>
+   </property>
+   <property name="whatsThis">
+    <string>About this application</string>
    </property>
   </action>
   <action name="actionOpening_Book_Reader">
    <property name="text">
     <string>&amp;Book Reader</string>
    </property>
+   <property name="whatsThis">
+    <string>Read an opening book</string>
+   </property>
   </action>
   <action name="actionStandard_Starting_Position">
    <property name="text">
     <string>&amp;Standard</string>
    </property>
+   <property name="whatsThis">
+    <string>The standard chess starting position</string>
+   </property>
   </action>
   <action name="actionChess960_Starting_Position">
    <property name="text">
     <string>&amp;Chess960</string>
+   </property>
+   <property name="whatsThis">
+    <string>A random Chess960 position</string>
    </property>
   </action>
   <action name="actionMove_History">
@@ -155,10 +188,16 @@
    <property name="text">
     <string>Move &amp;History</string>
    </property>
+   <property name="whatsThis">
+    <string>Shows the PGN move history</string>
+   </property>
   </action>
   <action name="actionPosition_to_Clipboard">
    <property name="text">
     <string>Position to &amp;Clipboard (FEN)</string>
+   </property>
+   <property name="whatsThis">
+    <string>Exports the position to the clipboard</string>
    </property>
   </action>
   <action name="action_Engine_Control">
@@ -167,6 +206,22 @@
    </property>
    <property name="text">
     <string>&amp;Engine Control</string>
+   </property>
+   <property name="whatsThis">
+    <string>Analyse the position using a UCI compatible engine</string>
+   </property>
+  </action>
+  <action name="action_Recent_Positions">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Recent Positions</string>
+   </property>
+  </action>
+  <action name="action_Whats_this">
+   <property name="text">
+    <string>&amp;What's this?</string>
    </property>
   </action>
  </widget>
