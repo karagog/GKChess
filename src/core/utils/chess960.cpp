@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "rng.h"
+#include "gutil_rng.h"
 #include "chess960.h"
 USING_NAMESPACE_GUTIL;
 
@@ -86,8 +86,8 @@ String Chess960::GetStartingPosition(int indx)
 
 String Chess960::GetRandomStartingPosition(int *indx)
 {
-    int tmpindx = RNG::RandInt(0, 959);
-    if(indx) 
+    int tmpindx = GlobalRNG()->U_Discrete(0, 959);
+    if(indx)
         *indx = tmpindx;
     return GetStartingPosition(tmpindx);
 }
