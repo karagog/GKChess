@@ -15,6 +15,8 @@ limitations under the License.*/
 #include "movehistorycontrol.h"
 #include "ui_movehistorycontrol.h"
 #include "gkchess_board.h"
+USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GKCHESS;
 
 NAMESPACE_GKCHESS1(UI);
 
@@ -52,16 +54,23 @@ void MoveHistoryControl::go_back()
 void MoveHistoryControl::history_updated()
 {
     // Refresh the text in the view
-    ui->pgnView->clear();
     QTextCursor cur(ui->pgnView->document()->rootFrame());
+    cur.movePosition(QTextCursor::EndOfBlock);
 
-    G_FOREACH_CONST(const MoveData &md, m_recorder.GetHistory()){
+    List<MoveData> const &moves = m_recorder.GetHistory();
+    if(0 < moves.Length())
+    {
+        const MoveData &md = moves.Back();
         if(1 == (md.PlyNumber & 0x1))
             cur.insertText(QString("%1. ").arg(md.PlyNumber / 2 + 1));
         cur.insertText(md.PGNData.ToString());
         cur.insertText(" ");
         if(0 == (md.PlyNumber & 0x1))
             cur.insertText(" ");
+    }
+    else
+    {
+        ui->pgnView->clear();
     }
 }
 

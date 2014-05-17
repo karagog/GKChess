@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_engineControl->Initialize(m_uci, &m_board);
     _show_engine_control();
 
-    m_moveHistory = new MoveHistoryControl(m_board, this),
+    m_moveHistory = new MoveHistoryControl(m_board, this);
     _show_move_history();
 
 #ifdef DEBUG
