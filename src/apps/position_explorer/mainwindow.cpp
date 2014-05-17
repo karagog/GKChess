@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Add the pgn control dock widget
     QDockWidget *dock_widget = new QDockWidget(tr("PGN Control"), this);
+    dock_widget->setObjectName("pgncontrol_dock_widget");
     dock_widget->setWidget(m_pgnPlayer);
     addDockWidget(Qt::LeftDockWidgetArea, dock_widget);
 
@@ -165,6 +166,7 @@ void MainWindow::_random_chess960_position()
 void MainWindow::_opening_book_reader()
 {
     QDockWidget *d = new QDockWidget("Opening Book", this);
+    d->setObjectName("book_dock_widget");
     BookReader *br = new BookReader(m_board, this);
     d->setWidget(br);
     addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
@@ -175,6 +177,7 @@ void MainWindow::_show_move_history()
 {
     if(!m_moveHistory->isVisible()){
         QDockWidget *d = new QDockWidget("Move History", this);
+        d->setObjectName("history_dock_widget");
         d->setWidget(m_moveHistory);
         addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
         m_moveHistory->show();
@@ -185,6 +188,7 @@ void MainWindow::_show_engine_control()
 {
     if(!m_engineControl->isVisible()){
         QDockWidget *d = new QDockWidget("Engine Control", this);
+        d->setObjectName("engine_dock_widget");
         d->setWidget(m_engineControl);
         addDockWidget(Qt::RightDockWidgetArea, d, Qt::Vertical);
         m_engineControl->show();

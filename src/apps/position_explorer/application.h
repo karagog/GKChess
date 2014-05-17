@@ -17,6 +17,10 @@ limitations under the License.*/
 
 #include "gutil_application.h"
 
+namespace GUtil{ namespace QT{
+class PersistentData;
+}}
+
 class MainWindow;
 
 class PositionExplorerApplication :
@@ -24,6 +28,7 @@ class PositionExplorerApplication :
 {
     Q_OBJECT
     MainWindow *m_mainWindow;
+    GUtil::QT::PersistentData *m_settings;
 public:
     explicit PositionExplorerApplication(int &argc, char **argv);
 

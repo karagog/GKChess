@@ -17,14 +17,21 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "gutil_messageboxlogger.h"
 #include "gutil_about.h"
+#include "gutil_persistentdata.h"
 USING_NAMESPACE_GUTIL1(QT);
 
 
 #define APPLICATION_ICON ":/gkchess/icons/default/k.png"
 
+
+#define SETTINGS_MAINWINDOW_STATE "mainwindow_state"
+#define SETTINGS_MAINWINDOW_GEOMETRY "mainwindow_geometry"
+
+
 PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
     :Application(argc, argv, "Position Explorer"),
-      m_mainWindow(new MainWindow)
+      m_mainWindow(new MainWindow),
+      m_settings(new PersistentData("settings", "main", this))
 {
     setApplicationName("GKChess Studio");
     setApplicationVersion("0.0.0");
@@ -33,14 +40,24 @@ PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
     GKChess::UI::InitializeApplicationResources();
     setWindowIcon(QIcon(APPLICATION_ICON));
 
+    if(m_settings->Contains(SETTINGS_MAINWINDOW_STATE))
+        m_mainWindow->restoreState(m_settings->Value(SETTINGS_MAINWINDOW_STATE).toByteArray());
+    if(m_settings->Contains(SETTINGS_MAINWINDOW_GEOMETRY))
+        m_mainWindow->restoreGeometry(m_settings->Value(SETTINGS_MAINWINDOW_GEOMETRY).toByteArray());
+
     m_mainWindow->show();
 }
 
 
 void PositionExplorerApplication::about_to_quit()
 {
+    QByteArray mainWindow_state = m_mainWindow->saveState();
+    QByteArray mainWindow_geometry = m_mainWindow->saveGeometry();
     m_mainWindow->hide();
     m_mainWindow->deleteLater();
+
+    m_settings->SetValue(SETTINGS_MAINWINDOW_STATE, mainWindow_state);
+    m_settings->SetValue(SETTINGS_MAINWINDOW_GEOMETRY, mainWindow_geometry);
 }
 
 void PositionExplorerApplication::handle_exception(const GUtil::Exception<> &ex)
