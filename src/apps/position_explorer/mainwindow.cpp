@@ -87,7 +87,6 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete m_uci;
 }
 
 bool MainWindow::eventFilter(QObject *o, QEvent *ev)
