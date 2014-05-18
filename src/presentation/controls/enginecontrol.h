@@ -16,6 +16,8 @@ limitations under the License.*/
 #define GKCHESS_ENGINECONTROL_H
 
 #include "gkchess_enginemanager.h"
+#include "gutil_smartpointer.h"
+#include "gutil_persistentdata.h"
 #include <QWidget>
 
 namespace Ui {
@@ -34,12 +36,15 @@ class EngineControl : public QWidget
 {
     Q_OBJECT
 
-    EngineManager m_engineMan;
+    GUtil::SmartPointer<EngineManager> m_engineMan;
     Board *m_board;
+    GUtil::QT::PersistentData *m_settings;
+    GUtil::Vector<GUtil::String> m_settingsKeys;
 
     Ui::EngineControl *ui;
 public:
-    explicit EngineControl(Board *, QWidget *parent = 0);
+
+    explicit EngineControl(Board *, GUtil::QT::PersistentData *engine_settings, QWidget *parent = 0);
     ~EngineControl();
 
 
@@ -55,7 +60,17 @@ public slots:
 private slots:
 
     void _msg_rx(const QByteArray &);
+    void _best_move_received(const QByteArray &, const QByteArray &);
+
     void _engine_crashed();
+
+    void _go_stop_pressed();
+    void _engine_selection_changed();
+
+
+private:
+
+    void _refresh_combo_box();
 
 };
 

@@ -456,14 +456,20 @@ void UCI_Client::SetPosition(const char *data)
     _append_to_write_queue(ba);
 }
 
-void UCI_Client::SetOption(const QString &, const QVariant &)
+void UCI_Client::SetOption(const QString &name, const QVariant &value)
 {
-
+    QString data = QString("setoption name %1 value %2")
+            .arg(name)
+            .arg(value.toString());
+    _append_to_write_queue(data.toUtf8());
 }
 
 void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
 {
     G_D;
+    if(d->thinking)
+        return;
+
     QString str = "go";
     if(-1 == p.MoveTime)
         str.append(" infinite");
@@ -491,6 +497,9 @@ void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
 
 void UCI_Client::StopThinking()
 {
+    G_D;
+    if(!d->thinking)
+        return;
     _append_to_write_queue("stop");
 }
 

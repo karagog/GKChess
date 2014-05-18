@@ -12,36 +12,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#ifndef MANAGE_ENGINES_H
+#define MANAGE_ENGINES_H
 
-#include "gutil_application.h"
+#include "gutil_persistentdata.h"
+#include <QDialog>
 
-namespace GUtil{ namespace QT{
-class PersistentData;
-}}
+namespace GKChess{ namespace UI{
 
-class MainWindow;
 
-class PositionExplorerApplication :
-        public GUtil::QT::Application
+class ManageEngines : public QDialog
 {
     Q_OBJECT
     GUtil::QT::PersistentData *m_settings;
-    GUtil::QT::PersistentData *m_engineSettings;
-    MainWindow *m_mainWindow;
-
 public:
-    explicit PositionExplorerApplication(int &argc, char **argv);
+
+    explicit ManageEngines(GUtil::QT::PersistentData *engine_settings, QWidget *parent = 0);
 
 
-protected:
-
-    virtual void handle_exception(const GUtil::Exception<> &);
-
-private:
-    virtual void about_to_quit();
-    virtual void show_about(QWidget *);
 };
 
-#endif // APPLICATION_H
+
+}}
+
+#endif // MANAGE_ENGINES_H

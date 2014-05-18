@@ -27,6 +27,10 @@ namespace Ui {
 class MainWindow;
 }
 
+namespace GUtil{ namespace QT{
+class PersistentData;
+}}
+
 namespace GKChess{ namespace UI{
 class PGN_PlayerControl;
 class BookReader;
@@ -44,9 +48,20 @@ class MainWindow : public QMainWindow
     GKChess::UI::EngineControl *m_engineControl;
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
 
+    GUtil::QT::PersistentData *m_settings;
+    GUtil::QT::PersistentData *m_engineSettings;
+
 public:
-    explicit MainWindow(QWidget *parent = 0);
+
+    explicit MainWindow(GUtil::QT::PersistentData *settings,
+                        GUtil::QT::PersistentData *engine_settings,
+                        QWidget *parent = 0);
     ~MainWindow();
+
+
+protected:
+
+    void closeEvent(QCloseEvent *);
 
 
 private slots:

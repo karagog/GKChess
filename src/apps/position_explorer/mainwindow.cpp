@@ -20,22 +20,33 @@ limitations under the License.*/
 #include "gkchess_bookreader.h"
 #include "gutil_file.h"
 #include "gutil_application.h"
+#include "gutil_persistentdata.h"
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QWhatsThis>
+#include <QCloseEvent>
 USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
 
-MainWindow::MainWindow(QWidget *parent)
+#define SETTINGS_MAINWINDOW_STATE "mainwindow_state"
+#define SETTINGS_MAINWINDOW_GEOMETRY "mainwindow_geometry"
+
+
+MainWindow::MainWindow(PersistentData *settings,
+                       PersistentData *engine_settings,
+                       QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),
       m_board(),
       //m_board(10),
       m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
-      m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray)
+      m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray),
+      m_settings(settings),
+      m_engineSettings(engine_settings)
 {
     ui->setupUi(this);
 
@@ -68,7 +79,7 @@ MainWindow::MainWindow(QWidget *parent)
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    m_engineControl = new EngineControl(&m_board, this);
+    m_engineControl = new EngineControl(&m_board, m_engineSettings, this);
     _show_engine_control();
 
     m_moveHistory = new MoveHistoryControl(m_board, this);
@@ -82,6 +93,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->boardView->SetIconFactory(&m_iconFactory);
     ui->boardView->SetBoard(&m_board);
     ui->boardView->SetShowThreatCounts(true);
+
+    // Restore the last state of the main window
+    if(m_settings->Contains(SETTINGS_MAINWINDOW_STATE))
+        restoreState(m_settings->Value(SETTINGS_MAINWINDOW_STATE).toByteArray());
+    if(m_settings->Contains(SETTINGS_MAINWINDOW_GEOMETRY))
+        restoreGeometry(m_settings->Value(SETTINGS_MAINWINDOW_GEOMETRY).toByteArray());
 }
 
 MainWindow::~MainWindow()
@@ -208,6 +225,12 @@ void MainWindow::_position_to_clipboard()
         QApplication::clipboard()->setText(m_board.ToFEN().ToQString());
 }
 
+void MainWindow::closeEvent(QCloseEvent *ev)
+{
+    m_settings->SetValue(SETTINGS_MAINWINDOW_STATE, saveState());
+    m_settings->SetValue(SETTINGS_MAINWINDOW_GEOMETRY, saveGeometry());
+    ev->accept();
+}
 
 
 
