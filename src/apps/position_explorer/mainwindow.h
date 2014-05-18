@@ -40,7 +40,7 @@ class MainWindow : public QMainWindow
     Ui::MainWindow *ui;
     GKChess::ObservableBoard m_board;
     GKChess::UI::PGN_PlayerControl *m_pgnPlayer;
-    GKChess::UCI_Client *m_uci;
+    GKChess::IEngine *m_uci;
     GKChess::UI::MoveHistoryControl *m_moveHistory;
     GKChess::UI::EngineControl *m_engineControl;
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;

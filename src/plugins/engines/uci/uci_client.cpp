@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "uci_client.h"
-#include "gutil_exception.h"
 #include "gutil_strings.h"
 #include "gkchess_globals.h"
 #include "gutil_consolelogger.h"
@@ -21,17 +20,21 @@ limitations under the License.*/
 #include <QMutex>
 #include <QWaitCondition>
 #include <QtConcurrentRun>
+#include <QtPlugin>
 USING_NAMESPACE_GUTIL;
 
 
 namespace{
+
 struct d_t
 {
     QString engine;
+    QStringList arguments;
+    bool thinking;
+
     QProcess process;
     GKChess::UCI_Client::EngineInfo info;
-    bool debug_output_enabled;
-    bool analysis_mode;
+
 
     // This data is protected by the lock and wait condition
     QList<QByteArray> outqueue;
@@ -42,11 +45,11 @@ struct d_t
     QFuture<void> writer_thread;
 
     d_t()
-        :debug_output_enabled(false),
-          analysis_mode(false),
+        :thinking(false),
           cancel_thread(false)
     {}
 };
+
 }
 
 
@@ -113,7 +116,7 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
 
     d->process.setReadChannel(QProcess::StandardOutput);
     //p.setProcessChannelMode(QProcess::MergedChannels);
-    d->process.start(d->engine);
+    d->process.start(d->engine, d->arguments);
     if(!d->process.waitForStarted())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to start");
 
@@ -180,7 +183,7 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
                     QString default_str = __get_option_value(line, default_idx + 8);
                     QString min_str = __get_option_value(line, min_idx + 4);
                     QString max_str = __get_option_value(line, max_idx + 4);
-                    opt = new UCI_Client::SpinOption(opt_name, default_str.toInt(), min_str.toInt(), max_str.toInt());
+                    opt = new IEngine::SpinOption(opt_name, default_str.toInt(), min_str.toInt(), max_str.toInt());
                 }
                 else if(opt_type == "string")
                 {
@@ -189,7 +192,7 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
                         break;
 
                     QString val = __get_option_value(line, default_idx + 8);
-                    opt = new UCI_Client::StringOption(opt_name, val);
+                    opt = new IEngine::StringOption(opt_name, val);
 
                 }
                 else if(opt_type == "check")
@@ -200,18 +203,15 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
 
                     QString val_str = __get_option_value(line, default_idx + 8);
                     bool checked = val_str.toLower() == "true";
-                    opt = new UCI_Client::CheckOption(opt_name, checked);
-
-                    if(opt_name.toLower() == QString(UCI_ANALYSE_MODE_TAG).toLower() && checked)
-                        d->analysis_mode = true;
+                    opt = new IEngine::CheckOption(opt_name, checked);
                 }
                 else if(opt_type == "combo")
                 {
-                    opt = new UCI_Client::ComboOption(opt_name, QStringList(), QString());
+                    opt = new IEngine::ComboOption(opt_name, QStringList(), QString());
                 }
                 else if(opt_type == "button")
                 {
-                    opt = new UCI_Client::ButtonOption(opt_name);
+                    opt = new IEngine::ButtonOption(opt_name);
                 }
                 else
                 {
@@ -247,131 +247,8 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to get ready");
 }
 
-UCI_Client::UCI_Client(const QString &path_to_engine, QObject *parent)
-    :QObject(parent)
+static void __writer_thread(d_t *d)
 {
-    G_D_INIT();
-    G_D;
-
-    d->engine = path_to_engine;
-
-    // Initialize the engine; this class is useless without a working engine
-    __start_and_validate_engine(d, true);
-
-    // Make necessary connections to the process
-    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
-    connect(&d->process, SIGNAL(error(QProcess::ProcessError)),
-            this, SLOT(_engine_error(QProcess::ProcessError)));
-    connect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
-
-    // Start the background worker
-    d->writer_thread = QtConcurrent::run(this, &UCI_Client::_writer_thread);
-}
-
-UCI_Client::~UCI_Client()
-{
-    G_D;
-    
-    // Disconnect all signals from the process
-    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
-    disconnect(&d->process, SIGNAL(error(QProcess::ProcessError)),
-               this, SLOT(_engine_error(QProcess::ProcessError)));
-    disconnect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
-    
-    _append_to_write_queue("quit");
-
-    d->lock.lock();
-    d->cancel_thread = true;
-    d->wc.wakeOne();
-    d->lock.unlock();
-
-    d->writer_thread.waitForFinished();
-    
-    // Give the process time to exit gracefully
-    if(!d->process.waitForFinished(5000))
-    {
-        // If it doesn't exit, then kill it
-        d->process.kill();
-        d->process.waitForFinished();
-    }
-    
-    G_D_UNINIT();
-}
-
-UCI_Client::EngineInfo::~EngineInfo()
-{
-    for(typename Map<QString, Option_t *>::iterator iter = Options.begin();
-        iter != Options.end();
-        ++iter)
-        delete iter->Value();
-}
-
-const UCI_Client::EngineInfo &UCI_Client::GetEngineInfo() const
-{
-    G_D;
-    return d->info;
-}
-
-void UCI_Client::SetDebugOutputEnabled(bool e)
-{
-    G_D;
-    d->debug_output_enabled = e;
-    _append_to_write_queue(QString("debug %1").arg(e ? "on" : "off").toUtf8());
-}
-
-bool UCI_Client::GetDebugOutputEnabled() const
-{
-    G_D;
-    return d->debug_output_enabled;
-}
-
-void UCI_Client::SetAnalysisMode(bool b)
-{
-    G_D;
-    d->analysis_mode = b;
-    _append_to_write_queue(QString("setoption name "UCI_ANALYSE_MODE_TAG" value %1").arg(b ? "true" : "false").toUtf8());
-}
-
-bool UCI_Client::GetAnalysisMode() const
-{
-    G_D;
-    return d->analysis_mode;
-}
-
-void UCI_Client::_engine_error(QProcess::ProcessError err)
-{
-    G_D;
-    switch(err)
-    {
-    case QProcess::WriteError:
-    case QProcess::ReadError:
-    case QProcess::Timedout:
-        // kill the process if it's timing out
-        d->process.kill();
-    default:break;
-    }
-}
-
-void UCI_Client::_engine_stopped(int ec)
-{
-    G_D;
-    GUTIL_UNUSED(ec);
-    
-    // Have to disconnect this while we restart the engine
-    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
-
-    emit NotifyEngineCrashed();
-    __start_and_validate_engine(d, false);
-
-    connect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
-
-    // Wake up the background thread if it was waiting to do a command
-    d->wc.wakeOne();
-}
-
-void UCI_Client::_writer_thread()
-{
-    G_D;
     d->lock.lock();
     while(!d->cancel_thread)
     {
@@ -397,6 +274,140 @@ void UCI_Client::_writer_thread()
         }
     }
     d->lock.unlock();
+}
+
+
+
+UCI_Client::UCI_Client(QObject *parent)
+    :IEngine(parent)
+{
+    G_D_INIT();
+
+    connect(this, SIGNAL(BestMove(QByteArray)),
+            this, SLOT(_best_move_received()));
+}
+
+UCI_Client::~UCI_Client()
+{
+    if(IsEngineStarted())
+        StopEngine();
+    G_D_UNINIT();
+}
+
+void UCI_Client::StartEngine(const QString &path_to_engine, const QStringList &args)
+{
+    if(IsEngineStarted()){
+        GDEBUG("Engine already started!");
+        return;
+    }
+
+    G_D;
+
+    d->engine = path_to_engine;
+    d->arguments = args;
+
+    try{
+        __start_and_validate_engine(d, true);
+    } catch(...){
+        d->engine.clear();
+        d->arguments.clear();
+        throw;
+    }
+
+    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+    connect(&d->process, SIGNAL(error(QProcess::ProcessError)),
+            this, SLOT(_engine_error(QProcess::ProcessError)));
+    connect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
+
+    // Start the background worker
+    d->writer_thread = QtConcurrent::run(&__writer_thread, d);
+}
+
+void UCI_Client::StopEngine()
+{
+    if(!IsEngineStarted()){
+        GDEBUG("Engine already stopped!");
+        return;
+    }
+
+    G_D;
+
+    // Disconnect all signals from the process
+    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+    disconnect(&d->process, SIGNAL(error(QProcess::ProcessError)),
+               this, SLOT(_engine_error(QProcess::ProcessError)));
+    disconnect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
+
+    _append_to_write_queue("quit");
+
+    d->lock.lock();
+    d->cancel_thread = true;
+    d->wc.wakeOne();
+    d->lock.unlock();
+
+    d->writer_thread.waitForFinished();
+
+    // Give the process time to exit gracefully
+    if(!d->process.waitForFinished(5000))
+    {
+        // If it doesn't exit, then kill it
+        d->process.kill();
+        d->process.waitForFinished();
+    }
+
+    d->engine.clear();
+    d->arguments.clear();
+}
+
+bool UCI_Client::IsEngineStarted() const
+{
+    G_D;
+    return !d->engine.isEmpty();
+}
+
+UCI_Client::EngineInfo::~EngineInfo()
+{
+    for(typename Map<QString, Option_t *>::iterator iter = Options.begin();
+        iter != Options.end();
+        ++iter)
+        delete iter->Value();
+}
+
+const UCI_Client::EngineInfo &UCI_Client::GetEngineInfo() const
+{
+    G_D;
+    return d->info;
+}
+
+void UCI_Client::_engine_error(QProcess::ProcessError err)
+{
+    G_D;
+    switch(err)
+    {
+    case QProcess::WriteError:
+    case QProcess::ReadError:
+    case QProcess::Timedout:
+        // kill the process if it's timing out
+        d->process.kill();
+    default:break;
+    }
+}
+
+void UCI_Client::_engine_stopped(int ec)
+{
+    G_D;
+    GUTIL_UNUSED(ec);
+
+    // Have to disconnect this while we restart the engine
+    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+
+    emit NotifyEngineCrashed();
+    __start_and_validate_engine(d, false);
+
+    connect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+
+    // Wake up the background thread if it was waiting to do a command
+    d->wc.wakeOne();
 }
 
 void UCI_Client::_data_available()
@@ -438,15 +449,21 @@ void UCI_Client::_data_available()
 void UCI_Client::SetPosition(const char *data)
 {
     QByteArray ba;
-    if(0 == String::Compare(data, "startpos"))
+    if(-1 != String(data).IndexOf("startpos"))
         ba = String::Format("position %s", data).ConstData();
     else
         ba = String::Format("position fen %s", data).ConstData();
     _append_to_write_queue(ba);
 }
 
-void UCI_Client::Go(const UCI_Client::GoParams &p)
+void UCI_Client::SetOption(const QString &, const QVariant &)
 {
+
+}
+
+void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
+{
+    G_D;
     QString str = "go";
     if(-1 == p.MoveTime)
         str.append(" infinite");
@@ -462,12 +479,31 @@ void UCI_Client::Go(const UCI_Client::GoParams &p)
     if(0 < p.Mate)
         str.append(QString(" mate %1").arg(p.Mate));
 
+    if(0 < p.SearchMoves.length())
+        str.append(QString(" searchmoves %1").arg(p.SearchMoves.join(" ")));
+
     _append_to_write_queue(str.toUtf8());
+
+    // We raise this when we tell the background thread to start thinking, and lower it
+    //  when we receive the best move signal, so we don't need to protect this with a lock
+    d->thinking = true;
 }
 
-void UCI_Client::Stop()
+void UCI_Client::StopThinking()
 {
     _append_to_write_queue("stop");
+}
+
+void UCI_Client::_best_move_received()
+{
+    G_D;
+    d->thinking = false;
+}
+
+bool UCI_Client::IsThinking() const
+{
+    G_D;
+    return d->thinking;
 }
 
 void UCI_Client::_append_to_write_queue(const QByteArray &ba)
@@ -481,3 +517,6 @@ void UCI_Client::_append_to_write_queue(const QByteArray &ba)
 
 
 END_NAMESPACE_GKCHESS;
+
+
+Q_EXPORT_PLUGIN2(uciEnginePlugin, GKChess::UCI_Client)

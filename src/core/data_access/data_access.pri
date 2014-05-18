@@ -1,6 +1,5 @@
 HEADERS += \
-    data_access/uci_client.h \
-    data_access/ibookreader.h
+    data_access/ibookreader.h \
+    data_access/iengine.h
 
-SOURCES += \
-    data_access/uci_client.cpp
+SOURCES +=

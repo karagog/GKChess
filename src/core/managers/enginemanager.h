@@ -12,18 +12,32 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_GLOBALS_H
-#define GKCHESS_GLOBALS_H
+#ifndef GKCHESS_ENGINEMANAGER_H
+#define GKCHESS_ENGINEMANAGER_H
 
-#include "gutil_macros.h"
+#include <QString>
+#include <QPluginLoader>
 
-#define NAMESPACE_GKCHESS1( n )           namespace GKChess{ namespace n { enum{}
-#define NAMESPACE_GKCHESS                 namespace GKChess{ enum{}
+namespace GKChess{
 
-#define END_NAMESPACE_GKCHESS1            }} enum{}
-#define END_NAMESPACE_GKCHESS             } enum{}
 
-#define USING_NAMESPACE_GKCHESS1( ns )            using namespace GKChess::ns
-#define USING_NAMESPACE_GKCHESS                   using namespace GKChess
+class IEngine;
 
-#endif // GKCHESS_GLOBALS_H
+class EngineManager
+{
+    void *d;
+public:
+
+    /** Initializes the engine, or throws an exception if something goes wrong. */
+    EngineManager(const QString &path_to_uci_engine);
+    ~EngineManager();
+
+    /** Returns a reference to the engine. */
+    IEngine &GetEngine() const;
+
+};
+
+
+}
+
+#endif // GKCHESS_ENGINEMANAGER_H

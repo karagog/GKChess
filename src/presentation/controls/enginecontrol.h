@@ -15,6 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_ENGINECONTROL_H
 #define GKCHESS_ENGINECONTROL_H
 
+#include "gkchess_enginemanager.h"
 #include <QWidget>
 
 namespace Ui {
@@ -22,7 +23,7 @@ class EngineControl;
 }
 
 namespace GKChess{
-class UCI_Client;
+class IEngine;
 class Board;
 
 namespace UI{
@@ -33,18 +34,13 @@ class EngineControl : public QWidget
 {
     Q_OBJECT
 
-    UCI_Client *m_uci;
+    EngineManager m_engineMan;
     Board *m_board;
 
     Ui::EngineControl *ui;
 public:
-    explicit EngineControl(QWidget *parent = 0);
+    explicit EngineControl(Board *, QWidget *parent = 0);
     ~EngineControl();
-
-    /** You must call this before the control will work. */
-    void Initialize(UCI_Client *, Board *);
-    void Uninitialize();
-    bool IsInitialized() const{ return m_uci; }
 
 
 public slots:

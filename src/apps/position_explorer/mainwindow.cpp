@@ -35,7 +35,6 @@ MainWindow::MainWindow(QWidget *parent)
       m_board(),
       //m_board(10),
       m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
-      m_uci(new UCI_Client("/usr/games/stockfish")),
       m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray)
 {
     ui->setupUi(this);
@@ -69,8 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    m_engineControl = new EngineControl(this);
-    m_engineControl->Initialize(m_uci, &m_board);
+    m_engineControl = new EngineControl(&m_board, this);
     _show_engine_control();
 
     m_moveHistory = new MoveHistoryControl(m_board, this);

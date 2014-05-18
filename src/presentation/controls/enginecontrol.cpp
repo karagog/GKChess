@@ -18,42 +18,25 @@ limitations under the License.*/
 #include "gkchess_uci_client.h"
 USING_NAMESPACE_GKCHESS;
 
+#ifdef Q_OS_UNIX
+    #define STOCKFISH_PATH  "/usr/games/stockfish"
+#else
+    #define STOCKFISH_PATH  "stockfish.exe"
+#endif
+
 NAMESPACE_GKCHESS1(UI);
 
 
-EngineControl::EngineControl(QWidget *parent)
+EngineControl::EngineControl(Board *b, QWidget *parent)
     :QWidget(parent),
+      m_engineMan(STOCKFISH_PATH),
+      m_board(b),
       ui(new Ui::EngineControl)
 {
     ui->setupUi(this);
 
-    setEnabled(false);
-}
-
-void EngineControl::Initialize(UCI_Client *cli, Board *b)
-{
-    if(cli && b)
-    {
-        m_uci = cli;
-        m_board = b;
-        connect(cli, SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
-        connect(cli, SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
-        setEnabled(true);
-    }
-
-    GASSERT(cli && b);
-}
-
-void EngineControl::Uninitialize()
-{
-    if(IsInitialized())
-    {
-        disconnect(m_uci, SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
-        disconnect(m_uci, SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
-        m_uci = 0;
-        m_board = 0;
-        setEnabled(false);
-    }
+    connect(&m_engineMan.GetEngine(), SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
+    connect(&m_engineMan.GetEngine(), SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
 }
 
 EngineControl::~EngineControl()
@@ -63,25 +46,19 @@ EngineControl::~EngineControl()
 
 void EngineControl::Go()
 {
-    if(IsInitialized())
-    {
-        m_uci->SetPosition(m_board->ToFEN());
+    m_engineMan.GetEngine().SetPosition(m_board->ToFEN());
 
-        UCI_Client::GoParams p;
-        p.MoveTime = ui->spin_thinkTime->value();
-        p.Nodes = ui->spin_nodes->value();
-        p.Depth = ui->spin_depth->value();
-        p.Mate = ui->spin_mate->value();
-        m_uci->Go(p);
-    }
+    IEngine::ThinkParams p;
+    p.MoveTime = ui->spin_thinkTime->value();
+    p.Nodes = ui->spin_nodes->value();
+    p.Depth = ui->spin_depth->value();
+    p.Mate = ui->spin_mate->value();
+    m_engineMan.GetEngine().StartThinking(p);
 }
 
 void EngineControl::Stop()
 {
-    if(IsInitialized())
-    {
-        m_uci->Stop();
-    }
+    m_engineMan.GetEngine().StopThinking();
 }
 
 void EngineControl::_msg_rx(const QByteArray &line)

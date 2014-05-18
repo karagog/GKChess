@@ -21,11 +21,7 @@ LIBS += \
     -L$$TOP_DIR/gutil/lib \
     -lGUtil
 
-unix {
-    target.path = /usr/lib
-    INSTALLS += target
-}
-
+include(managers/managers.pri)
 include(business_objects/business_objects.pri)
 include(data_access/data_access.pri)
 include(utils/utils.pri)

@@ -17,27 +17,20 @@ limitations under the License.*/
 #include "gkchess_ibookreader.h"
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
+#include "gutil_pluginutils.h"
 #include <QFileDialog>
-#include <QPluginLoader>
 #include <QTableWidgetItem>
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS1(UI);
 
-#if defined(Q_OS_UNIX)
-    #define PLUGIN_PREFIX "lib"
-    #define PLUGIN_SUFFIX ".so"
-#elif defined(Q_OS_WIN)
-    #define PLUGIN_PREFIX ""
-    #define PLUGIN_SUFFIX ".dll"
-#endif
 
 BookReader::BookReader(ObservableBoard &b, QWidget *parent)
     :QWidget(parent),
       ui(new Ui::BookReader),
       m_board(b),
-      i_bookreader(0)
+      i_bookreader(PluginUtils::LoadPlugin<IBookReader>(m_pl, "polyglotReaderPlugin"))
 {
     ui->setupUi(this);
 
@@ -78,17 +71,11 @@ void BookReader::file_selected()
 {
     if(i_bookreader)
     {
-        GASSERT(i_bookreader->IsBookOpen());
         i_bookreader->CloseBook();
     }
     else
     {
-        QPluginLoader pl(PLUGIN_PREFIX "polyglotReaderPlugin" PLUGIN_SUFFIX);
-        if(!pl.instance())
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Cannot load book plugin");
 
-        i_bookreader = qobject_cast<IBookReader *>(pl.instance());
-        GASSERT(i_bookreader);
     }
 
     i_bookreader->OpenBook(ui->lineEdit->text().trimmed().toUtf8().constData());

@@ -2,8 +2,6 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    books \
-    engines
+    uci
 
 CONFIG += ordered
-

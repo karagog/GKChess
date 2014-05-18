@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gutil_smartpointer.h"
 #include <QWidget>
+#include <QPluginLoader>
 
 namespace Ui {
 class BookReader;
@@ -37,6 +38,7 @@ class BookReader :
     GUtil::SmartPointer<Ui::BookReader> ui;
     Board &m_board;
     GKChess::IBookReader *i_bookreader;
+    QPluginLoader m_pl;
 
 public:
 

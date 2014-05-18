@@ -12,25 +12,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_UCI_CLIENT_H
-#define GKCHESS_UCI_CLIENT_H
-
-#include <QStringList>
-#include <QObject>
-#include <QProcess>
+#ifndef GKCHESS_IENGINE_H
+#define GKCHESS_IENGINE_H
 
 #include "gutil_map.h"
+#include <QObject>
+#include <QStringList>
 
 namespace GKChess
 {
 
 
-/** A class to handle access to a UCI-compatible chess engine. */
-class UCI_Client :
+/** A class to handle access to a chess engine.  All functions throw an exception on failure. */
+class IEngine :
         public QObject
 {
     Q_OBJECT
-    void *d;
 public:
 
     struct Option_t
@@ -102,40 +99,42 @@ public:
         ButtonOption(const QString &name) : Option_t(name) {}
     };
 
+    /** Information that is returned by the engine when you issue the 'uci' command. */
     struct EngineInfo
     {
         QString Name;
         QString Author;
         GUtil::Map<QString, Option_t *> Options;
 
+        void clear(){ Name.clear(); Author.clear(); Options.Clear(); }
+
         ~EngineInfo();
     };
 
-    /** Constructs an instance of the uci client with the given engine.  The engine
-     *  must be valid or this will throw an exception.
-     *
-     *  After the constructor, the engine info member will be populated.
-    */
-    explicit UCI_Client(const QString &path_to_engine, QObject *parent = 0);
-    ~UCI_Client();
+    IEngine(QObject *parent = 0) : QObject(parent) {}
 
-    const EngineInfo &GetEngineInfo() const;
+    /** Starts the engine at the given path with the given arguments.  */
+    virtual void StartEngine(const QString &path_to_engine, const QStringList &args = QStringList()) = 0;
 
-    /** Switches on/off debug output for the engine. */
-    void SetDebugOutputEnabled(bool);
-    bool GetDebugOutputEnabled() const;
+    /** Returns true if the engine has been started. */
+    virtual bool IsEngineStarted() const = 0;
 
-    void SetAnalysisMode(bool);
-    bool GetAnalysisMode() const;
+    /** Stops the engine (quits), or does nothing if it wasn't started. */
+    virtual void StopEngine() = 0;
+
+    /** Returns the info about the engine. */
+    virtual const EngineInfo &GetEngineInfo() const = 0;
+
+    /** Sets the option name-value pair.  If the value is null, it will reset to the default. */
+    virtual void SetOption(const QString &name, const QVariant &value) = 0;
 
     /** Sets the position for the engine to work on.
-     *  This can be "startpos" or a FEN string
+     *  This can be "startpos moves e2e4 e7e5 ..." or a FEN string
     */
-    void SetPosition(const char *);
+    virtual void SetPosition(const char *) = 0;
 
 
-    /** Parameters to the Go() function. */
-    struct GoParams
+    struct ThinkParams
     {
         /** If the move time is -1 it will search until you say stop.  If it's 0 it has no time to think of a move. */
         int MoveTime;
@@ -149,18 +148,30 @@ public:
         /** Searches for mate in a given number of moves.  0 means unconstrained. */
         int Mate;
 
-        GoParams()
+        /** Constrains the engine to consider only these moves. An empty list means unconstrained. */
+        QStringList SearchMoves;
+
+        ThinkParams()
             :MoveTime(-1),
               Depth(0),
               Nodes(0)
         {}
     };
 
-    /** Tells the engine to start thinking about the best move. */
-    void Go(const GoParams & = GoParams());
+    /** Tells the engine to start thinking about the best move.  If it is already
+     *  thinking, it does nothing.  The engine may stop thinking automatically based
+     *  on the ThinkParams, in which case the best move signal will be emitted before
+     *  you tell it to stop thinking.
+    */
+    virtual void StartThinking(const ThinkParams & = ThinkParams()) = 0;
 
-    /** Tells the engine to stop thinking. */
-    void Stop();
+    /** Returns true if the engine is currently thinking. */
+    virtual bool IsThinking() const = 0;
+
+    /** Tells the engine to stop thinking and give the best move.
+     *  Does nothing if the engine is not thinking.
+    */
+    virtual void StopThinking() = 0;
 
 
 signals:
@@ -179,24 +190,12 @@ signals:
     /** This signal notifies that the engine has crashed. */
     void NotifyEngineCrashed();
 
-
-private slots:
-
-    void _data_available();
-
-    void _engine_error(QProcess::ProcessError err);
-    void _engine_stopped(int);
-
-
-private:
-
-    void _writer_thread();
-
-    void _append_to_write_queue(const QByteArray &);
-
 };
 
 
 }
 
-#endif // GKCHESS_UCI_CLIENT_H
+
+Q_DECLARE_INTERFACE(GKChess::IEngine, "GKChess.IEngine")
+
+#endif // GKCHESS_IENGINE_H
