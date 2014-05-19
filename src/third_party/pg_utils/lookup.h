@@ -13,16 +13,21 @@ typedef struct
     float weight;
 } pg_move_t;
 
+
 /** Looks up the position in the book and returns all the moves it found.
-    \returns An array of moves, whose length is given by the ret_length parameter
     \param file_handle The handle created by calling open_file()
     \param fen A FEN string to describe the current position
-    \param ret_length An output that gives the length of the return array (can be 0)
+    \param array An array of moves which will be populated with return values,
+    whose length is given by the max_array_length parameter.
+    In case there are more moves in the book than can be held in the return array,
+    the results will be truncated.
+    \param max_array_length An input that gives the length of the return array
+    \returns The number of items in the return array (can be 0)
 */
-pg_move_t *pg_lookup_moves(void *file_handle, char const *fen, unsigned int *ret_length);
-
-/** Cleans up the array of moves returned by lookup_moves. */
-void pg_cleanup_moves(pg_move_t *);
+unsigned int pg_lookup_moves(void *file_handle,
+                                char const *fen,
+                                pg_move_t *array,
+                                unsigned int max_array_length);
 
 
 #ifdef __cplusplus

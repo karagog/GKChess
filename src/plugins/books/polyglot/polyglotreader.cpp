@@ -92,15 +92,14 @@ Vector<PolyglotBookReader::Move> PolyglotBookReader::LookupMoves(const char *fen
     Vector<Move> ret;
     if(d->file)
     {
-        unsigned int len;
-        pg_move_t *moves = pg_lookup_moves(d->file, fen, &len);
-        pg_move_t *cur_move = moves;
-        for(unsigned int i = 0; i < len; ++i, ++cur_move){
+        pg_move_t moves[MAX_MOVES];
+        unsigned int len = pg_lookup_moves(d->file, fen, moves, MAX_MOVES);
+        
+        for(unsigned int i = 0; i < len; ++i){
             ret.PushBack(Move());
-            ret.Back().Text = cur_move->text;
-            ret.Back().Weight = cur_move->weight;
+            ret.Back().Text = moves[i].text;
+            ret.Back().Weight = moves[i].weight;
         }
-        pg_cleanup_moves(moves);
     }
     return ret;
 }

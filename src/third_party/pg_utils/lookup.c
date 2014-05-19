@@ -9,17 +9,14 @@
 
 #define MAX_MOVES 50
 
-PG_EXPORT pg_move_t *pg_lookup_moves(void *f, char const *fen, unsigned int *ret_length)
+PG_EXPORT unsigned int pg_lookup_moves(void *f, char const *fen, pg_move_t *array, unsigned int max_array_length)
 {
-    pg_move_t *ret = 0;
     board_t board;
-
-    if(ret_length)
-        *ret_length = 0;
+    int ret_length = 0;
 
     if(0 == board_from_fen(&board,fen))
     {
-        int i;
+        unsigned int i;
         uint64 key=hash(&board);
         entry_t entry;
         int offset=find_key(f,key,&entry);
@@ -27,7 +24,7 @@ PG_EXPORT pg_move_t *pg_lookup_moves(void *f, char const *fen, unsigned int *ret
         {
             entry_t entries[MAX_MOVES];
             entries[0]=entry;
-            int count=1;
+            unsigned int count=1;
             fseek((FILE*)f,16*(offset+1),SEEK_SET);
             while(1){
                 if(entry_from_file(f,&entry)){
@@ -46,27 +43,16 @@ PG_EXPORT pg_move_t *pg_lookup_moves(void *f, char const *fen, unsigned int *ret
             for(i = 0;i<count;i++)
                 total_weight+=entries[i].weight;
 
-            // Allocate the return array
-            ret = (pg_move_t *)malloc(count * sizeof(pg_move_t));
-            if(ret)
+            pg_move_t *cur_move = array;
+            entry_t *cur_entry = entries;
+            for(i = 0; i < count && i < max_array_length; ++i, ++cur_move, ++cur_entry)
             {
-                pg_move_t *cur_move = ret;
-                entry_t *cur_entry = entries;
-                for(i = 0; i < count; ++i, ++cur_move, ++cur_entry)
-                {
-                    move_to_string(cur_move->text, cur_entry->move);
-                    cur_move->weight = (float) cur_entry->weight / total_weight * 100;
-                }
-
-                if(ret_length)
-                    *ret_length = count;
+                move_to_string(cur_move->text, cur_entry->move);
+                cur_move->weight = (float) cur_entry->weight / total_weight * 100;
             }
+
+            ret_length = count;
         }
     }
-    return ret;
-}
-
-PG_EXPORT void pg_cleanup_moves(pg_move_t *a)
-{
-    free(a);
+    return ret_length;
 }
