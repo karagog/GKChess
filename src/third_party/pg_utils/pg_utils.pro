@@ -24,17 +24,18 @@ HEADERS += \
     book.h \
     hash.h \
     move.h \
-    lookup.h \
     file.h \
-    pg_utils.h
+    pg_utils.h \
+    error.h \
+    error_p.h
 
 SOURCES += \
-    lookup.c \
     file.c \
     hash.c \
     board.c \
     book.c \
-    move.c
+    move.c \
+    error.c
 
 OTHER_FILES += \
     README \

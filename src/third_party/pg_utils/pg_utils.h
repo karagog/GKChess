@@ -65,7 +65,7 @@ typedef unsigned int uint32;
 
 
 #include "file.h"
-#include "lookup.h"
+#include "error.h"
 
 
 #endif
