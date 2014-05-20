@@ -65,6 +65,7 @@ typedef unsigned int uint32;
 
 
 #include "file.h"
+#include "book.h"
 #include "error.h"
 
 

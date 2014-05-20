@@ -31,7 +31,6 @@ LIBS += \
     -lGUtil \
     -lGUtilQt \
     -lGKChess \
-    -lpg_utils \
     -lGKChessUI
 
 

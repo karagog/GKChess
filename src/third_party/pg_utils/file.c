@@ -1,4 +1,5 @@
 #include "file.h"
+#include "file_object.h"
 #include "pg_utils.h"
 #include "book.h"
 #include "move.h"
@@ -11,83 +12,24 @@
 #include <errno.h>
 #include <assert.h>
 
-#define MAX_MOVES 50
-#define INDEX_VALUES 16
-
-/** The size of one polyglot entry, in bytes. */
-#define POLYGLOT_ENTRY_SIZE 16
-
-/** The size of a polyglot entry key, in bytes. */
-#define POLYGLOT_KEY_SIZE 8
-
-typedef struct file_handle_t
-{
-    FILE *handle;
-    long int index[INDEX_VALUES];
-} file_handle_t;
 
 /** Scans the file and returns 1 if it's a valid polyglot database.
  *
  *  Since it's scanning the file anyways, why not also populate the index.
 */
-static int validate_file_and_populate_index(file_handle_t *);
-
-
-PG_EXPORT unsigned int pg_lookup_moves(void *f, char const *fen, pg_move_t *array, unsigned int max_array_length)
-{
-    board_t board;
-    int ret_length = 0;
-
-    if(0 == board_from_fen(&board,fen))
-    {
-        unsigned int i;
-        uint64 key=hash(&board);
-        entry_t entry;
-        int offset=find_key(f,key,&entry);
-        if(entry.key == key)
-        {
-            entry_t entries[MAX_MOVES];
-            entries[0]=entry;
-            unsigned int count=1;
-            fseek((FILE*)f,16*(offset+1),SEEK_SET);
-            while(1){
-                if(entry_from_file(f,&entry)){
-                    break;
-                }
-                if(entry.key!=key){
-                    break;
-                }
-                if(count==MAX_MOVES){
-                    break;
-                }
-                entries[count++]=entry;
-            }
-
-            int total_weight=0;
-            for(i = 0;i<count;i++)
-                total_weight+=entries[i].weight;
-
-            pg_move_t *cur_move = array;
-            entry_t *cur_entry = entries;
-            for(i = 0; i < count && i < max_array_length; ++i, ++cur_move, ++cur_entry)
-            {
-                move_to_string(cur_move->text, cur_entry->move);
-                cur_move->weight = (float) cur_entry->weight / total_weight * 100;
-            }
-
-            ret_length = count;
-        }
-    }
-    set_error_string(0);
-    return ret_length;
-}
+static int validate_file_and_populate_index(file_object_t *);
 
 
 PG_EXPORT void *pg_open_file(const char *filename, int om)
 {
-    char mode[3] = {'r', '\0', '\0'};
-    if(om == 1)
-        mode[1] = 'w';
+    char mode[] = {'r', '\0', '\0', '\0'};
+    int b_ind = 1;
+    if(om == 1){
+        mode[1] = '+';
+        b_ind = 2;
+    }
+    mode[b_ind] = 'b';
+
 
     FILE *f = fopen(filename, mode);
     if(!f){
@@ -95,7 +37,7 @@ PG_EXPORT void *pg_open_file(const char *filename, int om)
         return NULL;
     }
 
-    file_handle_t *ret = (file_handle_t *)malloc(sizeof(file_handle_t));
+    file_object_t *ret = (file_object_t *)malloc(sizeof(file_object_t));
     if(!ret){
         set_error_string("Out of memory");
         fclose(f);
@@ -107,6 +49,7 @@ PG_EXPORT void *pg_open_file(const char *filename, int om)
     if(!validate_file_and_populate_index(ret)){
         // validate_file() sets its own error message
         fclose(f);
+        free(ret);
         return NULL;
     }
 
@@ -116,14 +59,14 @@ PG_EXPORT void *pg_open_file(const char *filename, int om)
 
 PG_EXPORT void pg_close_file(void *h)
 {
-    file_handle_t *f = (file_handle_t *)h;
+    file_object_t *f = (file_object_t *)h;
     fclose(f->handle);
     free(f);
     set_error_string(0);
 }
 
 
-int validate_file_and_populate_index(file_handle_t *f)
+int validate_file_and_populate_index(file_object_t *f)
 {
     long int i, len, entry_cnt;
 
@@ -131,13 +74,13 @@ int validate_file_and_populate_index(file_handle_t *f)
     fseek(f->handle, 0L, SEEK_END);
     len = ftell(f->handle);
 
-    if(0 != (0x0F && len)){
+    if(0 != (0x0F & len)){
         set_error_string("The book size must be a multiple of 16 bytes");
         return 0;
     }
 
     // Initialize the index
-    for(i = 0; i < INDEX_VALUES; ++i)
+    for(i = 0; i < INDEX_VALUE_COUNT; ++i)
         f->index[i] = -1;
 
     // Iterate through each entry and make sure the keys are in ascending order,
@@ -147,9 +90,13 @@ int validate_file_and_populate_index(file_handle_t *f)
     uint8 last_key[POLYGLOT_KEY_SIZE];
     for(i = 0; i < entry_cnt; ++i)
     {
-        fseek(f->handle, i * POLYGLOT_ENTRY_SIZE, SEEK_SET);
-        if(fread(key, POLYGLOT_KEY_SIZE, 1, f->handle) != POLYGLOT_KEY_SIZE){
-            set_error_string(strerror(errno));
+        if(0 != fseek(f->handle, i * POLYGLOT_ENTRY_SIZE, SEEK_SET)){
+            set_error_string("Error seeking file");
+            return 0;
+        }
+
+        if(1 != fread(key, POLYGLOT_KEY_SIZE, 1, f->handle)){
+            set_error_string("Error reading file");
             return 0;
         }
 
@@ -171,7 +118,7 @@ int validate_file_and_populate_index(file_handle_t *f)
     // Go through the index and fill in any values that are missing
     // Go backwards through the index and fill in empty indices (in case the book is sparse)
     long int last_value = 0;
-    for(i = 0; i < INDEX_VALUES; ++i){
+    for(i = 0; i < INDEX_VALUE_COUNT; ++i){
         if(-1 == f->index[i]){
             f->index[i] = last_value;
         }

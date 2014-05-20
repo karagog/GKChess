@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "board.h"
-#include "string.h"
+#include <string.h>
 
 
 void board_init(board_t *board){

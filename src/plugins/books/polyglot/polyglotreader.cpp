@@ -55,7 +55,8 @@ void PolyglotBookReader::OpenBook(const char *b)
         CloseBook();
 
     if(!(d->file = pg_open_file(b, 0)))
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Unable to open file: %s", b));
+        THROW_NEW_GUTIL_EXCEPTION2(Exception,
+                                   String::Format("Unable to open file: %s\n%s", b, pg_error_string()));
 
     d->filename = b;
 }
@@ -92,12 +93,17 @@ Vector<PolyglotBookReader::Move> PolyglotBookReader::LookupMoves(const char *fen
     Vector<Move> ret;
     if(d->file)
     {
+        char tmps[6];
         pg_move_t moves[MAX_MOVES];
-        unsigned int len = pg_lookup_moves(d->file, fen, moves, MAX_MOVES);
+        unsigned int len = pg_lookup_moves(d->file, pg_compute_key(fen), moves, MAX_MOVES);
         
-        for(unsigned int i = 0; i < len; ++i){
+        for(unsigned int i = 0; i < len; ++i)
+        {
             ret.PushBack(Move());
-            ret.Back().Text = moves[i].text;
+
+            pg_move_to_string(&moves[i], tmps);
+            ret.Back().Text = tmps;
+
             ret.Back().Weight = moves[i].weight;
         }
     }

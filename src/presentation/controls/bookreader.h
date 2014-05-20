@@ -37,8 +37,8 @@ class BookReader :
     Q_OBJECT
     GUtil::SmartPointer<Ui::BookReader> ui;
     Board &m_board;
-    GKChess::IBookReader *i_bookreader;
     QPluginLoader m_pl;
+    GKChess::IBookReader *i_bookreader;
 
 public:
 
