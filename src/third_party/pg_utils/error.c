@@ -16,7 +16,7 @@ limitations under the License.*/
 #include "error_p.h"
 #include "pg_utils.h"
 
-static char const *__err_str(0);
+static char const *__err_str = 0;
 
 PG_EXPORT char const *pg_error_string()
 {

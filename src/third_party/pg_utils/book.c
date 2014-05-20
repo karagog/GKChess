@@ -2,7 +2,7 @@
 #include "book.h"
 #include <stdio.h>
 
-static entry_t entry_none={0,0,0,0};
+static entry_t entry_none = {{0}};
 
 //static void int_to_file(FILE *f, int l, uint64 r){
 //    int i,c;
@@ -51,8 +51,7 @@ int entry_from_file(void *f, entry_t *entry){
 
 int find_key(void *f, uint64 key, entry_t *entry){
     int first, last, middle;
-    entry_t first_entry=entry_none, last_entry,middle_entry;
-    (void)first_entry;  // squelch compiler warning
+    entry_t last_entry,middle_entry;
 
     first=-1;
     if(fseek(f,-16,SEEK_END)){
@@ -75,7 +74,6 @@ int find_key(void *f, uint64 key, entry_t *entry){
             last_entry=middle_entry;
         }else{
             first=middle;
-            first_entry=middle_entry;
         }
     }
 }
