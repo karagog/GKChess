@@ -6,10 +6,10 @@
 #define INDEX_VALUE_COUNT 16
 
 
+/** Let's make this a struct so we can expand it if necessary. */
 typedef struct
 {
     FILE *handle;
-    long int index[INDEX_VALUE_COUNT];
 }
 file_object_t;
 
