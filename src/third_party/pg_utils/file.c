@@ -66,16 +66,16 @@ PG_EXPORT int pg_validate_file(void *h, void (*progress_cb)(int))
 
     if(0 != (0x0F & len)){
         set_error_string("The book size must be a multiple of 16 bytes");
-        return 0;
+        return 1;
     }
-    
+
     // Iterate through each entry and make sure the keys are in ascending order,
     //  and populate the index
     entry_cnt = len / POLYGLOT_ENTRY_SIZE;
-    
+
     // Only update every so often
     progress_inc = entry_cnt / 100;
-    
+
     for(i = 0; i < entry_cnt; ++i)
     {
         if(0 != fseek(f->handle, i * POLYGLOT_ENTRY_SIZE, SEEK_SET)){
@@ -95,7 +95,7 @@ PG_EXPORT int pg_validate_file(void *h, void (*progress_cb)(int))
 
         // Remember the last key
         memcpy(last_key, key, POLYGLOT_KEY_SIZE);
-        
+
         if(progress_cb){
             // Notify of progress update
             ++progress_cnt;

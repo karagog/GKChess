@@ -203,8 +203,8 @@ PG_EXPORT unsigned int pg_lookup_moves(void *f, uint64 key, pg_move_t *array, un
     {
         entry_t entries[MAX_MOVES];
         entries[0]=entry;
-        unsigned int count=1;
-        fseek(fo->handle, POLYGLOT_ENTRY_SIZE*(entry.offset),SEEK_SET);
+        unsigned int count=0;
+        fseek(fo->handle, POLYGLOT_ENTRY_SIZE*entry.offset, SEEK_SET);
         while(1){
             entry = entry_from_file(fo->handle);
             uint64 cur_key = get_key(&entry);
@@ -246,7 +246,7 @@ PG_EXPORT void pg_move_to_string(pg_move_t *m, char *s)
     s[1] = '1' + m->source_row;
     s[2] = 'a' + m->dest_col;
     s[3] = '1' + m->dest_row;
-    
+
     if(m->promoted_piece == promote_none)
         s[4] = '\0';
     else{
