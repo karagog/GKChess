@@ -27,6 +27,8 @@ class IBookReader
 {
 public:
 
+    class IValidationProgressObserver;
+
     /** Describes a move. The row and col indices are both starting at 0. */
     struct Move
     {
@@ -52,6 +54,12 @@ public:
     /** Returns the filename for the book that is currently open, or 0 if there is no book open. */
     virtual const char *GetBookFilename() const = 0;
 
+    /** Validates the book. This may be a time-expensive operation, so you can provide a callback function
+     *  to track its progress.
+     *  Throws an exception if validation fails
+    */
+    virtual void ValidateBook(IValidationProgressObserver * = 0) = 0;
+
     /** Looks up the given position in the book, and returns all the moves it found.
      *  If the position was not in the database, an empty vector is returned.
     */
@@ -61,6 +69,14 @@ public:
     virtual void CloseBook() = 0;
 
     virtual ~IBookReader(){}
+
+
+    /** Used to catch progress updates during book validation. */
+    class IValidationProgressObserver
+    {
+    public:
+        virtual void OnValidationProgressUpdate(int) = 0;
+    };
 
 };
 

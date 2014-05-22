@@ -67,6 +67,29 @@ bool PolyglotBookReader::IsBookOpen() const
     return d->file;
 }
 
+static IBookReader::IValidationProgressObserver *__validation_observer(0);
+
+static void __validation_progress_cb(int p)
+{
+    if(__validation_observer)
+        __validation_observer->OnValidationProgressUpdate(p);
+}
+
+void PolyglotBookReader::ValidateBook(IValidationProgressObserver *ob)
+{
+    G_D;
+    GASSERT(0 == __validation_observer);
+
+    __validation_observer = ob;
+    int res = pg_validate_file(d->file, &__validation_progress_cb);
+    __validation_observer = 0;
+
+    if(0 != res){
+        THROW_NEW_GUTIL_EXCEPTION2(Exception,
+                                   String::Format("Invalid Polyglot book: %s", pg_error_string()));
+    }
+}
+
 const char *PolyglotBookReader::GetBookFilename() const
 {
     G_D;
@@ -96,7 +119,7 @@ Vector<PolyglotBookReader::Move> PolyglotBookReader::LookupMoves(const char *fen
         char tmps[6];
         pg_move_t moves[MAX_MOVES];
         unsigned int len = pg_lookup_moves(d->file, pg_compute_key(fen), moves, MAX_MOVES);
-        
+
         for(unsigned int i = 0; i < len; ++i)
         {
             ret.PushBack(Move());

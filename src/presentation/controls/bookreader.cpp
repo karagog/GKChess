@@ -14,7 +14,6 @@ limitations under the License.*/
 
 #include "bookreader.h"
 #include "ui_bookreader.h"
-#include "gkchess_ibookreader.h"
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
 #include "gutil_pluginutils.h"
@@ -33,6 +32,9 @@ BookReader::BookReader(ObservableBoard &b, QWidget *parent)
       i_bookreader(PluginUtils::LoadPlugin<IBookReader>(m_pl, "polyglotReaderPlugin"))
 {
     ui->setupUi(this);
+    ui->btn_validate->hide();
+    ui->prg_validation->hide();
+    ui->prg_validation->setRange(0, 100);
 
     connect(&b, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
             this, SLOT(board_position_changed()));
@@ -72,14 +74,40 @@ void BookReader::file_selected()
     if(i_bookreader)
     {
         i_bookreader->CloseBook();
-    }
-    else
-    {
-
+        ui->btn_validate->hide();
     }
 
     i_bookreader->OpenBook(ui->lineEdit->text().trimmed().toUtf8().constData());
+
+    ui->btn_validate->show();
     board_position_changed();
+}
+
+void BookReader::validate_file()
+{
+    if(!i_bookreader || !i_bookreader->IsBookOpen())
+        return;
+
+    ui->prg_validation->show();
+    try
+    {
+        i_bookreader->ValidateBook(this);
+    } catch(...){
+        ui->prg_validation->hide();
+        throw;
+    }
+    ui->prg_validation->hide();
+    ui->btn_validate->hide();
+}
+
+void BookReader::OnValidationProgressUpdate(int p)
+{
+    if(p < 100){
+        ui->prg_validation->show();
+        ui->prg_validation->setValue(p);
+    }
+    else
+        ui->prg_validation->hide();
 }
 
 void BookReader::board_position_changed()

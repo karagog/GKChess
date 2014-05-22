@@ -16,6 +16,7 @@ limitations under the License.*/
 #define BOOKREADER_H
 
 #include "gutil_smartpointer.h"
+#include "gkchess_ibookreader.h"
 #include <QWidget>
 #include <QPluginLoader>
 
@@ -23,22 +24,25 @@ namespace Ui {
 class BookReader;
 }
 
+class QProgressBar;
+
 namespace GKChess{
   class Board;
   class ObservableBoard;
-  class IBookReader;
 
 namespace UI{
 
 
 class BookReader :
-        public QWidget
+        public QWidget,
+        public IBookReader::IValidationProgressObserver
 {
     Q_OBJECT
     GUtil::SmartPointer<Ui::BookReader> ui;
     Board &m_board;
     QPluginLoader m_pl;
     GKChess::IBookReader *i_bookreader;
+    QProgressBar *m_pb;
 
 public:
 
@@ -56,6 +60,12 @@ private slots:
 
     void file_selected();
     void board_position_changed();
+    void validate_file();
+
+
+private:
+
+    void OnValidationProgressUpdate(int);
 
 };
 

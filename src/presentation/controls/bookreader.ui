@@ -14,7 +14,62 @@
    <string>Opening Book Reader</string>
   </property>
   <layout class="QFormLayout" name="formLayout">
+   <property name="fieldGrowthPolicy">
+    <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+   </property>
+   <item row="0" column="0" colspan="2">
+    <widget class="QWidget" name="widget" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Book File:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_validate">
+        <property name="toolTip">
+         <string>Validates the book file.  Once you validate the first time, there is no need to do it again.</string>
+        </property>
+        <property name="text">
+         <string>Validate</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="toolButton">
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item row="1" column="0" colspan="2">
+    <widget class="QProgressBar" name="prg_validation">
+     <property name="value">
+      <number>24</number>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
     <widget class="QTableWidget" name="tableWidget">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -61,41 +116,6 @@
      </column>
     </widget>
    </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QWidget" name="widget" native="true">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Book File:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit"/>
-      </item>
-      <item>
-       <widget class="QToolButton" name="toolButton">
-        <property name="text">
-         <string>...</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
   </layout>
  </widget>
  <resources/>
@@ -132,9 +152,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>btn_validate</sender>
+   <signal>released()</signal>
+   <receiver>BookReader</receiver>
+   <slot>validate_file()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>326</x>
+     <y>24</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>292</x>
+     <y>35</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>SelectFile()</slot>
   <slot>file_selected()</slot>
+  <slot>validate_file()</slot>
  </slots>
 </ui>

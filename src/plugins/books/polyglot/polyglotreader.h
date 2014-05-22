@@ -41,6 +41,9 @@ public:
     void CloseBook();
     GUtil::Vector<Move> LookupMoves(const char *fen);
 
+    /** \note You can only observe the progress for one validation globally at a time. */
+    void ValidateBook(IValidationProgressObserver *);
+
 };
 
 
