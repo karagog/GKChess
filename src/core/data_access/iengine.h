@@ -113,6 +113,12 @@ public:
 
     IEngine(QObject *parent = 0) : QObject(parent) {}
 
+    /** Creates a new engine object. Ownership goes to the caller, but the new instance
+     *  will have the same parent as the original instance.
+     *  You must keep the plugin loaded as long as you're using this instance.
+    */
+    virtual IEngine *Create() const = 0;
+
     /** Starts the engine at the given path with the given arguments.  */
     virtual void StartEngine(const QString &path_to_engine, const QStringList &args = QStringList()) = 0;
 

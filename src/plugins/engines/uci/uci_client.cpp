@@ -287,6 +287,11 @@ UCI_Client::UCI_Client(QObject *parent)
             this, SLOT(_best_move_received()));
 }
 
+IEngine *UCI_Client::Create() const
+{
+    return new UCI_Client(parent());
+}
+
 UCI_Client::~UCI_Client()
 {
     if(IsEngineStarted())

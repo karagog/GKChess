@@ -76,6 +76,7 @@ private slots:
     void _opening_book_reader();
     void _show_move_history();
     void _show_engine_control();
+    void _manage_engines();
 
     void _setup_standard_chess();
     void _setup_random_chess960();

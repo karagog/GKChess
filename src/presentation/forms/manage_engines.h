@@ -18,8 +18,13 @@ limitations under the License.*/
 #include "gutil_persistentdata.h"
 #include <QDialog>
 
+namespace Ui{
+class ManageEngines;
+}
+
 namespace GKChess{
 class EngineSettings;
+class EngineManager;
 namespace UI{
 
 
@@ -27,10 +32,22 @@ class ManageEngines : public QDialog
 {
     Q_OBJECT
     EngineSettings *m_settings;
+    Ui::ManageEngines *ui;
+
+    QStringList m_engineList;
+    GUtil::SmartPointer<EngineManager> m_engineManager;
 public:
 
     explicit ManageEngines(EngineSettings *engine_settings, QWidget *parent = 0);
+    ~ManageEngines();
 
+
+private slots:
+
+    void _engine_list_updated();
+    void _current_changed(int);
+    void _add();
+    void _delete();
 
 };
 

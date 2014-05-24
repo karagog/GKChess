@@ -69,6 +69,7 @@
     <property name="title">
      <string>&amp;Tools</string>
     </property>
+    <addaction name="actionManage_Engines"/>
     <addaction name="actionRandom_Chess960_Position"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -219,6 +220,11 @@
   <action name="action_Whats_this">
    <property name="text">
     <string>&amp;What's this?</string>
+   </property>
+  </action>
+  <action name="actionManage_Engines">
+   <property name="text">
+    <string>Manage &amp;Engines</string>
    </property>
   </action>
  </widget>

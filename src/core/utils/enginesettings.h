@@ -38,6 +38,15 @@ public:
     /** Returns the list of configured engines. */
     QStringList GetEngineList() const;
 
+    /** Removes the engine from the list. */
+    void RemoveEngine(const QString &name);
+
+    /** Returns the path to the engine executable. */
+    QString GetEnginePath(const QString &name);
+
+    /** Sets the path to the engine executable. */
+    void SetEnginePath(const QString &name, const QString &path);
+
     /** Sets the option for the engine.  If the engine is not in the database yet, it will
      *  be added with the given options.
     */

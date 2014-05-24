@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "enginecontrol.h"
-#include "manage_engines.h"
 #include "ui_enginecontrol.h"
+#include "gkchess_manage_engines.h"
 #include "gkchess_board.h"
 #include "gkchess_uci_client.h"
 #include "gkchess_enginesettings.h"
@@ -39,6 +39,9 @@ EngineControl::EngineControl(Board *b, EngineSettings *settings, QWidget *parent
 {
     ui->setupUi(this);
 
+    connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
+            this, SLOT(_refresh_combo_box()));
+
     _refresh_combo_box();
 }
 
@@ -60,6 +63,7 @@ void EngineControl::_refresh_combo_box()
             ++i;
         }
         ui->wdg_control->setEnabled(true);
+        _engine_selection_changed();
     }
     else{
         ui->cmb_engine->addItem(tr("(none)"), -1);
@@ -121,7 +125,7 @@ void EngineControl::_engine_selection_changed()
         mng.exec();
     }
     else{
-        m_engineMan = new EngineManager(STOCKFISH_PATH);
+        m_engineMan = new EngineManager(m_settings->GetEnginePath(ui->cmb_engine->currentText()));
         connect(&m_engineMan->GetEngine(), SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
         connect(&m_engineMan->GetEngine(), SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
         connect(&m_engineMan->GetEngine(), SIGNAL(BestMove(QByteArray,QByteArray)),

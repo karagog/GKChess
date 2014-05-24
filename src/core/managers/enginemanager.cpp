@@ -35,7 +35,7 @@ EngineManager::EngineManager(const QString &path)
     G_D;
 
     // Load the plugin and start the engine
-    d->engine = PluginUtils::LoadPlugin<IEngine>(d->pluginloader, "uciEnginePlugin");
+    d->engine = PluginUtils::LoadPlugin<IEngine>(d->pluginloader, "uciEnginePlugin")->Create();
     d->engine->StartEngine(path);
 }
 
@@ -43,7 +43,7 @@ EngineManager::~EngineManager()
 {
     G_D;
     d->engine->StopEngine();
-    d->pluginloader.unload();
+    d->engine->deleteLater();
     G_D_UNINIT();
 }
 

@@ -68,9 +68,6 @@ private slots:
     void _go_stop_pressed();
     void _engine_selection_changed();
 
-
-private:
-
     void _refresh_combo_box();
 
 };

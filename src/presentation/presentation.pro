@@ -27,6 +27,7 @@ LIBS += \
     -lGUtilQt \
     -lGKChess
 
+include(forms/forms.pri)
 include(views/views.pri)
 include(models/models.pri)
 include(controls/controls.pri)

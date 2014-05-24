@@ -16,6 +16,10 @@ limitations under the License.*/
 #include "gkchess_globals.h"
 USING_NAMESPACE_GUTIL;
 
+// This needs to never collide with any potential engine settings names, because it will be
+//  stored in a map with option names as keys.
+#define PATH_SETTING_STRING "gkchess_engine_path"
+
 NAMESPACE_GKCHESS;
 
 
@@ -33,6 +37,26 @@ QStringList EngineSettings::GetEngineList() const
     return ret;
 }
 
+void EngineSettings::RemoveEngine(const QString &name)
+{
+    m_data.RemoveValue(name);
+}
+
+QString EngineSettings::GetEnginePath(const QString &name)
+{
+    QString path;
+    if(m_data.Contains(name)){
+        path = m_data.Value(name).toMap().value(PATH_SETTING_STRING).toString();
+    }
+    return path;
+}
+
+void EngineSettings::SetEnginePath(const QString &name, const QString &path)
+{
+    QVariantMap vals = m_data.Value(name).toMap();
+    vals[PATH_SETTING_STRING] = path;
+    m_data.SetValue(name, vals);
+}
 
 void EngineSettings::SetOptionsForEngine(const QString &engine, const QVariantMap &vals)
 {
@@ -42,8 +66,10 @@ void EngineSettings::SetOptionsForEngine(const QString &engine, const QVariantMa
 QVariantMap EngineSettings::GetOptionsForEngine(const QString &engine) const
 {
     QVariantMap ret;
-    if(m_data.Contains(engine))
+    if(m_data.Contains(engine)){
         ret = m_data.Value(engine).toMap();
+        ret.remove(PATH_SETTING_STRING);
+    }
     return ret;
 }
 

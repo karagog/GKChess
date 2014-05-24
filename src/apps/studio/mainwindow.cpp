@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_pgn_playercontrol.h"
 #include "gkchess_chess960generatorcontrol.h"
 #include "gkchess_bookreader.h"
+#include "gkchess_manage_engines.h"
 #include "gutil_file.h"
 #include "gutil_application.h"
 #include "gutil_persistentdata.h"
@@ -71,6 +72,7 @@ MainWindow::MainWindow(PersistentData *settings,
     connect(ui->actionChess960_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_random_chess960()));
     connect(ui->actionMove_History, SIGNAL(triggered()), this, SLOT(_show_move_history()));
     connect(ui->action_Engine_Control, SIGNAL(triggered()), this, SLOT(_show_engine_control()));
+    connect(ui->actionManage_Engines, SIGNAL(triggered()), this, SLOT(_manage_engines()));
 
     connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
 
@@ -207,6 +209,12 @@ void MainWindow::_show_engine_control()
         addDockWidget(Qt::RightDockWidgetArea, d, Qt::Vertical);
         m_engineControl->show();
     }
+}
+
+void MainWindow::_manage_engines()
+{
+    ManageEngines mng(m_engineSettings, this);
+    mng.exec();
 }
 
 void MainWindow::_setup_standard_chess()

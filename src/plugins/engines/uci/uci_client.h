@@ -35,8 +35,10 @@ public:
      *
      *  After the constructor, the engine info member will be populated.
     */
-    explicit UCI_Client(QObject *parent = 0);
+    UCI_Client(QObject *parent = 0);
     ~UCI_Client();
+
+    IEngine *Create() const;
 
     void StartEngine(const QString &, const QStringList &);
     bool IsEngineStarted() const;

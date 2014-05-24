@@ -12,21 +12,41 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "manage_engines.h"
-#include "gkchess_globals.h"
-#include "gkchess_enginesettings.h"
-#include <QFormLayout>
-USING_NAMESPACE_GUTIL1(QT);
-NAMESPACE_GKCHESS1(UI);
+#ifndef NEWENGINE_H
+#define NEWENGINE_H
 
+#include <QDialog>
 
-ManageEngines::ManageEngines(EngineSettings *settings, QWidget *parent)
-    :QDialog(parent),
-      m_settings(settings)
-{
-    setWindowModality(Qt::ApplicationModal);
-    new QFormLayout(this);
+namespace Ui {
+class EditEngine;
 }
 
+namespace GKChess{ namespace UI{
 
-END_NAMESPACE_GKCHESS1;
+
+class EditEngine : public QDialog
+{
+    Q_OBJECT
+    Ui::EditEngine *ui;
+    QString name, path;
+public:
+
+    explicit EditEngine(QWidget *parent = 0);
+    ~EditEngine();
+
+    QString GetName() const{ return name; }
+    QString GetExePath() const{ return path; }
+
+
+private slots:
+
+    void _select_exe();
+    void _name_changed();
+    void _path_changed();
+
+};
+
+
+}}
+
+#endif // NEWENGINE_H
