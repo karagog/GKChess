@@ -13,11 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "application.h"
-#include "gkchess_uiglobals.h"
 #include "mainwindow.h"
+#include "gkchess_uiglobals.h"
+#include "gkchess_enginesettings.h"
 #include "gutil_messageboxlogger.h"
 #include "gutil_about.h"
 #include "gutil_persistentdata.h"
+USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL1(QT);
 
 
@@ -28,11 +30,18 @@ USING_NAMESPACE_GUTIL1(QT);
 
 
 StudioApplication::StudioApplication(int &argc, char **argv)
-    :Application(argc, argv, APPLICATION_NAME, APPLICATION_VERSION),
-      m_settings(new PersistentData("settings", "main", this)),
-      m_engineSettings(new PersistentData("settings", "engine", this)),
-      m_mainWindow(new MainWindow(m_settings, m_engineSettings))
+    :Application(argc, argv)
 {
+    // Initialize these settings before setting the application name, so they are shared between apps
+    m_engineSettings = new EngineSettings;
+
+    setApplicationName(APPLICATION_NAME);
+    setApplicationVersion(APPLICATION_VERSION);
+
+    // Initialize these settings after setting the application name, so that they are specific to this app
+    m_settings = new PersistentData("Settings", QString(), this);
+    m_mainWindow = new MainWindow(m_settings, m_engineSettings);
+
     // Make sure the GKChess resources are initialized
     GKChess::UI::InitializeApplicationResources();
     setWindowIcon(QIcon(APPLICATION_ICON));
@@ -46,6 +55,8 @@ void StudioApplication::about_to_quit()
 {
     m_mainWindow->hide();
     m_mainWindow->deleteLater();
+
+    delete m_engineSettings;
 }
 
 void StudioApplication::handle_exception(const GUtil::Exception<> &ex)

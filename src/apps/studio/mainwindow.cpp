@@ -37,7 +37,7 @@ USING_NAMESPACE_GKCHESS1(UI);
 
 
 MainWindow::MainWindow(PersistentData *settings,
-                       PersistentData *engine_settings,
+                       EngineSettings *engine_settings,
                        QWidget *parent)
     :QMainWindow(parent),
       ui(new Ui::MainWindow),

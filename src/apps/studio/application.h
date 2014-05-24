@@ -21,14 +21,18 @@ namespace GUtil{ namespace QT{
 class PersistentData;
 }}
 
+namespace GKChess{
+class EngineSettings;
+}
+
 class MainWindow;
 
 class StudioApplication :
         public GUtil::QT::Application
 {
     Q_OBJECT
+    GKChess::EngineSettings *m_engineSettings;
     GUtil::QT::PersistentData *m_settings;
-    GUtil::QT::PersistentData *m_engineSettings;
     MainWindow *m_mainWindow;
 
 public:

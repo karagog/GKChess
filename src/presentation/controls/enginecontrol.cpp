@@ -17,6 +17,7 @@ limitations under the License.*/
 #include "ui_enginecontrol.h"
 #include "gkchess_board.h"
 #include "gkchess_uci_client.h"
+#include "gkchess_enginesettings.h"
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GUTIL;
@@ -30,10 +31,10 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS1(UI);
 
 
-EngineControl::EngineControl(Board *b, PersistentData *pd, QWidget *parent)
+EngineControl::EngineControl(Board *b, EngineSettings *settings, QWidget *parent)
     :QWidget(parent),
       m_board(b),
-      m_settings(pd),
+      m_settings(settings),
       ui(new Ui::EngineControl)
 {
     ui->setupUi(this);
@@ -50,11 +51,11 @@ void EngineControl::_refresh_combo_box()
 {
     ui->cmb_engine->clear();
 
-    m_settingsKeys = m_settings->Keys();
-    m_settingsKeys.Sort();
-    if(0 < m_settingsKeys.Length()){
+    m_engineList = m_settings->GetEngineList();
+    m_engineList.sort();
+    if(0 < m_engineList.length()){
         int i = 0;
-        G_FOREACH_CONST(const String &k, m_settingsKeys){
+        G_FOREACH_CONST(const String &k, m_engineList){
             ui->cmb_engine->addItem(k, i);
             ++i;
         }

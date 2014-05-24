@@ -27,6 +27,7 @@ class EngineControl;
 namespace GKChess{
 class IEngine;
 class Board;
+class EngineSettings;
 
 namespace UI{
 
@@ -38,13 +39,13 @@ class EngineControl : public QWidget
 
     GUtil::SmartPointer<EngineManager> m_engineMan;
     Board *m_board;
-    GUtil::QT::PersistentData *m_settings;
-    GUtil::Vector<GUtil::String> m_settingsKeys;
+    EngineSettings *m_settings;
+    QStringList m_engineList;
 
     Ui::EngineControl *ui;
 public:
 
-    explicit EngineControl(Board *, GUtil::QT::PersistentData *engine_settings, QWidget *parent = 0);
+    explicit EngineControl(Board *, EngineSettings *engine_settings, QWidget *parent = 0);
     ~EngineControl();
 
 

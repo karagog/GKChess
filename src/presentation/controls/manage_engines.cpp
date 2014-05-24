@@ -14,12 +14,13 @@ limitations under the License.*/
 
 #include "manage_engines.h"
 #include "gkchess_globals.h"
+#include "gkchess_enginesettings.h"
 #include <QFormLayout>
 USING_NAMESPACE_GUTIL1(QT);
 NAMESPACE_GKCHESS1(UI);
 
 
-ManageEngines::ManageEngines(PersistentData *settings, QWidget *parent)
+ManageEngines::ManageEngines(EngineSettings *settings, QWidget *parent)
     :QDialog(parent),
       m_settings(settings)
 {
