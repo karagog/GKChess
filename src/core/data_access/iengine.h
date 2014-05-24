@@ -38,7 +38,8 @@ public:
             Spin,
             Check,
             String,
-            Button
+            Button,
+            Combo
         };
 
         QString Name;
@@ -87,6 +88,8 @@ public:
     {
         QStringList Values;
         const QString &Default;
+
+        TypeEnum GetType() const{ return Combo; }
 
         ComboOption(const QString &name, const QStringList &vals, const QString &default_val)
             :Option_t(name), Values(vals), Default(default_val){}

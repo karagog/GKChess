@@ -47,7 +47,10 @@ private slots:
     void _engine_list_updated();
     void _current_changed(int);
     void _add();
+    void _edit();
     void _delete();
+
+    void _default_action(QAction *);
 
 };
 

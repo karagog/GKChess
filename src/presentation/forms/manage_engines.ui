@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>611</width>
-    <height>511</height>
+    <width>914</width>
+    <height>697</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,13 +29,20 @@
       <bool>false</bool>
      </property>
      <widget class="QListWidget" name="lst_engines"/>
-     <widget class="QWidget" name="pnl_options" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>1</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
       </property>
+      <widget class="QWidget" name="pnl_options">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>283</width>
+         <height>648</height>
+        </rect>
+       </property>
+      </widget>
      </widget>
     </widget>
    </item>
@@ -56,27 +63,22 @@
       </property>
       <item>
        <widget class="QPushButton" name="btn_add">
-        <property name="font">
-         <font>
-          <pointsize>15</pointsize>
-         </font>
-        </property>
         <property name="text">
-         <string>+</string>
+         <string>New</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_edit">
+        <property name="text">
+         <string>Edit</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="btn_del">
-        <property name="font">
-         <font>
-          <pointsize>15</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
         <property name="text">
-         <string>-</string>
+         <string>Delete</string>
         </property>
        </widget>
       </item>
@@ -114,8 +116,8 @@
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>601</x>
-     <y>496</y>
+     <x>683</x>
+     <y>597</y>
     </hint>
     <hint type="destinationlabel">
      <x>277</x>
@@ -130,8 +132,8 @@
    <slot>_add()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>73</x>
-     <y>482</y>
+     <x>82</x>
+     <y>597</y>
     </hint>
     <hint type="destinationlabel">
      <x>112</x>
@@ -146,8 +148,8 @@
    <slot>_delete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>146</x>
-     <y>493</y>
+     <x>260</x>
+     <y>597</y>
     </hint>
     <hint type="destinationlabel">
      <x>180</x>
@@ -155,9 +157,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>btn_edit</sender>
+   <signal>released()</signal>
+   <receiver>ManageEngines</receiver>
+   <slot>_edit()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>141</x>
+     <y>582</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>173</x>
+     <y>601</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>_add()</slot>
   <slot>_delete()</slot>
+  <slot>_edit()</slot>
  </slots>
 </ui>
