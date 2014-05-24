@@ -23,32 +23,32 @@ USING_NAMESPACE_GUTIL1(QT);
 
 #define APPLICATION_ICON ":/gkchess/icons/default/k.png"
 
+#define APPLICATION_NAME "GKChess Studio"
+#define APPLICATION_VERSION "0.0.0"
 
 
-PositionExplorerApplication::PositionExplorerApplication(int &argc, char **argv)
-    :Application(argc, argv, "Position Explorer"),
+StudioApplication::StudioApplication(int &argc, char **argv)
+    :Application(argc, argv, APPLICATION_NAME, APPLICATION_VERSION),
       m_settings(new PersistentData("settings", "main", this)),
       m_engineSettings(new PersistentData("settings", "engine", this)),
       m_mainWindow(new MainWindow(m_settings, m_engineSettings))
 {
-    setApplicationName("GKChess Studio");
-    setApplicationVersion("0.0.0");
-
     // Make sure the GKChess resources are initialized
     GKChess::UI::InitializeApplicationResources();
     setWindowIcon(QIcon(APPLICATION_ICON));
 
+    m_mainWindow->setWindowTitle(APPLICATION_NAME);
     m_mainWindow->show();
 }
 
 
-void PositionExplorerApplication::about_to_quit()
+void StudioApplication::about_to_quit()
 {
     m_mainWindow->hide();
     m_mainWindow->deleteLater();
 }
 
-void PositionExplorerApplication::handle_exception(const GUtil::Exception<> &ex)
+void StudioApplication::handle_exception(const GUtil::Exception<> &ex)
 {
     MessageBoxLogger().LogException(ex);
 }
@@ -77,7 +77,7 @@ public:
 };
 
 
-void PositionExplorerApplication::show_about(QWidget *w)
+void StudioApplication::show_about(QWidget *w)
 {
     __about(w).ShowAbout();
 }

@@ -16,5 +16,5 @@ limitations under the License.*/
 
 int main(int argc, char *argv[])
 {
-    return PositionExplorerApplication(argc, argv).exec();
+    return StudioApplication(argc, argv).exec();
 }

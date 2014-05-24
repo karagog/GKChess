@@ -10,9 +10,6 @@
     <height>718</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>GKChess Position Explorer</string>
-  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>

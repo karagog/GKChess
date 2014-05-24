@@ -2,7 +2,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    position_explorer
+    studio
 
 CONFIG += ordered
 

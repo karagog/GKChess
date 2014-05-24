@@ -23,7 +23,7 @@ class PersistentData;
 
 class MainWindow;
 
-class PositionExplorerApplication :
+class StudioApplication :
         public GUtil::QT::Application
 {
     Q_OBJECT
@@ -32,7 +32,7 @@ class PositionExplorerApplication :
     MainWindow *m_mainWindow;
 
 public:
-    explicit PositionExplorerApplication(int &argc, char **argv);
+    explicit StudioApplication(int &argc, char **argv);
 
 
 protected:
