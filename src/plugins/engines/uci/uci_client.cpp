@@ -340,7 +340,7 @@ void UCI_Client::StopEngine()
     G_D;
 
     // Disconnect all signals from the process
-    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+    disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
     disconnect(&d->process, SIGNAL(error(QProcess::ProcessError)),
                this, SLOT(_engine_error(QProcess::ProcessError)));
     disconnect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
@@ -406,12 +406,12 @@ void UCI_Client::_engine_stopped(int ec)
     GUTIL_UNUSED(ec);
 
     // Have to disconnect this while we restart the engine
-    disconnect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+    disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
 
     emit NotifyEngineCrashed();
     __start_and_validate_engine(d, false);
 
-    connect(&d->process, SIGNAL(readyReadStandardOutput()), this, SLOT(_data_available()));
+    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
 
     // Wake up the background thread if it was waiting to do a command
     d->wc.wakeOne();
