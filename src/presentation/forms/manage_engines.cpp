@@ -19,6 +19,7 @@ limitations under the License.*/
 #include "gkchess_editengine.h"
 #include "gkchess_enginemanager.h"
 #include "gkchess_iengine.h"
+#include "gkchess_uiglobals.h"
 #include <QMessageBox>
 #include <QGridLayout>
 #include <QLabel>
@@ -32,7 +33,7 @@ USING_NAMESPACE_GUTIL1(QT);
 NAMESPACE_GKCHESS1(UI);
 
 
-ManageEngines::ManageEngines(EngineSettings *settings, QWidget *parent)
+ManageEngines::ManageEngines(EngineSettings *settings, PersistentData *app_settings, QWidget *parent)
     :QDialog(parent),
       m_settings(settings),
       ui(new Ui::ManageEngines)
@@ -40,15 +41,18 @@ ManageEngines::ManageEngines(EngineSettings *settings, QWidget *parent)
     ui->setupUi(this);
     setWindowModality(Qt::ApplicationModal);
 
-//    connect(settings, SIGNAL(NotifyEnginesUpdated()),
-//            this, SLOT(_engine_list_updated()));
-    connect(ui->lst_engines, SIGNAL(currentRowChanged(int)),
-            this, SLOT(_current_changed(int)));
-
     new QGridLayout(ui->pnl_options);
     ui->pnl_options->setContentsMargins(0,0,0,0);
 
     _engine_list_updated();
+
+    connect(ui->lst_engines, SIGNAL(currentRowChanged(int)),
+            this, SLOT(_current_changed(int)));
+
+    const QString last_engine = app_settings->Value(GKCHESS_SETTING_LAST_ENGINE_USED).toString();
+    QList<QListWidgetItem *> lst = ui->lst_engines->findItems(last_engine, Qt::MatchExactly);
+    if(0 < lst.length())
+        ui->lst_engines->setCurrentItem(lst[0]);
 }
 
 ManageEngines::~ManageEngines()

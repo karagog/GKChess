@@ -81,7 +81,7 @@ MainWindow::MainWindow(PersistentData *settings,
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    m_engineControl = new EngineControl(&m_board, m_engineSettings, this);
+    m_engineControl = new EngineControl(&m_board, m_engineSettings, m_settings, this);
     _show_engine_control();
 
     m_moveHistory = new MoveHistoryControl(m_board, this);
@@ -213,7 +213,7 @@ void MainWindow::_show_engine_control()
 
 void MainWindow::_manage_engines()
 {
-    ManageEngines mng(m_engineSettings, this);
+    ManageEngines mng(m_engineSettings, m_settings, this);
     mng.exec();
 }
 

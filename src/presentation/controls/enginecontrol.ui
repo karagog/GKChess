@@ -266,22 +266,6 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>cmb_engine</sender>
-   <signal>activated(int)</signal>
-   <receiver>EngineControl</receiver>
-   <slot>_engine_selection_changed()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>87</x>
-     <y>24</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>124</x>
-     <y>43</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
  <slots>
   <slot>Go()</slot>

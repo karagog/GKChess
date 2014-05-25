@@ -40,12 +40,14 @@ class EngineControl : public QWidget
     GUtil::SmartPointer<EngineManager> m_engineMan;
     Board *m_board;
     EngineSettings *m_settings;
+    GUtil::QT::PersistentData *m_appSettings;
     QStringList m_engineList;
+    bool m_suppressUpdate;
 
     Ui::EngineControl *ui;
 public:
 
-    explicit EngineControl(Board *, EngineSettings *engine_settings, QWidget *parent = 0);
+    explicit EngineControl(Board *, EngineSettings *engine_settings, GUtil::QT::PersistentData *app_settings, QWidget *parent = 0);
     ~EngineControl();
 
 
@@ -66,7 +68,9 @@ private slots:
     void _engine_crashed();
 
     void _go_stop_pressed();
-    void _engine_selection_changed();
+
+    void _engine_selection_changed(const QString &);
+    void _engine_selection_activated(int);
 
     void _engines_updated();
 

@@ -17,6 +17,11 @@ limitations under the License.*/
 
 #include "gkchess_globals.h"
 
+
+// Here we define some globally used string constants
+#define GKCHESS_SETTING_LAST_ENGINE_USED "LastEngineUsed"
+
+
 NAMESPACE_GKCHESS1(UI);
 
 
