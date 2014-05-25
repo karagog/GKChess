@@ -219,8 +219,10 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
                     break;
                 }
 
-                if(opt)
+                if(opt){
+                    d->info.OptionNames.append(opt_name);
                     d->info.Options.Insert(opt_name, opt);
+                }
             }
             else if(line.startsWith("uciok"))
             {
@@ -463,6 +465,43 @@ void UCI_Client::SetPosition(const char *data)
 
 void UCI_Client::SetOption(const QString &name, const QVariant &value)
 {
+    G_D;
+    if(!d->info.Options.Contains(name))
+        return;
+
+    // Apply the change to our in-memory struct
+    IEngine::Option_t *opt = d->info.Options[name];
+    switch(opt->GetType())
+    {
+    case IEngine::Option_t::Check:
+    {
+        IEngine::CheckOption *co = static_cast<IEngine::CheckOption *>(opt);
+        co->Value = value.toInt();
+    }
+        break;
+    case IEngine::Option_t::Spin:
+    {
+        IEngine::SpinOption *so = static_cast<IEngine::SpinOption *>(opt);
+        so->Value = value.toInt();
+    }
+        break;
+    case IEngine::Option_t::String:
+    {
+        IEngine::StringOption *so = static_cast<IEngine::StringOption *>(opt);
+        so->Value = value.toString();
+    }
+        break;
+    case IEngine::Option_t::Combo:
+    {
+        IEngine::ComboOption *co = static_cast<IEngine::ComboOption *>(opt);
+        co->Value = value.toString();
+    }
+        break;
+    default:
+        break;
+    }
+
+    // Write the change to the engine
     QString data = QString("setoption name %1 value %2")
             .arg(name)
             .arg(value.toString());

@@ -58,9 +58,20 @@ void EngineSettings::SetEnginePath(const QString &name, const QString &path)
     m_data.SetValue(name, vals);
 }
 
-void EngineSettings::SetOptionsForEngine(const QString &engine, const QVariantMap &vals)
+void EngineSettings::SetOptionForEngine(const QString &engine, const QString &name, const QVariant &val)
 {
-    m_data.SetValue(engine, vals);
+    QVariantMap vm = m_data.Value(engine).toMap();
+    vm[name] = val;
+    m_data.SetValue(engine, vm);
+}
+
+void EngineSettings::RemoveOptionForEngine(const QString &engine, const QString &name)
+{
+    QVariantMap vm = m_data.Value(engine).toMap();
+    if(vm.contains(name)){
+        vm.remove(name);
+        m_data.SetValue(engine, vm);
+    }
 }
 
 QVariantMap EngineSettings::GetOptionsForEngine(const QString &engine) const

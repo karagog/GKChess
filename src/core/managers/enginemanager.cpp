@@ -15,28 +15,43 @@ limitations under the License.*/
 #include "enginemanager.h"
 #include "gkchess_iengine.h"
 #include "gkchess_globals.h"
+#include "gkchess_enginesettings.h"
 #include "gutil_pluginutils.h"
 USING_NAMESPACE_GUTIL;
 
 namespace{
 struct d_t
 {
+    QString engine_name;
     QPluginLoader pluginloader;
     GKChess::IEngine *engine;
+    GKChess::EngineSettings *engine_settings;
 };
 }
 
 NAMESPACE_GKCHESS;
 
 
-EngineManager::EngineManager(const QString &path)
+EngineManager::EngineManager(const QString &engine_name, EngineSettings *settings)
 {
     G_D_INIT();
     G_D;
 
+    if(!settings->GetEngineList().contains(engine_name))
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unrecognized Engine");
+
+    d->engine_name = engine_name;
+    d->engine_settings = settings;
+
     // Load the plugin and start the engine
     d->engine = PluginUtils::LoadPlugin<IEngine>(d->pluginloader, "uciEnginePlugin")->Create();
-    d->engine->StartEngine(path);
+    d->engine->StartEngine(settings->GetEnginePath(engine_name));
+
+    // Go through the settings and apply our configuration
+    QVariantMap options = settings->GetOptionsForEngine(engine_name);
+    foreach(const QString &k, options.keys()){
+        d->engine->SetOption(k, options[k]);
+    }
 }
 
 EngineManager::~EngineManager()
@@ -51,6 +66,12 @@ IEngine &EngineManager::GetEngine() const
 {
     G_D;
     return *d->engine;
+}
+
+QString EngineManager::GetEngineName() const
+{
+    G_D;
+    return d->engine_name;
 }
 
 

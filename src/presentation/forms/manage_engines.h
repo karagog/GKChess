@@ -50,6 +50,7 @@ private slots:
     void _edit();
     void _delete();
 
+    void _edited_action(QAction *);
     void _default_action(QAction *);
 
 };

@@ -40,8 +40,8 @@ ManageEngines::ManageEngines(EngineSettings *settings, QWidget *parent)
     ui->setupUi(this);
     setWindowModality(Qt::ApplicationModal);
 
-    connect(settings, SIGNAL(NotifyEnginesUpdated()),
-            this, SLOT(_engine_list_updated()));
+//    connect(settings, SIGNAL(NotifyEnginesUpdated()),
+//            this, SLOT(_engine_list_updated()));
     connect(ui->lst_engines, SIGNAL(currentRowChanged(int)),
             this, SLOT(_current_changed(int)));
 
@@ -78,18 +78,8 @@ void ManageEngines::_current_changed(int r)
     if(0 > r)
         return;
 
-    QString cur_engine = m_engineList[r];
-
-    QString engine_path = m_settings->GetEnginePath(cur_engine);
-    if(engine_path.isEmpty()){
-        GASSERT(false);
-        return;
-    }
-
-    QVariantMap vals = m_settings->GetOptionsForEngine(cur_engine);
-
     // This starts up the engine
-    m_engineManager = new EngineManager(engine_path);
+    m_engineManager = new EngineManager(m_engineList[r], m_settings);
 
     // Then we can read the options and populate the form
     IEngine &e = m_engineManager->GetEngine();
@@ -102,28 +92,36 @@ void ManageEngines::_current_changed(int r)
     gl->addWidget(new QLabel(tr("Author:"), this), 1, 0);
     gl->addWidget(new QLabel(info.Author, this), 1, 1);
 
-    // Iterate through all the options and add labels and widgets to configure them:
-    typename Map<QString, IEngine::Option_t *>::const_iterator iter;
-    Map<QString, IEngine::Option_t *> const &options = info.Options;
-    int cur_row = 2;
 
+    const QString default_tooltip = tr("Restore default value");
+    QActionGroup *edited_actions = new QActionGroup(this);
     QActionGroup *default_actions = new QActionGroup(this);
+    connect(edited_actions, SIGNAL(triggered(QAction*)), this, SLOT(_edited_action(QAction*)));
     connect(default_actions, SIGNAL(triggered(QAction*)), this, SLOT(_default_action(QAction *)));
 
-    for(iter = options.begin(); iter != options.end(); ++iter, ++cur_row)
+    // Iterate through all the options and add labels and widgets to configure them:
+    for(int i = 0; i < info.OptionNames.length(); ++i)
     {
+        bool is_default_val = true;
         bool show_option = true;
-
         QWidget *editing_widget = 0;
-        IEngine::Option_t *opt = iter->Value();
+        QAction *edited_action = 0;
+        QString cur_name = info.OptionNames[i];
+        IEngine::Option_t *opt = info.Options.At(cur_name);
+
         switch(opt->GetType())
         {
         case IEngine::Option_t::Check:
         {
             IEngine::CheckOption *co = static_cast<IEngine::CheckOption *>(opt);
             QCheckBox *cb = new QCheckBox(this);
-            cb->setChecked(co->Default);
+            cb->setChecked(co->Value);
             editing_widget = cb;
+
+            edited_action = new QAction(this);
+            connect(cb, SIGNAL(toggled(bool)), edited_action, SLOT(trigger()));
+
+            is_default_val = co->Value == co->Default;
         }
             break;
         case IEngine::Option_t::Spin:
@@ -131,8 +129,13 @@ void ManageEngines::_current_changed(int r)
             IEngine::SpinOption *so = static_cast<IEngine::SpinOption *>(opt);
             QSpinBox *sb = new QSpinBox(this);
             sb->setRange(so->Min, so->Max);
-            sb->setValue(so->Default);
+            sb->setValue(so->Value);
             editing_widget = sb;
+
+            edited_action = new QAction(this);
+            connect(sb, SIGNAL(valueChanged(int)), edited_action, SLOT(trigger()));
+
+            is_default_val = so->Value == so->Default;
         }
             break;
         case IEngine::Option_t::String:
@@ -140,6 +143,11 @@ void ManageEngines::_current_changed(int r)
             IEngine::StringOption *so = static_cast<IEngine::StringOption *>(opt);
             QLineEdit *le = new QLineEdit(so->Value, this);
             editing_widget = le;
+
+            edited_action = new QAction(this);
+            connect(le, SIGNAL(textChanged(QString)), edited_action, SLOT(trigger()));
+
+            is_default_val = so->Value == so->Default;
         }
             break;
         case IEngine::Option_t::Combo:
@@ -147,8 +155,13 @@ void ManageEngines::_current_changed(int r)
             IEngine::ComboOption *co = static_cast<IEngine::ComboOption *>(opt);
             QComboBox *cb = new QComboBox(this);
             cb->addItems(co->Values);
-            cb->setCurrentIndex(co->Values.indexOf(co->Default));
+            cb->setCurrentIndex(co->Values.indexOf(co->Value));
             editing_widget = cb;
+
+            edited_action = new QAction(this);
+            connect(cb, SIGNAL(currentIndexChanged(int)), edited_action, SLOT(trigger()));
+
+            is_default_val = co->Value == co->Default;
         }
             break;
         default:
@@ -158,38 +171,131 @@ void ManageEngines::_current_changed(int r)
 
         if(show_option)
         {
-            gl->addWidget(new QLabel(iter->Key(), this), cur_row, 0);
+            gl->addWidget(new QLabel(cur_name, this), i + 2, 0);
 
             if(editing_widget)
-                gl->addWidget(editing_widget, cur_row, 1);
+                gl->addWidget(editing_widget, i + 2, 1);
 
-            QPushButton *pb = new QPushButton(tr("Default"), this);
+            if(edited_action){
+                edited_action->setData(i);
+                edited_actions->addAction(edited_action);
+            }
+
+            QPushButton *pb = new QPushButton(tr("<-"), this);
+            pb->setToolTip(default_tooltip);
             QAction *act = new QAction(this);
-            act->setData(opt->Name);
+            act->setData(i);
             default_actions->addAction(act);
 
+            if(is_default_val)
+                pb->setEnabled(false);
+
             connect(pb, SIGNAL(released()), act, SLOT(trigger()));
-            gl->addWidget(pb, cur_row, 2);
+            gl->addWidget(pb, i + 2, 2);
         }
     }
 }
 
-void ManageEngines::_default_action(QAction *a)
+void ManageEngines::_edited_action(QAction *a)
 {
-    QString option_name = a->data().toString();
-    if(option_name.isEmpty())
+    bool ok = false;
+    int option_index = a->data().toInt(&ok);
+    if(!ok || 0 > option_index)
         return;
 
-    IEngine::Option_t *opt = m_engineManager->GetEngine().GetEngineInfo().Options.At(option_name);
+    IEngine &engine = m_engineManager->GetEngine();
+    IEngine::EngineInfo const &info = engine.GetEngineInfo();
+    IEngine::Option_t *opt = info.Options.At(info.OptionNames[option_index]);
+
+    bool default_value = true;
+    QVariant value;
+    QGridLayout *gl = static_cast<QGridLayout*>(ui->pnl_options->layout());
+    QPushButton *btn_default = static_cast<QPushButton *>(gl->itemAtPosition(option_index + 2, 2)->widget());
+    QWidget *editor_widget = gl->itemAtPosition(option_index + 2, 1)->widget();
+    GASSERT(editor_widget);
     switch(opt->GetType())
     {
-    case IEngine::Option_t::Spin:
-        break;
     case IEngine::Option_t::Check:
+    {
+        IEngine::CheckOption *co = static_cast<IEngine::CheckOption *>(opt);
+        QCheckBox *cb = static_cast<QCheckBox *>(editor_widget);
+        value = cb->isChecked();
+        default_value = cb->isChecked() == co->Default;
+    }
+        break;
+    case IEngine::Option_t::Spin:
+    {
+        IEngine::SpinOption *so = static_cast<IEngine::SpinOption *>(opt);
+        QSpinBox *sb = static_cast<QSpinBox *>(editor_widget);
+        value = sb->value();
+        default_value = sb->value() == so->Default;
+    }
         break;
     case IEngine::Option_t::String:
+    {
+        IEngine::StringOption *so = static_cast<IEngine::StringOption *>(opt);
+        QLineEdit *le = static_cast<QLineEdit *>(editor_widget);
+        value = le->text();
+        default_value = le->text() == so->Default;
+    }
         break;
     case IEngine::Option_t::Combo:
+    {
+        IEngine::ComboOption *co = static_cast<IEngine::ComboOption *>(opt);
+        QComboBox *cb = static_cast<QComboBox *>(editor_widget);
+        value = cb->currentText();
+        default_value = cb->currentText() == co->Default;
+    }
+        break;
+    default:
+        break;
+    }
+
+    if(default_value){
+        // Remove default settings from the config
+        m_settings->RemoveOptionForEngine(m_engineManager->GetEngineName(), opt->Name);
+    }
+    else{
+        // Add non-default values to the settings config
+        m_settings->SetOptionForEngine(m_engineManager->GetEngineName(), opt->Name, value);
+    }
+
+    if(!value.isNull())
+        engine.SetOption(opt->Name, value);
+
+    btn_default->setEnabled(!default_value);
+}
+
+void ManageEngines::_default_action(QAction *a)
+{
+    bool ok = false;
+    int option_index = a->data().toInt(&ok);
+    if(!ok || 0 > option_index)
+        return;
+
+    IEngine::EngineInfo const &info = m_engineManager->GetEngine().GetEngineInfo();
+    IEngine::Option_t *opt = info.Options.At(info.OptionNames[option_index]);
+    switch(opt->GetType())
+    {
+    case IEngine::Option_t::Check:
+    {
+        IEngine::CheckOption *co = static_cast<IEngine::CheckOption *>(opt);
+    }
+        break;
+    case IEngine::Option_t::Spin:
+    {
+        IEngine::SpinOption *so = static_cast<IEngine::SpinOption *>(opt);
+    }
+        break;
+    case IEngine::Option_t::String:
+    {
+        IEngine::StringOption *so = static_cast<IEngine::StringOption *>(opt);
+    }
+        break;
+    case IEngine::Option_t::Combo:
+    {
+        IEngine::ComboOption *co = static_cast<IEngine::ComboOption *>(opt);
+    }
         break;
     default:
         break;
@@ -217,6 +323,7 @@ void ManageEngines::_add()
             }
 
             m_settings->SetEnginePath(name, path);
+            _engine_list_updated();
         }
     }
 }
@@ -229,8 +336,10 @@ void ManageEngines::_edit()
 void ManageEngines::_delete()
 {
     int indx = ui->lst_engines->currentRow();
-    if(0 <= indx)
+    if(0 <= indx){
         m_settings->RemoveEngine(m_engineList[indx]);
+        _engine_list_updated();
+    }
 }
 
 ManageEngines::~ManageEngines()

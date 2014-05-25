@@ -87,12 +87,13 @@ public:
     struct ComboOption : public Option_t
     {
         QStringList Values;
+        QString Value;
         const QString &Default;
 
         TypeEnum GetType() const{ return Combo; }
 
         ComboOption(const QString &name, const QStringList &vals, const QString &default_val)
-            :Option_t(name), Values(vals), Default(default_val){}
+            :Option_t(name), Values(vals), Value(default_val), Default(default_val) {}
     };
 
     struct ButtonOption : public Option_t
@@ -107,9 +108,12 @@ public:
     {
         QString Name;
         QString Author;
+
+        /** This holds all the option names in the order they were given by the engine. */
+        QStringList OptionNames;
         GUtil::Map<QString, Option_t *> Options;
 
-        void clear(){ Name.clear(); Author.clear(); Options.Clear(); }
+        void clear(){ Name.clear(); Author.clear(); OptionNames.clear(); Options.Clear(); }
 
         ~EngineInfo();
     };

@@ -22,6 +22,8 @@ namespace GKChess{
 
 
 class IEngine;
+class EngineSettings;
+
 
 class EngineManager
 {
@@ -29,8 +31,11 @@ class EngineManager
 public:
 
     /** Initializes the engine, or throws an exception if something goes wrong. */
-    EngineManager(const QString &path_to_uci_engine);
+    EngineManager(const QString &engine_name, EngineSettings *);
     ~EngineManager();
+
+    /** Returns the name of the engine that was passed to the constructor. */
+    QString GetEngineName() const;
 
     /** Returns a reference to the engine. */
     IEngine &GetEngine() const;

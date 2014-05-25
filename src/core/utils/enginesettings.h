@@ -48,9 +48,12 @@ public:
     void SetEnginePath(const QString &name, const QString &path);
 
     /** Sets the option for the engine.  If the engine is not in the database yet, it will
-     *  be added with the given options.
+     *  be added with the given option.
     */
-    void SetOptionsForEngine(const QString &engine, const QVariantMap &);
+    void SetOptionForEngine(const QString &engine, const QString &name, const QVariant &value);
+
+    /** Removes the given option from the config. */
+    void RemoveOptionForEngine(const QString &engine, const QString &name);
 
     /** Returns the options for the given engine.  Or an empty map if the engine was not configured. */
     QVariantMap GetOptionsForEngine(const QString &engine) const;

@@ -39,8 +39,8 @@ EngineControl::EngineControl(Board *b, EngineSettings *settings, QWidget *parent
 {
     ui->setupUi(this);
 
-    connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
-            this, SLOT(_refresh_combo_box()));
+//    connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
+//            this, SLOT(_refresh_combo_box()));
 
     _refresh_combo_box();
 }
@@ -125,7 +125,7 @@ void EngineControl::_engine_selection_changed()
         mng.exec();
     }
     else{
-        m_engineMan = new EngineManager(m_settings->GetEnginePath(ui->cmb_engine->currentText()));
+        m_engineMan = new EngineManager(ui->cmb_engine->currentText(), m_settings);
         connect(&m_engineMan->GetEngine(), SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
         connect(&m_engineMan->GetEngine(), SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
         connect(&m_engineMan->GetEngine(), SIGNAL(BestMove(QByteArray,QByteArray)),
