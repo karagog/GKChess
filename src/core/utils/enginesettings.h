@@ -58,6 +58,12 @@ public:
     /** Returns the options for the given engine.  Or an empty map if the engine was not configured. */
     QVariantMap GetOptionsForEngine(const QString &engine) const;
 
+    /** Causes the changes to be written to disk and the update signals to be emitted. */
+    void CommitChanges();
+
+    /** Rolls back the changes to the last commit. */
+    void RejectChanges();
+
 
 signals:
 

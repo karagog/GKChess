@@ -27,6 +27,7 @@ EngineSettings::EngineSettings(QObject *p)
     :QObject(p),
       m_data("GKChess_GlobalEngineSettings")
 {
+    m_data.SetAutoCommitChanges(false);
     connect(&m_data, SIGNAL(DataChanged()), this, SIGNAL(NotifyEnginesUpdated()));
 }
 
@@ -82,6 +83,16 @@ QVariantMap EngineSettings::GetOptionsForEngine(const QString &engine) const
         ret.remove(PATH_SETTING_STRING);
     }
     return ret;
+}
+
+void EngineSettings::CommitChanges()
+{
+    m_data.CommitChanges();
+}
+
+void EngineSettings::RejectChanges()
+{
+    m_data.RejectChanges();
 }
 
 

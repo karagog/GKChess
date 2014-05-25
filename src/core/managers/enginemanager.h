@@ -40,6 +40,9 @@ public:
     /** Returns a reference to the engine. */
     IEngine &GetEngine() const;
 
+    /** Causes the current settings to be applied to the engine. */
+    void ApplySettings();
+
 };
 
 

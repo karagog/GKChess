@@ -51,16 +51,20 @@ ManageEngines::ManageEngines(EngineSettings *settings, QWidget *parent)
     _engine_list_updated();
 }
 
+ManageEngines::~ManageEngines()
+{
+    delete ui;
+}
+
 void ManageEngines::_engine_list_updated()
 {
     m_engineList = m_settings->GetEngineList();
     ui->lst_engines->clear();
 
     // Remove everything from the options panel
-    QWidgetList widgets = ui->pnl_options->findChildren<QWidget *>();
-    foreach(QWidget * widget, widgets){
-        delete widget;
-    }
+    QLayoutItem *item;
+    while((item = ui->pnl_options->layout()->takeAt(0)) != 0)
+        delete item;
 
     if(0 < m_engineList.length()){
         ui->lst_engines->addItems(m_engineList);
@@ -342,9 +346,16 @@ void ManageEngines::_delete()
     }
 }
 
-ManageEngines::~ManageEngines()
+void ManageEngines::accept()
 {
-    delete ui;
+    m_settings->CommitChanges();
+    QDialog::accept();
+}
+
+void ManageEngines::reject()
+{
+    m_settings->RejectChanges();
+    QDialog::reject();
 }
 
 

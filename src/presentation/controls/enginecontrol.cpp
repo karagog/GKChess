@@ -22,12 +22,6 @@ USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL1(QT);
 USING_NAMESPACE_GUTIL;
 
-#ifdef Q_OS_UNIX
-    #define STOCKFISH_PATH  "/usr/games/stockfish"
-#else
-    #define STOCKFISH_PATH  "stockfish.exe"
-#endif
-
 NAMESPACE_GKCHESS1(UI);
 
 
@@ -39,10 +33,10 @@ EngineControl::EngineControl(Board *b, EngineSettings *settings, QWidget *parent
 {
     ui->setupUi(this);
 
-//    connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
-//            this, SLOT(_refresh_combo_box()));
+    connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
+            this, SLOT(_engines_updated()));
 
-    _refresh_combo_box();
+    _engines_updated();
 }
 
 EngineControl::~EngineControl()
@@ -50,25 +44,38 @@ EngineControl::~EngineControl()
     delete ui;
 }
 
-void EngineControl::_refresh_combo_box()
+void EngineControl::_engines_updated()
 {
-    ui->cmb_engine->clear();
-
     m_engineList = m_settings->GetEngineList();
     m_engineList.sort();
+
+    // Remove engines from the combo box first
+    QStringList combo_list;
+    for(int i = ui->cmb_engine->count() - 1; i >= 0; --i){
+        QString engine_name = ui->cmb_engine->itemText(i);
+        if(m_engineList.contains(engine_name))
+            combo_list.append(engine_name);
+        else
+            ui->cmb_engine->removeItem(i);
+    }
+
+    // Then add new ones
     if(0 < m_engineList.length()){
         int i = 0;
         G_FOREACH_CONST(const String &k, m_engineList){
-            ui->cmb_engine->addItem(k, i);
+            int indx = combo_list.indexOf(k);
+            if(-1 == indx)
+                ui->cmb_engine->insertItem(i, k, i);
             ++i;
         }
         ui->wdg_control->setEnabled(true);
-        _engine_selection_changed();
     }
     else{
         ui->cmb_engine->addItem(tr("(none)"), -1);
         ui->wdg_control->setEnabled(false);
     }
+
+    _engine_selection_changed();
 }
 
 void EngineControl::Go()
@@ -125,11 +132,17 @@ void EngineControl::_engine_selection_changed()
         mng.exec();
     }
     else{
-        m_engineMan = new EngineManager(ui->cmb_engine->currentText(), m_settings);
-        connect(&m_engineMan->GetEngine(), SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
-        connect(&m_engineMan->GetEngine(), SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
-        connect(&m_engineMan->GetEngine(), SIGNAL(BestMove(QByteArray,QByteArray)),
-                this, SLOT(Stop()));
+        const QString engine_name = ui->cmb_engine->currentText();
+        if(!m_engineMan || m_engineMan->GetEngineName() != engine_name){
+            m_engineMan = new EngineManager(ui->cmb_engine->currentText(), m_settings);
+            connect(&m_engineMan->GetEngine(), SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
+            connect(&m_engineMan->GetEngine(), SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
+            connect(&m_engineMan->GetEngine(), SIGNAL(BestMove(QByteArray,QByteArray)),
+                    this, SLOT(Stop()));
+        }
+        else{
+            m_engineMan->ApplySettings();
+        }
         ui->wdg_control->setEnabled(true);
     }
 }

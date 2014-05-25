@@ -47,11 +47,7 @@ EngineManager::EngineManager(const QString &engine_name, EngineSettings *setting
     d->engine = PluginUtils::LoadPlugin<IEngine>(d->pluginloader, "uciEnginePlugin")->Create();
     d->engine->StartEngine(settings->GetEnginePath(engine_name));
 
-    // Go through the settings and apply our configuration
-    QVariantMap options = settings->GetOptionsForEngine(engine_name);
-    foreach(const QString &k, options.keys()){
-        d->engine->SetOption(k, options[k]);
-    }
+    ApplySettings();
 }
 
 EngineManager::~EngineManager()
@@ -60,6 +56,17 @@ EngineManager::~EngineManager()
     d->engine->StopEngine();
     d->engine->deleteLater();
     G_D_UNINIT();
+}
+
+void EngineManager::ApplySettings()
+{
+    G_D;
+
+    // Go through the settings and apply our configuration
+    QVariantMap options = d->engine_settings->GetOptionsForEngine(d->engine_name);
+    foreach(const QString &k, options.keys()){
+        d->engine->SetOption(k, options[k]);
+    }
 }
 
 IEngine &EngineManager::GetEngine() const

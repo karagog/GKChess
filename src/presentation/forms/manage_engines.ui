@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>ManageEngines</class>
- <widget class="QWidget" name="ManageEngines">
+ <widget class="QDialog" name="ManageEngines">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -30,6 +30,12 @@
      </property>
      <widget class="QListWidget" name="lst_engines"/>
      <widget class="QScrollArea" name="scrollArea">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="widgetResizable">
        <bool>true</bool>
       </property>
@@ -38,7 +44,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>283</width>
+         <width>634</width>
          <height>648</height>
         </rect>
        </property>
@@ -96,9 +102,32 @@
        </spacer>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="text">
+         <string>Apply</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Preferred</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>50</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
        <widget class="QPushButton" name="pushButton">
         <property name="text">
-         <string>Close</string>
+         <string>Cancel</string>
         </property>
        </widget>
       </item>
@@ -113,15 +142,15 @@
    <sender>pushButton</sender>
    <signal>released()</signal>
    <receiver>ManageEngines</receiver>
-   <slot>close()</slot>
+   <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>683</x>
-     <y>597</y>
+     <x>904</x>
+     <y>687</y>
     </hint>
     <hint type="destinationlabel">
-     <x>277</x>
-     <y>276</y>
+     <x>850</x>
+     <y>631</y>
     </hint>
    </hints>
   </connection>
@@ -132,8 +161,8 @@
    <slot>_add()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>82</x>
-     <y>597</y>
+     <x>88</x>
+     <y>687</y>
     </hint>
     <hint type="destinationlabel">
      <x>112</x>
@@ -149,7 +178,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>260</x>
-     <y>597</y>
+     <y>687</y>
     </hint>
     <hint type="destinationlabel">
      <x>180</x>
@@ -164,12 +193,28 @@
    <slot>_edit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>141</x>
-     <y>582</y>
+     <x>174</x>
+     <y>687</y>
     </hint>
     <hint type="destinationlabel">
      <x>173</x>
      <y>601</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_2</sender>
+   <signal>released()</signal>
+   <receiver>ManageEngines</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>716</x>
+     <y>673</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>767</x>
+     <y>693</y>
     </hint>
    </hints>
   </connection>

@@ -42,6 +42,12 @@ public:
     ~ManageEngines();
 
 
+public slots:
+
+    virtual void accept();
+    virtual void reject();
+
+
 private slots:
 
     void _engine_list_updated();
