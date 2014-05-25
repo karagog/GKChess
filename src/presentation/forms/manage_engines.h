@@ -59,6 +59,8 @@ private slots:
     void _edited_action(QAction *);
     void _default_action(QAction *);
 
+    void _clear_options_panel();
+
 };
 
 

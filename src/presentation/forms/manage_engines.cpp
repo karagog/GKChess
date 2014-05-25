@@ -56,15 +56,20 @@ ManageEngines::~ManageEngines()
     delete ui;
 }
 
+void ManageEngines::_clear_options_panel()
+{
+    // Remove everything from the options panel
+    QLayoutItem *item;
+    while((item = ui->pnl_options->layout()->takeAt(0)) != 0)
+        delete item;
+}
+
 void ManageEngines::_engine_list_updated()
 {
     m_engineList = m_settings->GetEngineList();
     ui->lst_engines->clear();
 
-    // Remove everything from the options panel
-    QLayoutItem *item;
-    while((item = ui->pnl_options->layout()->takeAt(0)) != 0)
-        delete item;
+    _clear_options_panel();
 
     if(0 < m_engineList.length()){
         ui->lst_engines->addItems(m_engineList);
@@ -81,6 +86,8 @@ void ManageEngines::_current_changed(int r)
     // Set up the options panel
     if(0 > r)
         return;
+
+    _clear_options_panel();
 
     // This starts up the engine
     m_engineManager = new EngineManager(m_engineList[r], m_settings);
