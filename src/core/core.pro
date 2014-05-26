@@ -21,7 +21,8 @@ INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \
     -L$$TOP_DIR/lib \
     -L$$TOP_DIR/gutil/lib \
-    -lGUtil
+    -lGUtil \
+    -lGUtilQt
 
 include(managers/managers.pri)
 include(business_objects/business_objects.pri)
