@@ -33,22 +33,23 @@ class PersistentData;
 
 namespace GKChess{
 class EngineSettings;
-namespace UI{
-class PGN_PlayerControl;
-class BookReader;
-}}
+}
+
+class QDockWidget;
 
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-
-    Ui::MainWindow *ui;
+    
     GKChess::ObservableBoard m_board;
-    GKChess::UI::PGN_PlayerControl *m_pgnPlayer;
-    GKChess::UI::MoveHistoryControl *m_moveHistory;
-    GKChess::UI::EngineControl *m_engineControl;
     GKChess::UI::ColoredPieceIconFactory m_iconFactory;
+    
+    Ui::MainWindow *ui;
+    QDockWidget *dw_pgnPlayer;
+    QDockWidget *dw_moveHistory;
+    QDockWidget *dw_engineControl;
+    GUtil::Vector<QDockWidget *> dw_bookReaders;
 
     GUtil::QT::PersistentData *m_settings;
     GKChess::EngineSettings *m_engineSettings;
@@ -74,6 +75,7 @@ private slots:
     void _position_to_clipboard();
 
     void _opening_book_reader();
+    void _show_pgn_player();
     void _show_move_history();
     void _show_engine_control();
     void _manage_engines();

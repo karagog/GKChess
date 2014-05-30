@@ -36,16 +36,22 @@ USING_NAMESPACE_GKCHESS1(UI);
 #define SETTINGS_MAINWINDOW_STATE "mainwindow_state"
 #define SETTINGS_MAINWINDOW_GEOMETRY "mainwindow_geometry"
 
+#define SETTINGS_DW_PGNPLAYER_OPEN  "mainwindow_pgnplayer_open"
+#define SETTINGS_DW_ENGINECONTROL_OPEN  "mainwindow_enginecontrol_open"
+#define SETTINGS_DW_MOVEHISTORY_OPEN  "mainwindow_movehistory_open"
+
 
 MainWindow::MainWindow(PersistentData *settings,
                        EngineSettings *engine_settings,
                        QWidget *parent)
     :QMainWindow(parent),
-      ui(new Ui::MainWindow),
       m_board(),
       //m_board(10),
-      m_pgnPlayer(new UI::PGN_PlayerControl(&m_board, this)),
-      m_iconFactory(":/gkchess/icons/default", Qt::yellow, Qt::gray),
+      m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray),
+      ui(new Ui::MainWindow),
+      dw_pgnPlayer(0),
+      dw_moveHistory(0),
+      dw_engineControl(0),
       m_settings(settings),
       m_engineSettings(engine_settings)
 {
@@ -53,12 +59,8 @@ MainWindow::MainWindow(PersistentData *settings,
 
     ui->menuHelp->insertAction(ui->actionAbout, QWhatsThis::createAction(this));
 
-    // Add the pgn control dock widget
-    QDockWidget *dock_widget = new QDockWidget(tr("PGN Control"), this);
-    dock_widget->setObjectName("pgncontrol_dock_widget");
-    dock_widget->setWidget(m_pgnPlayer);
-    addDockWidget(Qt::LeftDockWidgetArea, dock_widget);
-
+    // Catch events on the boardview so we can customize certain behaviors (like
+    //  the context menu)
     ui->boardView->installEventFilter(this);
 
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
@@ -81,12 +83,6 @@ MainWindow::MainWindow(PersistentData *settings,
     // For testing 10-column boards:
     //m_board.FromFEN("rnbqkbnrnn/pppppppppp/10/10/10/10/PPPPPPPPPP/RNBQKBNRNN w KQkq - 0 1");
 
-    m_engineControl = new EngineControl(&m_board, m_engineSettings, m_settings, this);
-    _show_engine_control();
-
-    m_moveHistory = new MoveHistoryControl(m_board, this);
-    _show_move_history();
-
 #ifdef DEBUG
     connect(&m_board, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
             this, SLOT(_piece_moved(const GKChess::MoveData &)));
@@ -97,6 +93,18 @@ MainWindow::MainWindow(PersistentData *settings,
     ui->boardView->SetShowThreatCounts(true);
 
     // Restore the last state of the main window
+    if(!m_settings->Contains(SETTINGS_DW_PGNPLAYER_OPEN) ||
+        m_settings->Value(SETTINGS_DW_PGNPLAYER_OPEN).toBool())
+        _show_pgn_player();
+        
+    if(!m_settings->Contains(SETTINGS_DW_MOVEHISTORY_OPEN) ||
+        m_settings->Value(SETTINGS_DW_MOVEHISTORY_OPEN).toBool())
+        _show_move_history();
+        
+    if(!m_settings->Contains(SETTINGS_DW_ENGINECONTROL_OPEN) ||
+        m_settings->Value(SETTINGS_DW_ENGINECONTROL_OPEN).toBool())
+        _show_engine_control();
+    
     if(m_settings->Contains(SETTINGS_MAINWINDOW_STATE))
         restoreState(m_settings->Value(SETTINGS_MAINWINDOW_STATE).toByteArray());
     if(m_settings->Contains(SETTINGS_MAINWINDOW_GEOMETRY))
@@ -170,7 +178,10 @@ void MainWindow::_load_fen_string(const String &s)
 
 void MainWindow::_load_pgn_string(const String &s)
 {
-    m_pgnPlayer->LoadPGN(s);
+    if(0 == dw_pgnPlayer)
+        _show_pgn_player();
+        
+    static_cast<PGN_PlayerControl *>(dw_pgnPlayer->widget())->LoadPGN(s);
 }
 
 void MainWindow::_random_chess960_position()
@@ -181,33 +192,54 @@ void MainWindow::_random_chess960_position()
 
 void MainWindow::_opening_book_reader()
 {
-    QDockWidget *d = new QDockWidget("Opening Book", this);
-    d->setObjectName("book_dock_widget");
-    BookReader *br = new BookReader(m_board, this);
-    d->setWidget(br);
+    QDockWidget *d = new QDockWidget("Opening Book", this);    
+    d->setObjectName(QString("dw_bookReader_%1").arg(dw_bookReaders.Length()));
+    d->setWidget(new BookReader(m_board, d));
     addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
-    br->show();
+    
+    dw_bookReaders.PushBack(d);
+    d->show();
+}
+
+void MainWindow::_show_pgn_player()
+{
+    if(0 == dw_pgnPlayer){
+        dw_pgnPlayer = new QDockWidget(tr("PGN Control"), this);
+        dw_pgnPlayer->setObjectName("dw_pgnControl");
+        dw_pgnPlayer->setWidget(new UI::PGN_PlayerControl(&m_board, dw_pgnPlayer));
+    }
+    
+    if(!dw_pgnPlayer->isVisible()){
+        addDockWidget(Qt::LeftDockWidgetArea, dw_pgnPlayer);
+        dw_pgnPlayer->show();
+    }
 }
 
 void MainWindow::_show_move_history()
 {
-    if(!m_moveHistory->isVisible()){
-        QDockWidget *d = new QDockWidget("Move History", this);
-        d->setObjectName("history_dock_widget");
-        d->setWidget(m_moveHistory);
-        addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
-        m_moveHistory->show();
+    if(0 == dw_moveHistory){
+        dw_moveHistory = new QDockWidget("Move History", this);
+        dw_moveHistory->setObjectName("dw_moveHistory");
+        dw_moveHistory->setWidget(new MoveHistoryControl(m_board, dw_moveHistory));
+    }
+
+    if(!dw_moveHistory->isVisible()){
+        addDockWidget(Qt::LeftDockWidgetArea, dw_moveHistory, Qt::Vertical);
+        dw_moveHistory->show();
     }
 }
 
 void MainWindow::_show_engine_control()
 {
-    if(!m_engineControl->isVisible()){
-        QDockWidget *d = new QDockWidget("Engine Control", this);
-        d->setObjectName("engine_dock_widget");
-        d->setWidget(m_engineControl);
-        addDockWidget(Qt::RightDockWidgetArea, d, Qt::Vertical);
-        m_engineControl->show();
+    if(0 == dw_engineControl){
+        dw_engineControl = new QDockWidget("Engine Control", this);
+        dw_engineControl->setObjectName("dw_engineControl");
+        dw_engineControl->setWidget(new EngineControl(&m_board, m_engineSettings, m_settings, dw_engineControl));
+    }
+    
+    if(!dw_engineControl->isVisible()){
+        addDockWidget(Qt::RightDockWidgetArea, dw_engineControl, Qt::Vertical);
+        dw_engineControl->show();
     }
 }
 
@@ -237,7 +269,13 @@ void MainWindow::closeEvent(QCloseEvent *ev)
 {
     m_settings->SetValue(SETTINGS_MAINWINDOW_STATE, saveState());
     m_settings->SetValue(SETTINGS_MAINWINDOW_GEOMETRY, saveGeometry());
-    ev->accept();
+
+    // Remember which dock widgets were open
+    m_settings->SetValue(SETTINGS_DW_PGNPLAYER_OPEN, dw_pgnPlayer ? dw_pgnPlayer->isVisible() : false);
+    m_settings->SetValue(SETTINGS_DW_MOVEHISTORY_OPEN, dw_moveHistory ? dw_moveHistory->isVisible() : false);
+    m_settings->SetValue(SETTINGS_DW_ENGINECONTROL_OPEN, dw_engineControl ? dw_engineControl->isVisible() : false);
+    
+    QMainWindow::closeEvent(ev);
 }
 
 
