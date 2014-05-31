@@ -13,63 +13,34 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "pgn_player.h"
-#include "gkchess_pgn_parser.h"
 #include "board.h"
 USING_NAMESPACE_GUTIL;
-
-namespace{
-struct d_t
-{
-    GKChess::Board *board;
-    String pgn_text;
-    GKChess::PGN_GameData game_data;
-    List<GKChess::MoveData> move_data;
-
-    int move_index;
-
-    d_t()
-        :move_index(-1)
-    {}
-};
-}
 
 NAMESPACE_GKCHESS;
 
 
-PGN_Player::PGN_Player(Board *b)
-{
-    G_D_INIT();
-    G_D;
-    d->board = b;
-}
-
-PGN_Player::~PGN_Player()
-{
-    G_D_UNINIT();
-}
+PGN_Player::PGN_Player(Board &b)
+    :board(b)
+{}
 
 List<MoveData> const &PGN_Player::GetMoveData() const
 {
-    G_D;
-    return d->move_data;
+    return move_data;
 }
 
 PGN_GameData const &PGN_Player::GetGameData() const
 {
-    G_D;
-    return d->game_data;
+    return game_data;
 }
 
 const String &PGN_Player::GetPGNText() const
 {
-    G_D;
-    return d->pgn_text;
+    return pgn_text;
 }
 
 const Board &PGN_Player::GetBoard() const
 {
-    G_D;
-    return *d->board;
+    return board;
 }
 
 // Converts the pgn movedata to the internal movedata struct and adds it to the list
@@ -96,73 +67,67 @@ static void __add_move_data(Board &b, List<MoveData> &l, const List<PGN_MoveData
 
 void PGN_Player::LoadPGN(const String &s)
 {
-    G_D;
     List<PGN_GameData> games = PGN_Parser::ParseString(s);
     if(games.Length() > 0)
     {
-        List<MoveData> move_data;
+        List<MoveData> tmp_move_data;
         const PGN_GameData &gd = games[0];
 
         // Set the initial position of the board
         if(gd.Tags.Contains("setup") && gd.Tags.At("setup") == "1"){
             GASSERT(gd.Tags.Contains("fen"));
-            d->board->FromFEN(gd.Tags.At("fen"));
+            board.FromFEN(gd.Tags.At("fen"));
         }
         else
-            d->board->SetupNewGame(Board::SetupStandardChess);
+            board.SetupNewGame(Board::SetupStandardChess);
 
         // We need to create a list of move data from the pgn data
-        __add_move_data(*d->board, move_data, gd.Moves);
+        __add_move_data(board, tmp_move_data, gd.Moves);
 
-        d->pgn_text = s;
-        d->game_data = gd;
-        d->move_data = move_data;
-        d->move_index = move_data.Length() - 1;
+        pgn_text = s;
+        game_data = gd;
+        move_data = tmp_move_data;
+        move_index = tmp_move_data.Length() - 1;
     }
 }
 
 void PGN_Player::Clear()
 {
-    G_D;
-    d->game_data.clear();
-    d->move_data.Clear();
-    d->pgn_text.Empty();
+    game_data.clear();
+    move_data.Clear();
+    pgn_text.Empty();
 }
 
 void PGN_Player::Next()
 {
-    G_D;
-    if(d->move_index < d->move_data.Length() - 1){
-        ++(d->move_index);
-        d->board->Move(d->move_data[d->move_index]);
+    if(move_index < move_data.Length() - 1){
+        ++(move_index);
+        board.Move(move_data[move_index]);
     }
 }
 
 void PGN_Player::Previous()
 {
-    G_D;
-    if(d->move_index >= 0){
-        d->board->FromFEN(d->move_data[d->move_index].Position);
-        --(d->move_index);
+    if(move_index >= 0){
+        board.FromFEN(move_data[move_index].Position);
+        --(move_index);
     }
 }
 
 void PGN_Player::First()
 {
-    G_D;
-    if(d->move_data.Length() > 0){
-        d->move_index = -1;
-        d->board->FromFEN(d->move_data[0].Position);
+    if(move_data.Length() > 0){
+        move_index = -1;
+        board.FromFEN(move_data[0].Position);
     }
 }
 
 void PGN_Player::Last()
 {
-    G_D;
-    if(d->move_data.Length() > 0){
-        d->move_index = d->move_data.Length() - 1;
-        d->board->FromFEN(d->move_data[d->move_index].Position);
-        d->board->Move(d->move_data[d->move_index]);
+    if(move_data.Length() > 0){
+        move_index = move_data.Length() - 1;
+        board.FromFEN(move_data[move_index].Position);
+        board.Move(move_data[move_index]);
     }
 }
 

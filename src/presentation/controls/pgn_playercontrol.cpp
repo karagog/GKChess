@@ -21,88 +21,69 @@ USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
 
 
-namespace{
-struct d_t
-{
-    Ui::PGN_PlayerControl *ui;
-    PGN_Player *player;
-};
-}
-
-
 NAMESPACE_GKCHESS1(UI);
 
 
-PGN_PlayerControl::PGN_PlayerControl(Board *b, QWidget *parent)
-    :QWidget(parent)
+PGN_PlayerControl::PGN_PlayerControl(Board &b, QWidget *parent)
+    :QWidget(parent),
+      ui(new Ui::PGN_PlayerControl),
+      player(new PGN_Player(b))
 {
-    G_D_INIT();
-    G_D;
-    d->ui = new Ui::PGN_PlayerControl;
-    d->ui->setupUi(this);
+    ui->setupUi(this);
     setEnabled(false);
-    d->player = new PGN_Player(b);
 }
 
 PGN_PlayerControl::~PGN_PlayerControl()
 {
-    G_D;
-    delete d->ui;
-    delete d->player;
-    G_D_UNINIT();
+    delete player;
+    delete ui;
 }
 
 void PGN_PlayerControl::LoadPGN(const String &s)
 {
-    G_D;
-    d->player->LoadPGN(s);
-    const PGN_GameData &pgd = d->player->GetGameData();
+    player->LoadPGN(s);
+    const PGN_GameData &pgd = player->GetGameData();
 
     if(pgd.Tags.Contains("white") && pgd.Tags.Contains("black"))
-        d->ui->lbl_title->setText(QString("%1 vs. %2")
+        ui->lbl_title->setText(QString("%1 vs. %2")
                                   .arg(pgd.Tags.At("white"))
                                   .arg(pgd.Tags.At("black")));
 
     if(pgd.Tags.Contains("date"))
-        d->ui->lbl_date->setText(QString("Date: %1").arg(pgd.Tags.At("date")));
+        ui->lbl_date->setText(QString("Date: %1").arg(pgd.Tags.At("date")));
     if(pgd.Tags.Contains("result"))
-        d->ui->lbl_result->setText(QString("Result: %1").arg(pgd.Tags.At("result")));
+        ui->lbl_result->setText(QString("Result: %1").arg(pgd.Tags.At("result")));
 
     setEnabled(true);
 }
 
 void PGN_PlayerControl::Clear()
 {
-    G_D;
-    d->player->Clear();
-    d->ui->lbl_title->clear();
-    d->ui->lbl_date->clear();
-    d->ui->lbl_result->clear();
+    player->Clear();
+    ui->lbl_title->clear();
+    ui->lbl_date->clear();
+    ui->lbl_result->clear();
     setEnabled(false);
 }
 
 void PGN_PlayerControl::GotoNext()
 {
-    G_D;
-    d->player->Next();
+    player->Next();
 }
 
 void PGN_PlayerControl::GotoPrevious()
 {
-    G_D;
-    d->player->Previous();
+    player->Previous();
 }
 
 void PGN_PlayerControl::GotoFirst()
 {
-    G_D;
-    d->player->First();
+    player->First();
 }
 
 void PGN_PlayerControl::GotoLast()
 {
-    G_D;
-    d->player->Last();
+    player->Last();
 }
 
 void PGN_PlayerControl::GotoIndex(int)

@@ -19,13 +19,12 @@ limitations under the License.*/
 #include "gutil_map.h"
 #include "gutil_flags.h"
 #include "gutil_smartpointer.h"
-#include "gkchess_globals.h"
+#include "gkchess_pgn_parser.h"
+#include "gkchess_movedata.h"
 
 NAMESPACE_GKCHESS;
 
 class Board;
-class MoveData;
-class PGN_GameData;
 
 
 /** Plays a PGN file.
@@ -33,12 +32,15 @@ class PGN_GameData;
 */
 class PGN_Player
 {
-    void *d;
+    GKChess::Board &board;
+    GUtil::String pgn_text;
+    GKChess::PGN_GameData game_data;
+    GUtil::List<GKChess::MoveData> move_data;
+    int move_index;
 public:
 
     /** Constructs a PGN player with the given game logic.  It will not take ownership. */
-    PGN_Player(Board *);
-    ~PGN_Player();
+    PGN_Player(Board &);
 
     /** Loads the pgn string. */
     void LoadPGN(const GUtil::String &);

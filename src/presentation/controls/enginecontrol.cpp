@@ -28,7 +28,7 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS1(UI);
 
 
-EngineControl::EngineControl(Board *b, EngineSettings *settings, PersistentData *appSettings, QWidget *parent)
+EngineControl::EngineControl(Board &b, EngineSettings *settings, PersistentData *appSettings, QWidget *parent)
     :QWidget(parent),
       m_board(b),
       m_settings(settings),
@@ -99,7 +99,7 @@ void EngineControl::_engines_updated()
 
 void EngineControl::Go()
 {
-    m_engineMan->GetEngine().SetPosition(m_board->ToFEN());
+    m_engineMan->GetEngine().SetPosition(m_board.ToFEN());
 
     IEngine::ThinkParams p;
     p.MoveTime = ui->spin_thinkTime->value();

@@ -18,19 +18,26 @@ limitations under the License.*/
 #include "gutil_strings.h"
 #include <QWidget>
 
+namespace Ui{
+class PGN_PlayerControl;
+}
+
 namespace GKChess{
 class Board;
+class PGN_Player;
 
 namespace UI{
 
 
-class PGN_PlayerControl : public QWidget
+class PGN_PlayerControl :
+        public QWidget
 {
     Q_OBJECT
-    void *d;
+    Ui::PGN_PlayerControl *ui;
+    PGN_Player *player;
 public:
 
-    explicit PGN_PlayerControl(Board *, QWidget *parent = 0);
+    explicit PGN_PlayerControl(Board &, QWidget *parent = 0);
     ~PGN_PlayerControl();
 
     /** Loads the PGN string into the player.  Nothing will work until you call this. */

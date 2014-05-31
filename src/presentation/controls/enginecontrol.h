@@ -38,7 +38,7 @@ class EngineControl : public QWidget
     Q_OBJECT
 
     GUtil::SmartPointer<EngineManager> m_engineMan;
-    Board *m_board;
+    Board &m_board;
     EngineSettings *m_settings;
     GUtil::QT::PersistentData *m_appSettings;
     QStringList m_engineList;
@@ -47,7 +47,7 @@ class EngineControl : public QWidget
     Ui::EngineControl *ui;
 public:
 
-    explicit EngineControl(Board *, EngineSettings *engine_settings, GUtil::QT::PersistentData *app_settings, QWidget *parent = 0);
+    explicit EngineControl(Board &, EngineSettings *engine_settings, GUtil::QT::PersistentData *app_settings, QWidget *parent = 0);
     ~EngineControl();
 
 
