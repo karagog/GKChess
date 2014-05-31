@@ -24,7 +24,6 @@ limitations under the License.*/
 #include "gutil_persistentdata.h"
 #include <QClipboard>
 #include <QContextMenuEvent>
-#include <QDockWidget>
 #include <QFileDialog>
 #include <QWhatsThis>
 #include <QCloseEvent>
@@ -49,15 +48,17 @@ MainWindow::MainWindow(PersistentData *settings,
       //m_board(10),
       m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray),
       ui(new Ui::MainWindow),
-      dw_pgnPlayer(0),
-      dw_moveHistory(0),
-      dw_engineControl(0),
       m_settings(settings),
       m_engineSettings(engine_settings)
 {
     ui->setupUi(this);
 
     ui->menuHelp->insertAction(ui->actionAbout, QWhatsThis::createAction(this));
+
+    ui->dw_moveHistory->setWidget(new MoveHistoryControl(m_board, ui->dw_moveHistory));
+    ui->dw_pgnPlayer->setWidget(new UI::PGN_PlayerControl(&m_board, ui->dw_pgnPlayer));
+    ui->dw_engineControl->setWidget(new EngineControl(&m_board, m_engineSettings, m_settings, ui->dw_engineControl));
+    ui->dw_bookReader->setWidget(new UI::BookReader(m_board, ui->dw_bookReader));
 
     // Catch events on the boardview so we can customize certain behaviors (like
     //  the context menu)
@@ -69,11 +70,12 @@ MainWindow::MainWindow(PersistentData *settings,
     connect(ui->actionLoadPGN_File, SIGNAL(triggered()), this, SLOT(_load_pgn_file()));
     connect(ui->actionPosition_to_Clipboard, SIGNAL(triggered()), this, SLOT(_position_to_clipboard()));
     connect(ui->actionRandom_Chess960_Position, SIGNAL(triggered()), this, SLOT(_random_chess960_position()));
-    connect(ui->actionOpening_Book_Reader, SIGNAL(triggered()), this, SLOT(_opening_book_reader()));
+    connect(ui->actionPGN_Player, SIGNAL(triggered()), ui->dw_pgnPlayer, SLOT(show()));
+    connect(ui->actionOpening_Book_Reader, SIGNAL(triggered()), ui->dw_bookReader, SLOT(show()));
+    connect(ui->actionMove_History, SIGNAL(triggered()), ui->dw_moveHistory, SLOT(show()));
+    connect(ui->action_Engine_Control, SIGNAL(triggered()), ui->dw_engineControl, SLOT(show()));
     connect(ui->actionStandard_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_standard_chess()));
     connect(ui->actionChess960_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_random_chess960()));
-    connect(ui->actionMove_History, SIGNAL(triggered()), this, SLOT(_show_move_history()));
-    connect(ui->action_Engine_Control, SIGNAL(triggered()), this, SLOT(_show_engine_control()));
     connect(ui->actionManage_Engines, SIGNAL(triggered()), this, SLOT(_manage_engines()));
 
     connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
@@ -93,18 +95,6 @@ MainWindow::MainWindow(PersistentData *settings,
     ui->boardView->SetShowThreatCounts(true);
 
     // Restore the last state of the main window
-    if(!m_settings->Contains(SETTINGS_DW_PGNPLAYER_OPEN) ||
-        m_settings->Value(SETTINGS_DW_PGNPLAYER_OPEN).toBool())
-        _show_pgn_player();
-        
-    if(!m_settings->Contains(SETTINGS_DW_MOVEHISTORY_OPEN) ||
-        m_settings->Value(SETTINGS_DW_MOVEHISTORY_OPEN).toBool())
-        _show_move_history();
-        
-    if(!m_settings->Contains(SETTINGS_DW_ENGINECONTROL_OPEN) ||
-        m_settings->Value(SETTINGS_DW_ENGINECONTROL_OPEN).toBool())
-        _show_engine_control();
-    
     if(m_settings->Contains(SETTINGS_MAINWINDOW_STATE))
         restoreState(m_settings->Value(SETTINGS_MAINWINDOW_STATE).toByteArray());
     if(m_settings->Contains(SETTINGS_MAINWINDOW_GEOMETRY))
@@ -178,69 +168,15 @@ void MainWindow::_load_fen_string(const String &s)
 
 void MainWindow::_load_pgn_string(const String &s)
 {
-    if(0 == dw_pgnPlayer)
-        _show_pgn_player();
-        
-    static_cast<PGN_PlayerControl *>(dw_pgnPlayer->widget())->LoadPGN(s);
+    ui->dw_pgnPlayer->show();
+
+    static_cast<PGN_PlayerControl *>(ui->dw_pgnPlayer->widget())->LoadPGN(s);
 }
 
 void MainWindow::_random_chess960_position()
 {
     UI::Chess960Generator *dlg = new UI::Chess960Generator(this);
     dlg->show();
-}
-
-void MainWindow::_opening_book_reader()
-{
-    QDockWidget *d = new QDockWidget("Opening Book", this);    
-    d->setObjectName(QString("dw_bookReader_%1").arg(dw_bookReaders.Length()));
-    d->setWidget(new BookReader(m_board, d));
-    addDockWidget(Qt::LeftDockWidgetArea, d, Qt::Vertical);
-    
-    dw_bookReaders.PushBack(d);
-    d->show();
-}
-
-void MainWindow::_show_pgn_player()
-{
-    if(0 == dw_pgnPlayer){
-        dw_pgnPlayer = new QDockWidget(tr("PGN Control"), this);
-        dw_pgnPlayer->setObjectName("dw_pgnControl");
-        dw_pgnPlayer->setWidget(new UI::PGN_PlayerControl(&m_board, dw_pgnPlayer));
-    }
-    
-    if(!dw_pgnPlayer->isVisible()){
-        addDockWidget(Qt::LeftDockWidgetArea, dw_pgnPlayer);
-        dw_pgnPlayer->show();
-    }
-}
-
-void MainWindow::_show_move_history()
-{
-    if(0 == dw_moveHistory){
-        dw_moveHistory = new QDockWidget("Move History", this);
-        dw_moveHistory->setObjectName("dw_moveHistory");
-        dw_moveHistory->setWidget(new MoveHistoryControl(m_board, dw_moveHistory));
-    }
-
-    if(!dw_moveHistory->isVisible()){
-        addDockWidget(Qt::LeftDockWidgetArea, dw_moveHistory, Qt::Vertical);
-        dw_moveHistory->show();
-    }
-}
-
-void MainWindow::_show_engine_control()
-{
-    if(0 == dw_engineControl){
-        dw_engineControl = new QDockWidget("Engine Control", this);
-        dw_engineControl->setObjectName("dw_engineControl");
-        dw_engineControl->setWidget(new EngineControl(&m_board, m_engineSettings, m_settings, dw_engineControl));
-    }
-    
-    if(!dw_engineControl->isVisible()){
-        addDockWidget(Qt::RightDockWidgetArea, dw_engineControl, Qt::Vertical);
-        dw_engineControl->show();
-    }
 }
 
 void MainWindow::_manage_engines()
@@ -270,11 +206,6 @@ void MainWindow::closeEvent(QCloseEvent *ev)
     m_settings->SetValue(SETTINGS_MAINWINDOW_STATE, saveState());
     m_settings->SetValue(SETTINGS_MAINWINDOW_GEOMETRY, saveGeometry());
 
-    // Remember which dock widgets were open
-    m_settings->SetValue(SETTINGS_DW_PGNPLAYER_OPEN, dw_pgnPlayer ? dw_pgnPlayer->isVisible() : false);
-    m_settings->SetValue(SETTINGS_DW_MOVEHISTORY_OPEN, dw_moveHistory ? dw_moveHistory->isVisible() : false);
-    m_settings->SetValue(SETTINGS_DW_ENGINECONTROL_OPEN, dw_engineControl ? dw_engineControl->isVisible() : false);
-    
     QMainWindow::closeEvent(ev);
 }
 

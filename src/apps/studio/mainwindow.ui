@@ -80,8 +80,9 @@
    </widget>
    <widget class="QMenu" name="menuWindows">
     <property name="title">
-     <string>&amp;Widgets</string>
+     <string>&amp;Controls</string>
     </property>
+    <addaction name="actionPGN_Player"/>
     <addaction name="actionMove_History"/>
     <addaction name="action_Engine_Control"/>
     <addaction name="actionOpening_Book_Reader"/>
@@ -107,6 +108,42 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="dw_pgnPlayer">
+   <property name="windowTitle">
+    <string>PGN Control</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5"/>
+  </widget>
+  <widget class="QDockWidget" name="dw_moveHistory">
+   <property name="windowTitle">
+    <string>Move History</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_6"/>
+  </widget>
+  <widget class="QDockWidget" name="dw_engineControl">
+   <property name="windowTitle">
+    <string>Engine Control</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_8"/>
+  </widget>
+  <widget class="QDockWidget" name="dw_bookReader">
+   <property name="windowTitle">
+    <string>Opening Book</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_9"/>
+  </widget>
   <action name="actionLoad_FEN_in_Clipboard">
    <property name="text">
     <string>&amp;FEN String in Clipboard</string>
@@ -157,7 +194,7 @@
   </action>
   <action name="actionOpening_Book_Reader">
    <property name="text">
-    <string>&amp;Book Reader</string>
+    <string>Opening &amp;Book</string>
    </property>
    <property name="whatsThis">
     <string>Read an opening book</string>
@@ -225,6 +262,11 @@
   <action name="actionManage_Engines">
    <property name="text">
     <string>Manage &amp;Engines</string>
+   </property>
+  </action>
+  <action name="actionPGN_Player">
+   <property name="text">
+    <string>&amp;PGN Player</string>
    </property>
   </action>
  </widget>
