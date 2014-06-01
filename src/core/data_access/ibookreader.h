@@ -15,6 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_IBOOKREADER_H
 #define GKCHESS_IBOOKREADER_H
 
+#include "gkchess_movedata.h"
 #include "gutil_strings.h"
 #include <QObject>
 
@@ -29,17 +30,6 @@ public:
 
     class IValidationProgressObserver;
 
-    /** Describes a move. The row and col indices are both starting at 0. */
-    struct Move
-    {
-        /** The text that describes the move.  i.e. e2e4  e1h1 */
-        GUtil::String Text;
-
-        /** The weight is a percentage between 0 and 100.
-         *  All moves in the list from LookupMoves() will sum to have a total weight of 100.
-        */
-        float Weight;
-    };
 
     /** Opens a book with the given file name. If a book was already open, it will be closed
      *  and the new one will be opened.
@@ -63,7 +53,7 @@ public:
     /** Looks up the given position in the book, and returns all the moves it found.
      *  If the position was not in the database, an empty vector is returned.
     */
-    virtual GUtil::Vector<Move> LookupMoves(const char *fen) = 0;
+    virtual GUtil::Vector<BookMove> LookupMoves(const char *fen) = 0;
 
     /** Closes the book, or does nothing if it's already closed. */
     virtual void CloseBook() = 0;

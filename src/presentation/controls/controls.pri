@@ -9,12 +9,12 @@ HEADERS += \
     controls/enginecontrol.h \
     controls/pgn_playercontrol.h \
     controls/chess960generatorcontrol.h \
-    controls/bookreader.h \
-    controls/movehistorycontrol.h
+    controls/movehistorycontrol.h \
+    controls/bookreadercontrol.h
 
 SOURCES += \
     controls/enginecontrol.cpp \
     controls/pgn_playercontrol.cpp \
     controls/chess960generatorcontrol.cpp \
-    controls/bookreader.cpp \
-    controls/movehistorycontrol.cpp
+    controls/movehistorycontrol.cpp \
+    controls/bookreadercontrol.cpp

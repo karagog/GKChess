@@ -20,7 +20,7 @@ limitations under the License.*/
 #include "gutil_flags.h"
 #include "gutil_smartpointer.h"
 #include "gkchess_pgn_parser.h"
-#include "gkchess_movedata.h"
+#include "gkchess_board_movedata.h"
 
 NAMESPACE_GKCHESS;
 

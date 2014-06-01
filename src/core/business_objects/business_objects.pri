@@ -3,12 +3,13 @@ HEADERS += \
     business_objects/piece.h \
     business_objects/abstractclock.h \
     business_objects/clock.h \
-    business_objects/movedata.h \
     business_objects/pgn_player.h \
     business_objects/square.h \
     business_objects/board.h \
     business_objects/moverecorderplayer.h \
-    business_objects/pgn_movedata.h
+    business_objects/pgn_movedata.h \
+    business_objects/board_movedata.h \
+    business_objects/movedata.h
     #business_objects/board_old.h
 
 

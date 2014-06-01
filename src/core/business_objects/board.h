@@ -17,7 +17,7 @@ limitations under the License.*/
 
 #include "gutil_strings.h"
 #include "gkchess_piece.h"
-#include "gkchess_movedata.h"
+#include "gkchess_board_movedata.h"
 #include "gkchess_pgn_parser.h"
 
 // Even though we don't need this to compile the header, we include it anyways for completeness of this

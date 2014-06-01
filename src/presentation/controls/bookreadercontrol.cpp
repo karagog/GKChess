@@ -12,10 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#include "bookreader.h"
+#include "bookreadercontrol.h"
 #include "ui_bookreader.h"
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
+#include "gkchess_movedata.h"
 #include "gutil_pluginutils.h"
 #include "gutil_persistentdata.h"
 #include <QFileDialog>
@@ -144,14 +145,24 @@ void BookReader::board_position_changed()
         return;
 
     String s = m_board.ToFEN();
-    Vector<IBookReader::Move> moves = i_bookreader->LookupMoves(s);
+    Vector<BookMove> moves = i_bookreader->LookupMoves(s);
     int row = 0;
 
     ui->tableWidget->clearContents();
     ui->tableWidget->setRowCount(moves.Length());
 
-    G_FOREACH_CONST(IBookReader::Move const &m, moves){
-        QTableWidgetItem *item1 = new QTableWidgetItem(m.Text.ToQString(), QVariant::String);
+    G_FOREACH_CONST(BookMove const &m, moves){
+        MoveData md = m_board.GenerateMoveData(m_board.SquareAt(m.SourceCol, m.SourceRow),
+                                               m_board.SquareAt(m.DestCol, m.DestRow),
+                                               0, true);
+
+//        QTableWidgetItem *item1 = new QTableWidgetItem(QString("%1%2%3%4%5")
+//                                                       .arg((char)('a' + m.SourceCol)).arg((char)('1' + m.SourceRow))
+//                                                       .arg((char)('a' + m.DestCol)).arg((char)('1' + m.DestRow))
+//                                                       .arg(m.PromotedPiece),
+//                                                       QVariant::String);
+        QTableWidgetItem *item1 = new QTableWidgetItem(md.PGNData.ToString().ToQString(),
+                                                       QVariant::String);
         QTableWidgetItem *item2 = new QTableWidgetItem;
         item2->setData(Qt::DisplayRole, m.Weight);
         item2->setData(Qt::TextAlignmentRole, Qt::AlignCenter);

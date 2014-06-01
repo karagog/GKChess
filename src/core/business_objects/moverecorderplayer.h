@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_MOVERECORDERPLAYER_H
 #define GKCHESS_MOVERECORDERPLAYER_H
 
-#include "gkchess_movedata.h"
+#include "gkchess_board_movedata.h"
 #include <QObject>
 
 namespace GKChess{

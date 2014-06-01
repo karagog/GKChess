@@ -17,7 +17,7 @@ limitations under the License.*/
 #include "gkchess_pgn_parser.h"
 #include "gkchess_pgn_playercontrol.h"
 #include "gkchess_chess960generatorcontrol.h"
-#include "gkchess_bookreader.h"
+#include "gkchess_bookreadercontrol.h"
 #include "gkchess_manage_engines.h"
 #include "gutil_file.h"
 #include "gutil_application.h"

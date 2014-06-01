@@ -12,80 +12,76 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_MOVEDATA_H
-#define GKCHESS_MOVEDATA_H
+#ifndef GKCHESS_MOVEDATA_ENGINE_H
+#define GKCHESS_MOVEDATA_ENGINE_H
 
-#include "gkchess_piece.h"
-#include "gkchess_pgn_movedata.h"
+#include "gkchess_globals.h"
 
 NAMESPACE_GKCHESS;
 
-class Square;
-class Board;
 
-
-/** Holds all the information we need to do a move on a Board object. */
-struct MoveData
+/** Represents a move from any source, which just has the most basic data: source and dest
+ *  squares and the promoted piece.
+*/
+struct GenericMove
 {
-    /** The half-move number for the move. */
-    int PlyNumber;
+    GUINT8 SourceCol, SourceRow;
+    GUINT8 DestCol, DestRow;
 
-    /** The starting square.  If the move was a castle this will be the king square. */
-    Square const *Source;
+    /** A character describing which piece to promote.  If there is no promoted piece it will be 0. */
+    char PromotedPiece;
 
-    /** The ending square.  If the move was a castle this will be the rook square. */
-    Square const *Destination;
-
-    /** The type of castle. */
-    enum CastleTypeEnum
-    {
-        NoCastle = 0,
-
-        /** In standard chess this indicates a king-side castle. */
-        CastleHSide,
-
-        /** In standard chess this indicates a queen-side castle. */
-        CastleASide
-    }
-    CastleType;
-
-    /** The piece being moved. */
-    Piece PieceMoved;
-
-    /** The captured piece, if any. If this is type NoPiece then the
-     *  move did not involve a capture.
-    */
-    Piece PieceCaptured;
-
-    /** The piece that was promoted, if any. If this is type NoPiece then the
-     *  move did not involve a promotion. */
-    Piece PiecePromoted;
-
-    /** Stores the initial position before the move. */
-    GUtil::String Position;
-
-    /** Stores a list of variant lines for this move. */
-    GUtil::List<GUtil::List<MoveData> > Variants;
-
-    /** Returns true if this is a null move data (default constructed). */
-    bool IsNull() const{ return -1 == PlyNumber; }
-
-    /** Returns whose move this is, according to the ply number. */
-    Piece::AllegienceEnum Whose() const{ return 0 == ((PlyNumber - 1) & 0x1) ? Piece::White : Piece::Black; }
-
-    /** Stores the PGN data for the move. */
-    PGN_MoveData PGNData;
-
-    MoveData()
-        :PlyNumber(-1),
-          Source(0),
-          Destination(0),
-          CastleType(NoCastle)
+    GenericMove()
+        :SourceCol(0), SourceRow(0),
+          DestCol(0), DestRow(0),
+          PromotedPiece(0)
     {}
+    GenericMove(GUINT8 source_col, GUINT8 source_row,
+                      GUINT8 dest_col, GUINT8 dest_row,
+                      char promoted_piece = 0)
+        :SourceCol(source_col), SourceRow(source_row),
+          DestCol(dest_col), DestRow(dest_row),
+          PromotedPiece(promoted_piece)
+    {}
+};
 
+
+/** Represents a move that came from an opening book.  Each move has a weight and learn value. */
+struct BookMove :
+        public GenericMove
+{
+    /** The weight is a percentage between 0 and 100.
+     *  All moves in the list from LookupMoves() will sum to have a total weight of 100.
+    */
+    float Weight;
+
+    /** The 32-bit application-dependent "learn" value.  If you don't know what this is you can
+     *  safely ignore it.
+    */
+    GUINT32 Learn;
+
+    BookMove()
+        :Weight(0), Learn(0) {}
+
+    BookMove(float weight, GUINT32 learn,
+             GUINT8 source_col, GUINT8 source_row,
+             GUINT8 dest_col, GUINT8 dest_row,
+             char promoted_piece = 0)
+        :GenericMove(source_col,source_row, dest_col, dest_row, promoted_piece),
+          Weight(weight), Learn(learn)
+    {}
+};
+
+
+/** A class that represents the move data returned by an engine. */
+struct EngineMove :
+        public GenericMove
+{
+    /** The move's score in centipawns. */
+    int Score;
 };
 
 
 END_NAMESPACE_GKCHESS;
 
-#endif // GKCHESS_MOVEDATA_H
+#endif // GKCHESS_MOVEDATA_ENGINE_H
