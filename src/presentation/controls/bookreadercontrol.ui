@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>BookReader</class>
- <widget class="QWidget" name="BookReader">
+ <class>BookReaderControl</class>
+ <widget class="QWidget" name="BookReaderControl">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -43,16 +43,6 @@
        <widget class="QLineEdit" name="lineEdit"/>
       </item>
       <item>
-       <widget class="QPushButton" name="btn_validate">
-        <property name="toolTip">
-         <string>Validates the book file.  Once you validate the first time, there is no need to do it again.</string>
-        </property>
-        <property name="text">
-         <string>Validate</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QToolButton" name="toolButton">
         <property name="text">
          <string>...</string>
@@ -70,50 +60,13 @@
     </widget>
    </item>
    <item row="2" column="0" colspan="2">
-    <widget class="QTableWidget" name="tableWidget">
+    <widget class="QTreeView" name="treeView">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
-     </property>
-     <property name="gridStyle">
-      <enum>Qt::DashLine</enum>
-     </property>
-     <property name="sortingEnabled">
-      <bool>true</bool>
-     </property>
-     <property name="cornerButtonEnabled">
-      <bool>false</bool>
-     </property>
-     <attribute name="horizontalHeaderStretchLastSection">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-     <column>
-      <property name="text">
-       <string>Move</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Score (%)</string>
-      </property>
-      <property name="textAlignment">
-       <set>AlignHCenter|AlignVCenter|AlignCenter</set>
-      </property>
-     </column>
     </widget>
    </item>
   </layout>
@@ -123,7 +76,7 @@
   <connection>
    <sender>toolButton</sender>
    <signal>released()</signal>
-   <receiver>BookReader</receiver>
+   <receiver>BookReaderControl</receiver>
    <slot>SelectFile()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -139,7 +92,7 @@
   <connection>
    <sender>lineEdit</sender>
    <signal>returnPressed()</signal>
-   <receiver>BookReader</receiver>
+   <receiver>BookReaderControl</receiver>
    <slot>file_selected()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -149,22 +102,6 @@
     <hint type="destinationlabel">
      <x>164</x>
      <y>36</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>btn_validate</sender>
-   <signal>released()</signal>
-   <receiver>BookReader</receiver>
-   <slot>validate_file()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>326</x>
-     <y>24</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>292</x>
-     <y>35</y>
     </hint>
    </hints>
   </connection>

@@ -218,13 +218,13 @@ void BoardModel_p::_square_updated(const Square &s)
 
 void BoardModel_p::_piece_moved(const MoveData &md)
 {
-    QModelIndex i = index(md.Destination->GetRow(), md.Destination->GetColumn());
+    QModelIndex i = index(md.Destination.GetRow(), md.Destination.GetColumn());
 
     // We need to notify views that the source and dest squares will be updated
     // As a simplification, we notify that the entire source row was updated, to simplify
     //  special cases like enpassant and castling, which result in other squares to need updating,
     //  but they are always along the rank of the source square.
-    emit dataChanged(index(md.Source->GetRow(), 0), index(md.Source->GetRow(), columnCount() - 1));
+    emit dataChanged(index(md.Source.GetRow(), 0), index(md.Source.GetRow(), columnCount() - 1));
     emit dataChanged(i, i);
 }
 

@@ -18,6 +18,7 @@ limitations under the License.*/
 #include "gkchess_enginesettings.h"
 #include "gutil_pluginutils.h"
 USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GUTIL1(QT);
 
 namespace{
 struct d_t

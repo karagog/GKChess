@@ -993,7 +993,7 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
         }
 
         animate_castle(md,
-                       *md.Source, *king_dest,
+                       md.Source, *king_dest,
                        *rook_src, *rook_dest,
                        ANIM_MOVE_DURATION *1000,
                        ANIM_MOVE_EASING);
@@ -1007,9 +1007,9 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
         // Animate regular moving, unless they're dragging
         if(!m_dragging)
             animate_move(md,
-                         item_rect(md.Source->GetColumn(), md.Source->GetRow()).center(),
-                         item_rect(md.Destination->GetColumn(), md.Destination->GetRow()).center(),
-                         *md.Source,
+                         item_rect(md.Source.GetColumn(), md.Source.GetRow()).center(),
+                         item_rect(md.Destination.GetColumn(), md.Destination.GetRow()).center(),
+                         md.Source,
                          ANIM_MOVE_DURATION * 1000,
                          ANIM_MOVE_EASING);
     }

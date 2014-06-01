@@ -76,12 +76,12 @@ QModelIndex MoveDataModel::parent(const QModelIndex &i) const
     return ret;
 }
 
-MoveDataModel::MoveContainer *MoveDataModel::_get_container_from_index(const QModelIndex &i)
+MoveDataModel::MoveDataContainer *MoveDataModel::_get_container_from_index(const QModelIndex &i)
 {
     return i.isValid() ? _get_data_from_index(i) : &m_rootContainer;
 }
 
-MoveDataModel::MoveContainer const *MoveDataModel::_get_container_from_index(const QModelIndex &i) const
+MoveDataModel::MoveDataContainer const *MoveDataModel::_get_container_from_index(const QModelIndex &i) const
 {
     return i.isValid() ? _get_data_from_index(i) : &m_rootContainer;
 }

@@ -17,18 +17,17 @@ limitations under the License.*/
 
 #include "gutil_smartpointer.h"
 #include "gkchess_ibookreader.h"
+#include "gkchess_bookmodel.h"
 #include <QWidget>
 #include <QPluginLoader>
 
 namespace Ui {
-class BookReader;
+class BookReaderControl;
 }
 
 namespace GUtil{ namespace QT{
 class PersistentData;
 }}
-
-class QProgressBar;
 
 namespace GKChess{
   class Board;
@@ -37,23 +36,21 @@ namespace GKChess{
 namespace UI{
 
 
-class BookReader :
+class BookReaderControl :
         public QWidget,
         private IBookReader::IValidationProgressObserver
 {
     Q_OBJECT
-    GUtil::SmartPointer<Ui::BookReader> ui;
+    GUtil::SmartPointer<Ui::BookReaderControl> ui;
     Board &m_board;
-    QPluginLoader m_pl;
     GUtil::QT::PersistentData *m_settings;
-    GKChess::IBookReader *i_bookreader;
-    QProgressBar *m_pb;
+    GKChess::UI::BookModel m_bookModel;
 
 public:
 
     /** If you pass a persistent data object, then we will be able to remember the last book you had open. */
-    explicit BookReader(GKChess::ObservableBoard &, GUtil::QT::PersistentData * = 0, QWidget *parent = 0);
-    ~BookReader();
+    explicit BookReaderControl(GKChess::ObservableBoard &, GUtil::QT::PersistentData * = 0, QWidget *parent = 0);
+    ~BookReaderControl();
 
 
 public slots:
@@ -65,8 +62,6 @@ public slots:
 private slots:
 
     void file_selected();
-    void board_position_changed();
-    void validate_file();
 
 
 private:

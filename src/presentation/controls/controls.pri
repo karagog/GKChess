@@ -2,8 +2,8 @@ FORMS += \
     controls/enginecontrol.ui \
     controls/pgn_playercontrol.ui \
     controls/chess960generator.ui \
-    controls/bookreader.ui \
-    controls/movehistorycontrol.ui
+    controls/movehistorycontrol.ui \
+    controls/bookreadercontrol.ui
 
 HEADERS += \
     controls/enginecontrol.h \

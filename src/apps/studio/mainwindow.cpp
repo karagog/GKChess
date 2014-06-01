@@ -58,7 +58,7 @@ MainWindow::MainWindow(PersistentData *settings,
     ui->dw_moveHistory->setWidget(new MoveHistoryControl(m_board, ui->dw_moveHistory));
     ui->dw_pgnPlayer->setWidget(new UI::PGN_PlayerControl(m_board, ui->dw_pgnPlayer));
     ui->dw_engineControl->setWidget(new EngineControl(m_board, m_engineSettings, m_settings, ui->dw_engineControl));
-    ui->dw_bookReader->setWidget(new UI::BookReader(m_board, m_settings, ui->dw_bookReader));
+    ui->dw_bookReader->setWidget(new UI::BookReaderControl(m_board, m_settings, ui->dw_bookReader));
 
     // Catch events on the boardview so we can customize certain behaviors (like
     //  the context menu)

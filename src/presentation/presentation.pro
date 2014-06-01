@@ -19,12 +19,13 @@ else {
     #message(Preparing release build)
 }
 
-INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
+INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include $$TOP_DIR/gutil
 LIBS += \
     -L$$TOP_DIR/gutil/lib \
     -L$$TOP_DIR/lib \
     -lGUtil \
     -lGUtilQt \
+    -lGUtilTest \
     -lGKChess
 
 include(forms/forms.pri)

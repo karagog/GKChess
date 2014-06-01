@@ -13,12 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "bookreadercontrol.h"
-#include "ui_bookreader.h"
+#include "ui_bookreadercontrol.h"
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
 #include "gkchess_movedata.h"
-#include "gutil_pluginutils.h"
 #include "gutil_persistentdata.h"
+#include "src/test/modeltest.h"
 #include <QFileDialog>
 #include <QTableWidgetItem>
 USING_NAMESPACE_GKCHESS;
@@ -30,24 +30,19 @@ USING_NAMESPACE_GUTIL1(QT);
 NAMESPACE_GKCHESS1(UI);
 
 
-BookReader::BookReader(ObservableBoard &b, PersistentData *pd, QWidget *parent)
+BookReaderControl::BookReaderControl(ObservableBoard &b, PersistentData *pd, QWidget *parent)
     :QWidget(parent),
-      ui(new Ui::BookReader),
+      ui(new Ui::BookReaderControl),
       m_board(b),
       m_settings(pd),
-      i_bookreader(PluginUtils::LoadPlugin<IBookReader>(m_pl, "polyglotReaderPlugin"))
+      m_bookModel(b)
 {
     ui->setupUi(this);
-    ui->btn_validate->hide();
     ui->prg_validation->hide();
     ui->prg_validation->setRange(0, 100);
+    ui->treeView->setModel(&m_bookModel);
 
-    connect(&b, SIGNAL(NotifyPieceMoved(const GKChess::MoveData &)),
-            this, SLOT(board_position_changed()));
-    connect(&b, SIGNAL(NotifySquareUpdated(const GKChess::Square &)),
-            this, SLOT(board_position_changed()));
-    connect(&b, SIGNAL(NotifyBoardReset()),
-            this, SLOT(board_position_changed()));
+    //new ModelTest(&m_bookModel);
 
     if(m_settings && m_settings->Contains(SETTING_LAST_BOOK)){
         ui->lineEdit->setText(m_settings->Value(SETTING_LAST_BOOK).toString());
@@ -55,10 +50,10 @@ BookReader::BookReader(ObservableBoard &b, PersistentData *pd, QWidget *parent)
     }
 }
 
-BookReader::~BookReader()
+BookReaderControl::~BookReaderControl()
 {}
 
-void BookReader::SelectFile()
+void BookReaderControl::SelectFile()
 {
     QString fn = QFileDialog::getOpenFileName(this, "Select Book", QString(), "*.bin");
     if(!fn.isEmpty()){
@@ -67,69 +62,23 @@ void BookReader::SelectFile()
     }
 }
 
-void BookReader::CloseFile()
+void BookReaderControl::CloseFile()
 {
-    if(!i_bookreader)
-        return;
-
-    if(i_bookreader->IsBookOpen())
-    {
-        i_bookreader->CloseBook();
-        i_bookreader = 0;
-        // Don't delete it, because the QPlugin abstraction takes care of it for us
-    }
+    m_bookModel.SetBookFile("");
 }
 
-void BookReader::file_selected()
+void BookReaderControl::file_selected()
 {
     QString filename = ui->lineEdit->text().trimmed();
 
-    if(i_bookreader)
-    {
-        // If the filename didn't change, then return
-        if(filename == i_bookreader->GetBookFilename())
-            return;
-
-        i_bookreader->CloseBook();
-        ui->btn_validate->hide();
-        ui->tableWidget->setRowCount(0);
-    }
-
-    if(!filename.isEmpty())
-    {
-        try{
-            i_bookreader->OpenBook(filename.toUtf8().constData());
-        } catch(...) {
-            return;
-        }
-
-        ui->btn_validate->show();
-    }
-    board_position_changed();
+    m_bookModel.SetBookFile(filename);
 
     // Remember the last book
     if(m_settings)
-        m_settings->SetValue(SETTING_LAST_BOOK, i_bookreader->GetBookFilename());
+        m_settings->SetValue(SETTING_LAST_BOOK, m_bookModel.GetBookFile());
 }
 
-void BookReader::validate_file()
-{
-    if(!i_bookreader || !i_bookreader->IsBookOpen())
-        return;
-
-    ui->prg_validation->show();
-    try
-    {
-        i_bookreader->ValidateBook(this);
-    } catch(...){
-        ui->prg_validation->hide();
-        throw;
-    }
-    ui->prg_validation->hide();
-    ui->btn_validate->hide();
-}
-
-void BookReader::OnValidationProgressUpdate(int p)
+void BookReaderControl::OnValidationProgressUpdate(int p)
 {
     if(p < 100){
         ui->prg_validation->show();
@@ -137,40 +86,6 @@ void BookReader::OnValidationProgressUpdate(int p)
     }
     else
         ui->prg_validation->hide();
-}
-
-void BookReader::board_position_changed()
-{
-    if(!i_bookreader)
-        return;
-
-    String s = m_board.ToFEN();
-    Vector<BookMove> moves = i_bookreader->LookupMoves(s);
-    int row = 0;
-
-    ui->tableWidget->clearContents();
-    ui->tableWidget->setRowCount(moves.Length());
-
-    G_FOREACH_CONST(BookMove const &m, moves){
-        MoveData md = m_board.GenerateMoveData(m_board.SquareAt(m.SourceCol, m.SourceRow),
-                                               m_board.SquareAt(m.DestCol, m.DestRow),
-                                               0, true);
-
-//        QTableWidgetItem *item1 = new QTableWidgetItem(QString("%1%2%3%4%5")
-//                                                       .arg((char)('a' + m.SourceCol)).arg((char)('1' + m.SourceRow))
-//                                                       .arg((char)('a' + m.DestCol)).arg((char)('1' + m.DestRow))
-//                                                       .arg(m.PromotedPiece),
-//                                                       QVariant::String);
-        QTableWidgetItem *item1 = new QTableWidgetItem(md.PGNData.ToString().ToQString(),
-                                                       QVariant::String);
-        QTableWidgetItem *item2 = new QTableWidgetItem;
-        item2->setData(Qt::DisplayRole, m.Weight);
-        item2->setData(Qt::TextAlignmentRole, Qt::AlignCenter);
-        item1->setData(Qt::TextAlignmentRole, Qt::AlignCenter);
-        ui->tableWidget->setItem(row, 0, item1);
-        ui->tableWidget->setItem(row, 1, item2);
-        ++row;
-    }
 }
 
 

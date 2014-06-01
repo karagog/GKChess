@@ -17,6 +17,7 @@ limitations under the License.*/
 
 #include "gkchess_pgn_parser.h"
 #include "gkchess_board.h"
+#include "gkchess_board_movedata.h"
 #include "gutil_vector.h"
 #include <QAbstractItemModel>
 
@@ -32,7 +33,7 @@ class MoveDataModel :
     struct MoveDataCache;
 
     /** Contains a list of moves. */
-    struct MoveContainer
+    struct MoveDataContainer
     {
         GUtil::Vector<MoveDataCache *> Moves;
     };
@@ -41,7 +42,7 @@ class MoveDataModel :
         the parent index and a list of other moves.
     */
     struct MoveDataCache :
-        public MoveContainer
+        public MoveDataContainer
     {
         /** A reference to my parent index. */
         MoveDataCache *Parent;
@@ -50,10 +51,10 @@ class MoveDataModel :
         MoveData Data;
 
         MoveDataCache(MoveDataCache *parent = 0) :Parent(parent){}
+        virtual ~MoveDataCache() {}
     };
 
-    MoveContainer m_rootContainer;
-
+    MoveDataContainer m_rootContainer;
 
 public:
 
@@ -78,8 +79,8 @@ public:
 private:
 
     // This will always return a value, because even the root is a container
-    MoveContainer *_get_container_from_index(const QModelIndex &);
-    MoveContainer const *_get_container_from_index(const QModelIndex &) const;
+    MoveDataContainer *_get_container_from_index(const QModelIndex &);
+    MoveDataContainer const *_get_container_from_index(const QModelIndex &) const;
 
     // This will always return a value except when the root index is passed
     static MoveDataCache *_get_data_from_index(const QModelIndex &);

@@ -29,16 +29,23 @@ class Square
     friend class Board;
 
     // For fast lookups this is implemented as quickly queryable data types
-    const GUINT8 m_column, m_row;
+    GINT8 m_column, m_row;
     GINT8 m_threatsWhite, m_threatsBlack;
     Piece m_piece;
 
     Square(GUINT8 col, GUINT8 row);
 
-    /** Copies the square's data, except the row and column. */
+public:
+
+    Square();
+
+    Square(const Square &);
+
+    /** Copies the square's data. */
     Square &operator = (const Square &o);
 
-public:
+    /** Returns true if the square is null. */
+    bool IsNull() const;
 
     /** Holds the column that the square is in. */
     int GetColumn() const;

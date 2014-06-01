@@ -16,11 +16,11 @@ limitations under the License.*/
 #define GKCHESS_MOVEDATA_H
 
 #include "gkchess_piece.h"
+#include "gkchess_square.h"
 #include "gkchess_pgn_movedata.h"
 
 NAMESPACE_GKCHESS;
 
-class Square;
 class Board;
 
 
@@ -31,10 +31,10 @@ struct MoveData
     int PlyNumber;
 
     /** The starting square.  If the move was a castle this will be the king square. */
-    Square const *Source;
+    Square Source;
 
     /** The ending square.  If the move was a castle this will be the rook square. */
-    Square const *Destination;
+    Square Destination;
 
     /** The type of castle. */
     enum CastleTypeEnum
@@ -78,8 +78,6 @@ struct MoveData
 
     MoveData()
         :PlyNumber(-1),
-          Source(0),
-          Destination(0),
           CastleType(NoCastle)
     {}
 

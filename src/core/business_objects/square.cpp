@@ -18,19 +18,37 @@ USING_NAMESPACE_GUTIL;
 NAMESPACE_GKCHESS;
 
 
-Square::Square(GUINT8 c, GUINT8 r):
-    m_column(c),
-    m_row(r),
-    m_threatsWhite(-1),
-    m_threatsBlack(-1)
+Square::Square()
+    :m_column(-1), m_row(-1),
+      m_threatsWhite(0), m_threatsBlack(0)
+{}
+
+Square::Square(GUINT8 c, GUINT8 r)
+    :m_column(c),
+      m_row(r),
+      m_threatsWhite(-1),
+      m_threatsBlack(-1)
+{}
+
+Square::Square(const Square &o)
+    :m_column(o.m_column), m_row(o.m_row),
+      m_threatsWhite(o.m_threatsWhite), m_threatsBlack(o.m_threatsBlack),
+      m_piece(o.m_piece)
 {}
 
 Square &Square::operator = (const Square &o)
 {
+    m_column = o.m_column;
+    m_row = o.m_row;
     m_piece = o.m_piece;
     m_threatsWhite = o.m_threatsWhite;
     m_threatsBlack = o.m_threatsBlack;
     return *this;
+}
+
+bool Square::IsNull() const
+{
+    return -1 == m_column && -1 == m_row;
 }
 
 int Square::GetColumn() const
