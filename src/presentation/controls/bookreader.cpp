@@ -17,18 +17,23 @@ limitations under the License.*/
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
 #include "gutil_pluginutils.h"
+#include "gutil_persistentdata.h"
 #include <QFileDialog>
 #include <QTableWidgetItem>
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
+USING_NAMESPACE_GUTIL1(QT);
+
+#define SETTING_LAST_BOOK "bookreader_last_open_book"
 
 NAMESPACE_GKCHESS1(UI);
 
 
-BookReader::BookReader(ObservableBoard &b, QWidget *parent)
+BookReader::BookReader(ObservableBoard &b, PersistentData *pd, QWidget *parent)
     :QWidget(parent),
       ui(new Ui::BookReader),
       m_board(b),
+      m_settings(pd),
       i_bookreader(PluginUtils::LoadPlugin<IBookReader>(m_pl, "polyglotReaderPlugin"))
 {
     ui->setupUi(this);
@@ -42,6 +47,11 @@ BookReader::BookReader(ObservableBoard &b, QWidget *parent)
             this, SLOT(board_position_changed()));
     connect(&b, SIGNAL(NotifyBoardReset()),
             this, SLOT(board_position_changed()));
+
+    if(m_settings && m_settings->Contains(SETTING_LAST_BOOK)){
+        ui->lineEdit->setText(m_settings->Value(SETTING_LAST_BOOK).toString());
+        file_selected();
+    }
 }
 
 BookReader::~BookReader()
@@ -71,16 +81,34 @@ void BookReader::CloseFile()
 
 void BookReader::file_selected()
 {
+    QString filename = ui->lineEdit->text().trimmed();
+
     if(i_bookreader)
     {
+        // If the filename didn't change, then return
+        if(filename == i_bookreader->GetBookFilename())
+            return;
+
         i_bookreader->CloseBook();
         ui->btn_validate->hide();
+        ui->tableWidget->setRowCount(0);
     }
 
-    i_bookreader->OpenBook(ui->lineEdit->text().trimmed().toUtf8().constData());
+    if(!filename.isEmpty())
+    {
+        try{
+            i_bookreader->OpenBook(filename.toUtf8().constData());
+        } catch(...) {
+            return;
+        }
 
-    ui->btn_validate->show();
+        ui->btn_validate->show();
+    }
     board_position_changed();
+
+    // Remember the last book
+    if(m_settings)
+        m_settings->SetValue(SETTING_LAST_BOOK, i_bookreader->GetBookFilename());
 }
 
 void BookReader::validate_file()
@@ -117,9 +145,11 @@ void BookReader::board_position_changed()
 
     String s = m_board.ToFEN();
     Vector<IBookReader::Move> moves = i_bookreader->LookupMoves(s);
-    ui->tableWidget->clearContents();
     int row = 0;
+
+    ui->tableWidget->clearContents();
     ui->tableWidget->setRowCount(moves.Length());
+
     G_FOREACH_CONST(IBookReader::Move const &m, moves){
         QTableWidgetItem *item1 = new QTableWidgetItem(m.Text.ToQString(), QVariant::String);
         QTableWidgetItem *item2 = new QTableWidgetItem;

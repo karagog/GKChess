@@ -24,6 +24,10 @@ namespace Ui {
 class BookReader;
 }
 
+namespace GUtil{ namespace QT{
+class PersistentData;
+}}
+
 class QProgressBar;
 
 namespace GKChess{
@@ -35,18 +39,20 @@ namespace UI{
 
 class BookReader :
         public QWidget,
-        public IBookReader::IValidationProgressObserver
+        private IBookReader::IValidationProgressObserver
 {
     Q_OBJECT
     GUtil::SmartPointer<Ui::BookReader> ui;
     Board &m_board;
     QPluginLoader m_pl;
+    GUtil::QT::PersistentData *m_settings;
     GKChess::IBookReader *i_bookreader;
     QProgressBar *m_pb;
 
 public:
 
-    explicit BookReader(GKChess::ObservableBoard &, QWidget *parent = 0);
+    /** If you pass a persistent data object, then we will be able to remember the last book you had open. */
+    explicit BookReader(GKChess::ObservableBoard &, GUtil::QT::PersistentData * = 0, QWidget *parent = 0);
     ~BookReader();
 
 
