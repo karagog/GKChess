@@ -88,7 +88,9 @@ const MoveData *BookModel::ConvertIndexToMoveData(const QModelIndex &i) const
 bool BookModel::hasChildren(const QModelIndex &i) const
 {
     bool ret = false;
-    if(!i.isValid() || 0 == i.column())
+    MoveDataContainer const *c = _get_children_of_index(i);
+    //if(!i.isValid() || 0 == i.column())
+    if(!c->Loaded || 0 < c->Moves.Length())
         ret = true;
     return ret;
 }
