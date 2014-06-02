@@ -61,6 +61,30 @@ QString BookModel::GetBookFile() const
     return i_bookReader->GetBookFilename();
 }
 
+QModelIndexList BookModel::GetAncestry(const QModelIndex &ind) const
+{
+    QModelIndexList ret;
+    _get_ancestry_helper(ret, ind);
+    return ret;
+}
+
+void BookModel::_get_ancestry_helper(QModelIndexList &l, const QModelIndex &i) const
+{
+    if(!i.isValid())
+        return;
+
+    _get_ancestry_helper(l, i.parent());
+    l.append(i);
+}
+
+const MoveData *BookModel::ConvertIndexToMoveData(const QModelIndex &i) const
+{
+    MoveData const *ret = 0;
+    if(i.isValid())
+        ret = &_get_data_from_index(i)->Data;
+    return ret;
+}
+
 bool BookModel::hasChildren(const QModelIndex &i) const
 {
     bool ret = false;
@@ -100,8 +124,7 @@ QVariant BookModel::data(const QModelIndex &index, int role) const
             break;
         case Qt::BackgroundRole:
         {
-            Vector<MoveDataCache *> lst = _get_parent_list(index);
-            int n = 0x1 & lst.Length();
+            int n = 0x1 & GetAncestry(index).length();
             Piece::AllegienceEnum a = m_board.GetWhoseTurn();
             if((n && a == Piece::White) || (!n && a == Piece::Black))
                 ret = Qt::white;
@@ -180,9 +203,9 @@ void BookModel::fetchMore(const QModelIndex &parent)
 
     // Need to simulate all parents' moves
     Board cpy = m_board;
-    Vector<MoveDataCache *> parents = _get_parent_list(parent);
-    for(int i = parents.Length() - 1; i >= 0; --i){
-        cpy.Move(parents[i]->Data);
+    QModelIndexList parents = GetAncestry(parent);
+    for(int i = 0; i < parents.length(); ++i){
+        cpy.Move(_get_data_from_index(parents[i])->Data);
     }
 
     String s = cpy.ToFEN();
@@ -211,17 +234,6 @@ bool BookModel::canFetchMore(const QModelIndex &parent) const
 {
     MoveDataContainer const *d = _get_children_of_index(parent);
     return !d->Loaded;
-}
-
-Vector<BookModel::MoveDataCache *> BookModel::_get_parent_list(const QModelIndex &i) const
-{
-    Vector<MoveDataCache *> ret;
-    QModelIndex cur = i;
-    while(cur.isValid()){
-        ret.PushBack(_get_data_from_index(cur));
-        cur = cur.parent();
-    }
-    return ret;
 }
 
 BookModel::MoveDataCache *BookModel::_get_data_from_index(const QModelIndex &i) const

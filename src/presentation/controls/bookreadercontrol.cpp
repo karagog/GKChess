@@ -18,7 +18,7 @@ limitations under the License.*/
 #include "gkchess_polyglotreader.h"
 #include "gkchess_movedata.h"
 #include "gutil_persistentdata.h"
-#include "src/test/modeltest.h"
+//#include "src/test/modeltest.h"
 #include <QFileDialog>
 #include <QTableWidgetItem>
 USING_NAMESPACE_GKCHESS;
@@ -38,11 +38,9 @@ BookReaderControl::BookReaderControl(ObservableBoard &b, PersistentData *pd, QWi
       m_bookModel(b)
 {
     ui->setupUi(this);
-    ui->prg_validation->hide();
-    ui->prg_validation->setRange(0, 100);
     ui->treeView->setModel(&m_bookModel);
 
-    //new ModelTest(&m_bookModel);
+//    new ModelTest(&m_bookModel);
 
     if(m_settings && m_settings->Contains(SETTING_LAST_BOOK)){
         ui->lineEdit->setText(m_settings->Value(SETTING_LAST_BOOK).toString());
@@ -78,14 +76,26 @@ void BookReaderControl::file_selected()
         m_settings->SetValue(SETTING_LAST_BOOK, m_bookModel.GetBookFile());
 }
 
+void BookReaderControl::move_doubleClicked(const QModelIndex &ind)
+{
+    List<MoveData> lst;
+    foreach(const QModelIndex &i, m_bookModel.GetAncestry(ind)){
+        lst.Append(*m_bookModel.ConvertIndexToMoveData(i));
+    }
+    G_FOREACH_CONST(const MoveData &md, lst){
+        m_board.Move(md);
+    }
+}
+
 void BookReaderControl::OnValidationProgressUpdate(int p)
 {
-    if(p < 100){
-        ui->prg_validation->show();
-        ui->prg_validation->setValue(p);
-    }
-    else
-        ui->prg_validation->hide();
+    GUTIL_UNUSED(p);
+//    if(p < 100){
+//        ui->prg_validation->show();
+//        ui->prg_validation->setValue(p);
+//    }
+//    else
+//        ui->prg_validation->hide();
 }
 
 

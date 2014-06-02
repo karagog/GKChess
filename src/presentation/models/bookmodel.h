@@ -71,8 +71,23 @@ public:
 
     explicit BookModel(ObservableBoard &, QObject *parent = 0);
 
+    /** Opens the book file at the given file path. */
     bool SetBookFile(const QString &filename);
+
+    /** Returns the current book file. */
     QString GetBookFile() const;
+
+    /** Returns all ancestors of the given index, including the index */
+    QModelIndexList GetAncestry(const QModelIndex &) const;
+
+    /** Returns the move data at the given index.  If the index is invalid
+     *  this will return a null pointer.
+    */
+    MoveData const *ConvertIndexToMoveData(const QModelIndex &) const;
+
+    /** \name QAbstractItemModel interface
+     *  \{
+    */
 
     bool hasChildren(const QModelIndex &parent) const;
     int rowCount(const QModelIndex &parent) const;
@@ -86,6 +101,8 @@ public:
     void fetchMore(const QModelIndex &);
     bool canFetchMore(const QModelIndex &parent) const;
 
+    /** \} */
+
 
 private slots:
 
@@ -97,7 +114,8 @@ private:
     MoveDataCache *_get_data_from_index(const QModelIndex &) const;
     MoveDataContainer const *_get_children_of_index(const QModelIndex &) const;
     MoveDataContainer *_get_children_of_index(const QModelIndex &);
-    GUtil::Vector<MoveDataCache *> _get_parent_list(const QModelIndex &) const;
+
+    void _get_ancestry_helper(QModelIndexList &, const QModelIndex &) const;
 
 };
 

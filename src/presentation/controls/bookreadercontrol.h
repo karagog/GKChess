@@ -62,6 +62,7 @@ public slots:
 private slots:
 
     void file_selected();
+    void move_doubleClicked(const QModelIndex &);
 
 
 private:
