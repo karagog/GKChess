@@ -873,7 +873,7 @@ static bool __is_path_blocked(Board const &b, Square const &s, Square const &d, 
         cur = &b.SquareAt(cur->GetColumn() + cmp_res_col, cur->GetRow() + cmp_res_row);
 
         Piece const &p = cur->GetPiece();
-        if(cur == &d)
+        if(*cur == d)
         {
             // The destination square is only blocked if there is a piece that belongs
             //  to the same allegience as the piece being moved.
