@@ -228,7 +228,9 @@ void BookModel::fetchMore(const QModelIndex &parent)
     }
     else
     {
-
+        // Now we know that the parent has no children,
+        //  so we notify that it has changed so the view can remove the expander
+        emit dataChanged(parent, parent);
     }
 }
 
