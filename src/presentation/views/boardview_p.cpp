@@ -139,6 +139,7 @@ struct piece_animation_t :
 BoardView_p::BoardView_p(QWidget *parent)
     :QAbstractItemView(parent),
       m_squareSize(DEFAULT_SQUARE_SIZE),
+      m_orientation(NormalOrientation),
       m_editable(true),
       m_showThreatCounts(false),
       m_darkSquareColor(Qt::gray),
@@ -202,9 +203,26 @@ QRectF BoardView_p::visual_rectf(int col, int row) const
 
 QRectF BoardView_p::item_rect(int col, int row) const
 {
-    return QRectF(get_board_rect().x() + col * GetSquareSize(),
-                  get_board_rect().y() + get_board_rect().height() - (GetSquareSize() * (1 + row)),
-                  GetSquareSize(), GetSquareSize());
+    QRectF ret;
+    if(0 <= col && col < GetBoardModel()->GetBoard().ColumnCount() &&
+            0 <= row && row < GetBoardModel()->GetBoard().RowCount())
+    {
+        // Map the indices to account for the orientation
+        switch(GetOrientation())
+        {
+        case BoardView_p::Rotated_180:
+            row = GetBoardModel()->GetBoard().RowCount() - row - 1;
+            col = GetBoardModel()->GetBoard().ColumnCount() - col - 1;
+            break;
+        case BoardView_p::NormalOrientation:
+        default: break;
+        }
+
+        ret = QRectF(get_board_rect().x() + col * GetSquareSize(),
+                     get_board_rect().y() + get_board_rect().height() - (GetSquareSize() * (1 + row)),
+                     GetSquareSize(), GetSquareSize());
+    }
+    return ret;
 }
 
 void BoardView_p::scrollTo(const QModelIndex &index, ScrollHint)
@@ -256,9 +274,8 @@ void BoardView_p::_update_rubber_band()
     // Update the rubber band
     QModelIndex cur = currentIndex();
     m_selectionBand->setVisible(cur.isValid());
-    if(cur.isValid()){
+    if(cur.isValid())
         m_selectionBand->setGeometry(visualRect(cur));
-    }
 }
 
 QModelIndex BoardView_p::indexAt(const QPoint &p) const
@@ -268,6 +285,18 @@ QModelIndex BoardView_p::indexAt(const QPoint &p) const
                 p.y() + verticalOffset());
     if(get_board_rect().contains(p_t))
     {
+        // Map the point to account for the board's orientation
+        QRectF board_rect = get_board_rect();
+        switch(GetOrientation())
+        {
+        case BoardView_p::Rotated_180:
+            p_t.setX(board_rect.left() + (board_rect.right() - p_t.x()));
+            p_t.setY(board_rect.top() + (board_rect.bottom() - p_t.y()));
+            break;
+        case BoardView_p::NormalOrientation:
+        default: break;
+        }
+
         float x = p_t.x() - get_board_rect().x();
         float y = get_board_rect().y() + get_board_rect().height() - p_t.y();
 
@@ -450,8 +479,8 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     {
         for(int r = 0; r < num_rows; ++r)
         {
-            Square const &cur_sqr(board->SquareAt(c, r));
             QRectF tmp = item_rect(c, r);
+            Square const &cur_sqr(board->SquareAt(c, r));
 
             if((c & 0x1) == (r & 0x1))
             {
@@ -505,9 +534,21 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             }
 
             // Draw the index
+            QString txt;
             QRectF text_rect(p2, QPointF(p2.x() + file_width, p2.y() + MARGIN_INDICES));
             painter.setPen(textPen);
-            painter.drawText(text_rect, Qt::AlignCenter,  QString('a' + i));
+            switch(GetOrientation())
+            {
+            case NormalOrientation:
+                txt = QString('a' + i);
+                break;
+            case Rotated_180:
+                txt = QString('h' - i);
+                break;
+            default:
+                GASSERT(false);
+            }
+            painter.drawText(text_rect, Qt::AlignCenter,  txt);
 
             p1.setX(p1.x() + file_width);
             p2.setX(p2.x() + file_width);
@@ -528,10 +569,22 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             }
 
             // Draw the index
+            QString txt;
             QRectF text_rect(QPointF(p1.x() - MARGIN_INDICES, p1.y()),
                              QPointF(p1.x(), p1.y() + rank_height));
             painter.setPen(textPen);
-            painter.drawText(text_rect, Qt::AlignCenter,  QString('8' - i));
+            switch(GetOrientation())
+            {
+            case NormalOrientation:
+                txt = QString('8' - i);
+                break;
+            case Rotated_180:
+                txt = QString('1' + i);
+                break;
+            default:
+                GASSERT(false);
+            }
+            painter.drawText(text_rect, Qt::AlignCenter,  txt);
 
             p1.setY(p1.y() + rank_height);
             p2.setY(p2.y() + rank_height);
@@ -549,7 +602,6 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
         ++iter)
     {
         Square const *sqr = GetBoardModel()->ConvertIndexToSquare(iter->Key());
-
         QRectF cur_rect = item_rect(sqr->GetColumn(), sqr->GetRow());
         QPainterPath path;
         QPainterPath subtracted;
@@ -665,8 +717,8 @@ bool BoardView_p::attempt_move(const QModelIndex &s, const QModelIndex &d)
 
 void BoardView_p::animate_snapback(const QPointF &from, const QModelIndex &s)
 {
-    Square const *sqr = GetBoardModel()->ConvertIndexToSquare(s);
     MoveData md;
+    Square const *sqr = GetBoardModel()->ConvertIndexToSquare(s);
     md.PieceMoved = sqr->GetPiece();
     animate_move(md,
                  from,
@@ -811,7 +863,6 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
     QModelIndex ind = indexAt(ev->pos());
     if(ind.isValid() && ev->button() == Qt::LeftButton)
     {
-        QPoint p(ev->pos());
         Piece target_piece = ind.data(BoardModel_p::PieceRole).value<Piece>();
         if(target_piece.IsNull())
             return;
@@ -992,26 +1043,26 @@ void BoardView_p::_piece_about_to_move(const MoveData &md)
         default: break;
         }
 
-        animate_castle(md,
-                       md.Source, *king_dest,
-                       *rook_src, *rook_dest,
+        animate_castle(md, md.Source, *king_dest, *rook_src, *rook_dest,
                        ANIM_MOVE_DURATION *1000,
                        ANIM_MOVE_EASING);
     }
     else if(!md.PiecePromoted.IsNull())
     {
-        // Animate pawn promotion
+        // TODO: Animate pawn promotion?
     }
     else
     {
         // Animate regular moving, unless they're dragging
         if(!m_dragging)
+        {
             animate_move(md,
                          item_rect(md.Source.GetColumn(), md.Source.GetRow()).center(),
                          item_rect(md.Destination.GetColumn(), md.Destination.GetRow()).center(),
                          md.Source,
                          ANIM_MOVE_DURATION * 1000,
                          ANIM_MOVE_EASING);
+        }
     }
 }
 
@@ -1041,6 +1092,14 @@ void BoardView_p::_update_cursor_at_point(const QPointF &pt)
 void BoardView_p::SetShowThreatCounts(bool b)
 {
     m_showThreatCounts = b;
+    viewport()->update();
+}
+
+void BoardView_p::SetOrientation(OrientationEnum o)
+{
+    m_orientation = o;
+    m_activeSquare = QModelIndex();
+    ClearSquareHighlighting();
     viewport()->update();
 }
 
@@ -1127,7 +1186,6 @@ private:
     }
 
 };
-
 
 Piece BoardView_p::ChoosePromotedPiece(Piece::AllegienceEnum a)
 {

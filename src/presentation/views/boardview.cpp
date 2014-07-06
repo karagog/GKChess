@@ -197,5 +197,12 @@ bool BoardView::GetShowThreatCounts() const
     return d->BoardView.GetShowThreatCounts();
 }
 
+void BoardView::FlipOrientation()
+{
+    G_D;
+    int o = d->BoardView.GetOrientation();
+    d->BoardView.SetOrientation((BoardView_p::OrientationEnum)(~o & 3));
+}
+
 
 END_NAMESPACE_GKCHESS1;

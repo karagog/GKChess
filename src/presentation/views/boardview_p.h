@@ -42,40 +42,18 @@ class BoardView_p :
         public GKChess::IPlayerResponse
 {
     Q_OBJECT
+public:
 
-    struct SquareFormatOptions
+    /** Enumerates the possible orientations. */
+    enum OrientationEnum
     {
-        QColor HighlightColor;
+        /** The default orientation, vertical with white at the bottom. */
+        NormalOrientation = 0,
+
+        /** Rotated 180 degrees from Normal. */
+        Rotated_180 = 3
     };
 
-    // Dimensional parameters
-    float m_squareSize;
-
-    // Behavioral parameters
-    bool m_editable;
-    bool m_showThreatCounts;
-
-    // for painting
-    QColor m_darkSquareColor;
-    QColor m_lightSquareColor;
-    QColor m_activeSquareHighlightColor;
-    GKChess::UI::IFactory_PieceIcon *i_factory;
-
-    // Our current state for user interaction
-    QModelIndex m_activeSquare;
-    bool m_dragging;
-    QPoint m_mousePressLoc;
-    bool m_wasSquareActiveWhenPressed;
-    GUtil::SmartPointer<QRubberBand> m_selectionBand;
-
-    // Our animation objects
-    QAnimationGroup *m_animation;
-    GUtil::SmartPointer<GKChess::Board> m_animationBoard;
-
-    // Keeps track of our per-square format options
-    GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;
-
-public:
 
     /** Constructs a board view with default options. */
     explicit BoardView_p(QWidget *parent = 0);
@@ -100,6 +78,9 @@ public:
     void SetEditable(bool b){ m_editable = b; }
     void SetShowThreatCounts(bool);
     bool GetShowThreatCounts() const{ return m_showThreatCounts; }
+
+    OrientationEnum GetOrientation() const{ return m_orientation; }
+    void SetOrientation(OrientationEnum);
 
     /** \name IPlayerResponse interface
      *  \{
@@ -213,6 +194,41 @@ private slots:
 
 private:
 
+    struct SquareFormatOptions
+    {
+        QColor HighlightColor;
+    };
+
+    // Dimensional parameters
+    float m_squareSize;
+    OrientationEnum m_orientation;
+
+    // Behavioral parameters
+    bool m_editable;
+    bool m_showThreatCounts;
+
+    // for painting
+    QColor m_darkSquareColor;
+    QColor m_lightSquareColor;
+    QColor m_activeSquareHighlightColor;
+    GKChess::UI::IFactory_PieceIcon *i_factory;
+
+    // Our current state for user interaction
+    QModelIndex m_activeSquare;
+    bool m_dragging;
+    QPoint m_mousePressLoc;
+    bool m_wasSquareActiveWhenPressed;
+    GUtil::SmartPointer<QRubberBand> m_selectionBand;
+
+    // Our animation objects
+    QAnimationGroup *m_animation;
+    GUtil::SmartPointer<GKChess::Board> m_animationBoard;
+
+    // Keeps track of our per-square format options
+    GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;
+
+
+    // Private methods start here:
     void _update_cursor_at_point(const QPointF &);
 
 };

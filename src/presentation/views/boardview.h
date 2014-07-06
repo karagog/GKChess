@@ -36,6 +36,7 @@ class IFactory_PieceIcon;
 class BoardView :
         public QWidget
 {
+    Q_OBJECT
     void *d;
 public:
     BoardView(QWidget * = 0);
@@ -91,6 +92,12 @@ public:
 
     /** Returns true if the view is showing threat counts. */
     bool GetShowThreatCounts() const;
+
+
+public slots:
+
+    /** Rotates the board 180 degrees. */
+    void FlipOrientation();
 
 };
 

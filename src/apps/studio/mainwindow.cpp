@@ -77,6 +77,7 @@ MainWindow::MainWindow(PersistentData *settings,
     connect(ui->actionStandard_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_standard_chess()));
     connect(ui->actionChess960_Starting_Position, SIGNAL(triggered()), this, SLOT(_setup_random_chess960()));
     connect(ui->actionManage_Engines, SIGNAL(triggered()), this, SLOT(_manage_engines()));
+    connect(ui->action_FlipBoard, SIGNAL(triggered()), ui->boardView, SLOT(FlipOrientation()));
 
     connect(ui->actionAbout, SIGNAL(triggered()), gApp, SLOT(About()));
 

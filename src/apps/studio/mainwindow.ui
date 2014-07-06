@@ -59,6 +59,8 @@
      <addaction name="actionStandard_Starting_Position"/>
      <addaction name="actionChess960_Starting_Position"/>
     </widget>
+    <addaction name="action_FlipBoard"/>
+    <addaction name="separator"/>
     <addaction name="menu_New_Position"/>
     <addaction name="menu_Load_Position"/>
     <addaction name="action_Recent_Positions"/>
@@ -267,6 +269,11 @@
   <action name="actionPGN_Player">
    <property name="text">
     <string>&amp;PGN Player</string>
+   </property>
+  </action>
+  <action name="action_FlipBoard">
+   <property name="text">
+    <string>&amp;Flip</string>
    </property>
   </action>
  </widget>
