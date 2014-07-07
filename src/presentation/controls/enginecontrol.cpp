@@ -40,8 +40,8 @@ EngineControl::EngineControl(Board &b, EngineSettings *settings, PersistentData 
 
     _engines_updated();
 
-//    if(settings->GetEngineList().count() > 0)
-//        _engine_selection_changed(ui->cmb_engine->currentText());
+    if(settings->GetEngineList().count() > 0)
+        _engine_selection_changed(ui->cmb_engine->currentText());
 
     connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
             this, SLOT(_engines_updated()));
