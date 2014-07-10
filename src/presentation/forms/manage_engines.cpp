@@ -52,7 +52,7 @@ ManageEngines::ManageEngines(EngineSettings *settings, PersistentData *app_setti
     const QString last_engine = app_settings->Value(GKCHESS_SETTING_LAST_ENGINE_USED).toString();
     QList<QListWidgetItem *> lst = ui->lst_engines->findItems(last_engine, Qt::MatchExactly);
     if(0 < lst.length())
-        ui->lst_engines->setCurrentItem(lst[0]);
+        _current_changed(0);
 }
 
 ManageEngines::~ManageEngines()
@@ -63,9 +63,10 @@ ManageEngines::~ManageEngines()
 void ManageEngines::_clear_options_panel()
 {
     // Remove everything from the options panel
-    QLayoutItem *item;
-    while((item = ui->pnl_options->layout()->takeAt(0)) != 0)
-        delete item;
+    foreach(QWidget *w, m_optionItems)
+        delete w;
+
+    m_optionItems.clear();
 }
 
 void ManageEngines::_engine_list_updated()
@@ -101,11 +102,19 @@ void ManageEngines::_current_changed(int r)
     const IEngine::EngineInfo &info = e.GetEngineInfo();
 
     QGridLayout *gl = static_cast<QGridLayout *>(ui->pnl_options->layout());
-    gl->addWidget(new QLabel(tr("Name:"), this), 0, 0);
-    gl->addWidget(new QLabel(info.Name, this), 0, 1);
+    {
+        QLabel *name, *name_value, *author, *author_value;
+        gl->addWidget(name = new QLabel(tr("Name:"), this), 0, 0);
+        gl->addWidget(name_value = new QLabel(info.Name, this), 0, 1);
 
-    gl->addWidget(new QLabel(tr("Author:"), this), 1, 0);
-    gl->addWidget(new QLabel(info.Author, this), 1, 1);
+        gl->addWidget(author = new QLabel(tr("Author:"), this), 1, 0);
+        gl->addWidget(author_value = new QLabel(info.Author, this), 1, 1);
+
+        m_optionItems.append(name);
+        m_optionItems.append(name_value);
+        m_optionItems.append(author);
+        m_optionItems.append(author_value);
+    }
 
 
     const QString default_tooltip = tr("Restore default value");
@@ -186,7 +195,8 @@ void ManageEngines::_current_changed(int r)
 
         if(show_option)
         {
-            gl->addWidget(new QLabel(cur_name, this), i + 2, 0);
+            QLabel *lbl = new QLabel(cur_name, this);
+            gl->addWidget(lbl, i + 2, 0);
 
             if(editing_widget)
                 gl->addWidget(editing_widget, i + 2, 1);
@@ -207,6 +217,10 @@ void ManageEngines::_current_changed(int r)
 
             connect(pb, SIGNAL(released()), act, SLOT(trigger()));
             gl->addWidget(pb, i + 2, 2);
+
+            m_optionItems.append(lbl);
+            m_optionItems.append(editing_widget);
+            m_optionItems.append(pb);
         }
     }
 }

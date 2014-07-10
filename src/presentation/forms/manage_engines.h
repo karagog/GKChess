@@ -36,6 +36,9 @@ class ManageEngines : public QDialog
 
     QStringList m_engineList;
     GUtil::SmartPointer<EngineManager> m_engineManager;
+
+    QWidgetList m_optionItems;
+
 public:
 
     explicit ManageEngines(EngineSettings *engine_settings, GUtil::QT::PersistentData *app_settings, QWidget *parent = 0);
