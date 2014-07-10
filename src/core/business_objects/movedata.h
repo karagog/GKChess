@@ -31,14 +31,21 @@ struct GenericMove
     /** A character describing which piece to promote.  If there is no promoted piece it will be 0. */
     char PromotedPiece;
 
+    /** Returns true if the move is null (default constructed). */
+    bool IsNull() const{
+        return 0 == SourceCol && 0 == SourceRow &&
+                0 == DestCol && 0 == DestRow &&
+                0 == PromotedPiece;
+    }
+
     GenericMove()
         :SourceCol(0), SourceRow(0),
           DestCol(0), DestRow(0),
           PromotedPiece(0)
     {}
     GenericMove(GUINT8 source_col, GUINT8 source_row,
-                      GUINT8 dest_col, GUINT8 dest_row,
-                      char promoted_piece = 0)
+                GUINT8 dest_col, GUINT8 dest_row,
+                char promoted_piece = 0)
         :SourceCol(source_col), SourceRow(source_row),
           DestCol(dest_col), DestRow(dest_row),
           PromotedPiece(promoted_piece)
@@ -79,6 +86,17 @@ struct EngineMove :
 {
     /** The move's score in centipawns. */
     int Score;
+
+    EngineMove()
+        :Score(0) {}
+
+    EngineMove(int score,
+               GUINT8 source_col, GUINT8 source_row,
+               GUINT8 dest_col, GUINT8 dest_row,
+               char promoted_piece = 0)
+        :GenericMove(source_col,source_row, dest_col, dest_row, promoted_piece),
+          Score(score)
+    {}
 };
 
 

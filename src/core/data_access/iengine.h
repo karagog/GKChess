@@ -16,6 +16,8 @@ limitations under the License.*/
 #define GKCHESS_IENGINE_H
 
 #include "gutil_map.h"
+#include "gutil_list.h"
+#include "gkchess_movedata.h"
 #include <QObject>
 #include <QStringList>
 
@@ -141,16 +143,47 @@ public:
     /** Sets the option name-value pair.  If the value is null, it will reset to the default. */
     virtual void SetOption(const QString &name, const QVariant &value) = 0;
 
+    /** Issues the "ucinewgame" command, which tells the engine that the next position
+     *  is from a new game, so it should forget its internal learning data from the previous position.
+    */
+    virtual void NewGame() = 0;
+
+    /** Issues the "isready" command and waits for the "readyok" response.
+     *  Use this to synchronize your state with the engine.
+     *  \param timeout_ms The function will return after this many milliseconds if the engine is not ready.
+     *  \returns true if the engine is ready, false otherwise.
+    */
+    virtual bool WaitForReady(int timeout_ms = -1) = 0;
+
     /** Sets the position for the engine to work on.
      *  This can be "startpos moves e2e4 e7e5 ..." or a FEN string
     */
     virtual void SetPosition(const char *) = 0;
 
 
+    /** Parameters for the "go" command in UCI. */
     struct ThinkParams
     {
-        /** If the move time is -1 it will search until you say stop.  If it's 0 it has no time to think of a move. */
-        int MoveTime;
+        /** The amount of time to search, in milliseconds.
+         *  If the search time is -1 it will search until you say stop.
+         *  If it's 0 it has no time to search for a move.
+        */
+        int SearchTime;
+
+        /** The amount of time left on white's clock, in milliseconds. */
+        int WhiteTime;
+
+        /** White's time increment per move. */
+        int WhiteIncrement;
+
+        /** The amount of time left on black's clock, in milliseconds. */
+        int BlackTime;
+
+        /** Black's time increment per move. */
+        int BlackIncrement;
+
+        /** The number of moves until the next time control.  If it's 0 then it's sudden death. */
+        int MovesToGo;
 
         /** Constrains the search depth.  0 means unconstrained. */
         int Depth;
@@ -162,12 +195,18 @@ public:
         int Mate;
 
         /** Constrains the engine to consider only these moves. An empty list means unconstrained. */
-        QStringList SearchMoves;
+        GUtil::List<GenericMove> SearchMoves;
 
         ThinkParams()
-            :MoveTime(-1),
+            :SearchTime(-1),
+              WhiteTime(-1),
+              WhiteIncrement(0),
+              BlackTime(-1),
+              BlackIncrement(0),
+              MovesToGo(0),
               Depth(0),
-              Nodes(0)
+              Nodes(0),
+              Mate(0)
         {}
     };
 
@@ -198,7 +237,7 @@ signals:
      *  \param move The move text
      *  \param ponder The move that the engine would like to ponder
     */
-    void BestMove(const QByteArray &move, const QByteArray &ponder = QByteArray());
+    void BestMove(const GenericMove &move, const GenericMove &ponder = GenericMove());
 
     /** This signal notifies that the engine has crashed. */
     void NotifyEngineCrashed();
