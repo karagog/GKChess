@@ -16,6 +16,8 @@ limitations under the License.*/
 #define GKCHESS_MOVEDATA_ENGINE_H
 
 #include "gkchess_globals.h"
+#include "gutil_exception.h"
+#include <cstring>
 
 NAMESPACE_GKCHESS;
 
@@ -43,6 +45,26 @@ struct GenericMove
           DestCol(0), DestRow(0),
           PromotedPiece(0)
     {}
+
+    /** Creates a generic move from an engine/book string (i.e. e2e4 or a7a8q */
+    GenericMove(const char *str)
+        :SourceCol(0), SourceRow(0),
+          DestCol(0), DestRow(0),
+          PromotedPiece(0)
+    {
+        int len = strlen(str);
+        if(len < 4 || 5 < len)
+            return;
+
+        SourceCol = str[0] - 'a';
+        SourceRow = str[1] - '1';
+        DestCol =   str[2] - 'a';
+        DestRow =   str[3] - '1';
+
+        if(len == 5)
+            PromotedPiece = str[4];
+    }
+
     GenericMove(GUINT8 source_col, GUINT8 source_row,
                 GUINT8 dest_col, GUINT8 dest_row,
                 char promoted_piece = 0)
@@ -70,11 +92,8 @@ struct BookMove :
     BookMove()
         :Weight(0), Learn(0) {}
 
-    BookMove(float weight, GUINT32 learn,
-             GUINT8 source_col, GUINT8 source_row,
-             GUINT8 dest_col, GUINT8 dest_row,
-             char promoted_piece = 0)
-        :GenericMove(source_col,source_row, dest_col, dest_row, promoted_piece),
+    BookMove(float weight, GUINT32 learn, const GenericMove &generic_move)
+        :GenericMove(generic_move),
           Weight(weight), Learn(learn)
     {}
 };
@@ -90,11 +109,8 @@ struct EngineMove :
     EngineMove()
         :Score(0) {}
 
-    EngineMove(int score,
-               GUINT8 source_col, GUINT8 source_row,
-               GUINT8 dest_col, GUINT8 dest_row,
-               char promoted_piece = 0)
-        :GenericMove(source_col,source_row, dest_col, dest_row, promoted_piece),
+    EngineMove(int score, const GenericMove &generic_move)
+        :GenericMove(generic_move),
           Score(score)
     {}
 };

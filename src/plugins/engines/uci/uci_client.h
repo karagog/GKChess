@@ -47,6 +47,8 @@ public:
     const EngineInfo &GetEngineInfo() const;
     void SetPosition(const char *);
     void SetOption(const QString &, const QVariant &);
+    bool WaitForReady(int);
+    void NewGame();
 
     void StartThinking(const ThinkParams &);
     bool IsThinking() const;
@@ -55,7 +57,8 @@ public:
 
 private slots:
 
-    void _data_available();
+    void _read_from_engine();
+
     void _best_move_received();
 
     void _engine_error(QProcess::ProcessError err);
@@ -64,7 +67,13 @@ private slots:
 
 private:
 
-    void _append_to_write_queue(const QByteArray &);
+    void _start_and_validate_engine(bool populate_data);
+
+    void _write_to_engine(const QByteArray &);
+    void _process_line_received(QByteArray &);
+
+    bool _wait_for_ready(int);
+    void _disconnect_from_process();
 
 };
 

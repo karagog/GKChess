@@ -122,9 +122,9 @@ Vector<BookMove> PolyglotBookReader::LookupMoves(const char *fen)
         for(unsigned int i = 0; i < len; ++i)
         {
             ret.PushBack(BookMove(moves[i].weight, moves[i].learn,
-                                  moves[i].source_col, moves[i].source_row,
-                                  moves[i].dest_col, moves[i].dest_row,
-                                  moves[i].promoted_piece));
+                                  GenericMove(moves[i].source_col, moves[i].source_row,
+                                              moves[i].dest_col, moves[i].dest_row,
+                                              moves[i].promoted_piece)));
         }
     }
     return ret;

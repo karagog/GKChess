@@ -99,10 +99,14 @@ void EngineControl::_engines_updated()
 
 void EngineControl::Go()
 {
+    // Since this engine is for analysis only, every position should be from a new game
+    m_engineMan->GetEngine().NewGame();
+    m_engineMan->GetEngine().WaitForReady();
+
     m_engineMan->GetEngine().SetPosition(m_board.ToFEN());
 
     IEngine::ThinkParams p;
-    p.MoveTime = ui->spin_thinkTime->value();
+    p.SearchTime = ui->spin_thinkTime->value();
     p.Nodes = ui->spin_nodes->value();
     p.Depth = ui->spin_depth->value();
     p.Mate = ui->spin_mate->value();
@@ -114,32 +118,47 @@ void EngineControl::Stop()
     m_engineMan->GetEngine().StopThinking();
 }
 
-void EngineControl::_msg_rx(const QByteArray &line)
+void EngineControl::_msg_tx(const QByteArray &line)
 {
-    if(ui->tb_engineLog->isVisible())
-        ui->tb_engineLog->append(line);
+    ui->tb_engineLog->setTextColor(Qt::blue);
+    ui->tb_engineLog->append(line);
 }
 
-void EngineControl::_best_move_received(const QByteArray &, const QByteArray &)
+void EngineControl::_msg_rx(const QByteArray &line)
+{
+    ui->tb_engineLog->setTextColor(Qt::black);
+    ui->tb_engineLog->append(line);
+}
+
+void EngineControl::_best_move_received(const GenericMove &, const GenericMove &)
 {
     ui->btn_gostop->setChecked(false);
 }
 
 void EngineControl::_engine_crashed()
 {
+    ui->tb_engineLog->setTextColor(Qt::red);
     ui->tb_engineLog->append(tr("*** ENGINE CRASHED ***"));
+    ui->btn_gostop->setChecked(false);
 }
 
 void EngineControl::_go_stop_pressed()
 {
-    if(ui->btn_gostop->isChecked()){
+    bool checked = ui->btn_gostop->isChecked();
+    if(checked)
         Go();
-        ui->btn_gostop->setText(tr("Stop"));
-    }
-    else{
+    else
         Stop();
+
+    _update_go_stop_text(checked);
+}
+
+void EngineControl::_update_go_stop_text(bool checked)
+{
+    if(checked)
+        ui->btn_gostop->setText(tr("Stop"));
+    else
         ui->btn_gostop->setText(tr("Go"));
-    }
 }
 
 void EngineControl::_engine_selection_activated(int indx)
@@ -158,10 +177,11 @@ void EngineControl::_engine_selection_changed(const QString &engine_name)
 
     if(!m_engineMan || m_engineMan->GetEngineName() != engine_name){
         m_engineMan = new EngineManager(ui->cmb_engine->currentText(), m_settings);
+        connect(&m_engineMan->GetEngine(), SIGNAL(MessageSent(QByteArray)), this, SLOT(_msg_tx(QByteArray)));
         connect(&m_engineMan->GetEngine(), SIGNAL(MessageReceived(QByteArray)), this, SLOT(_msg_rx(QByteArray)));
         connect(&m_engineMan->GetEngine(), SIGNAL(NotifyEngineCrashed()), this, SLOT(_engine_crashed()));
-        connect(&m_engineMan->GetEngine(), SIGNAL(BestMove(QByteArray,QByteArray)),
-                this, SLOT(Stop()));
+        connect(&m_engineMan->GetEngine(), SIGNAL(BestMove(const GenericMove &, const GenericMove &)),
+                this, SLOT(_best_move_received(const GenericMove &, const GenericMove &)));
 
         // Whenever we switch engines, remember the last one we used
         m_appSettings->SetValue(GKCHESS_SETTING_LAST_ENGINE_USED, engine_name);

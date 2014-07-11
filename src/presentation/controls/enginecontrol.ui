@@ -252,7 +252,7 @@
   </connection>
   <connection>
    <sender>btn_gostop</sender>
-   <signal>released()</signal>
+   <signal>toggled(bool)</signal>
    <receiver>EngineControl</receiver>
    <slot>_go_stop_pressed()</slot>
    <hints>

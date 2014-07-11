@@ -28,6 +28,7 @@ namespace GKChess{
 class IEngine;
 class Board;
 class EngineSettings;
+class GenericMove;
 
 namespace UI{
 
@@ -62,8 +63,9 @@ public slots:
 
 private slots:
 
+    void _msg_tx(const QByteArray &);
     void _msg_rx(const QByteArray &);
-    void _best_move_received(const QByteArray &, const QByteArray &);
+    void _best_move_received(const GenericMove &, const GenericMove &);
 
     void _engine_crashed();
 
@@ -73,6 +75,11 @@ private slots:
     void _engine_selection_activated(int);
 
     void _engines_updated();
+
+
+private:
+
+    void _update_go_stop_text(bool);
 
 };
 

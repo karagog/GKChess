@@ -228,6 +228,9 @@ public:
 
 signals:
 
+    /** This signal is emitted for every message that is sent to the engine. */
+    void MessageSent(const QByteArray &);
+
     /** A line has been received from the engine.  This is emitted for every single line
      *  of engine output so you can use it for logging or whatever
     */

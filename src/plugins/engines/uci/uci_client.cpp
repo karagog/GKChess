@@ -17,10 +17,8 @@ limitations under the License.*/
 #include "gkchess_globals.h"
 #include "gutil_consolelogger.h"
 #include <QFile>
-#include <QMutex>
-#include <QWaitCondition>
-#include <QtConcurrentRun>
 #include <QtPlugin>
+#include <QVariant>
 USING_NAMESPACE_GUTIL;
 
 
@@ -35,27 +33,16 @@ struct d_t
     QProcess process;
     GKChess::UCI_Client::EngineInfo info;
 
-
-    // This data is protected by the lock and wait condition
-    QList<QByteArray> outqueue;
-    bool cancel_thread;
-
-    QMutex lock;
-    QWaitCondition wc;
-    QFuture<void> writer_thread;
-
     d_t()
-        :thinking(false),
-          cancel_thread(false)
+        :thinking(false)
     {}
 };
 
 }
 
 
-NAMESPACE_GKCHESS;
 
-#define UCI_ANALYSE_MODE_TAG "UCI_AnalyseMode"
+NAMESPACE_GKCHESS;
 
 
 static QByteArray __get_next_token(const QByteArray &ba, int indx)
@@ -109,28 +96,29 @@ static QByteArray __get_option_value(const QByteArray &ba, int indx)
     return ret.trimmed();
 }
 
-static void __start_and_validate_engine(d_t *d, bool populate_data)
+void UCI_Client::_start_and_validate_engine(bool populate_data)
 {
+    G_D;
     if(!QFile(d->engine).exists())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "File does not exist");
 
     d->process.setReadChannel(QProcess::StandardOutput);
-    //p.setProcessChannelMode(QProcess::MergedChannels);
     d->process.start(d->engine, d->arguments);
     if(!d->process.waitForStarted())
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to start");
 
     // Ignore the first bit of junk the engine sends
-    d->process.waitForReadyRead();
+    d->process.waitForReadyRead(-1);
     d->process.readAllStandardOutput();
 
-    GASSERT(d->process.state() == QProcess::Running);
+    if(d->process.state() != QProcess::Running)
+        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine crashed immediately after starting");
 
     bool valid = true;
     QString name;
 
     d->process.write("uci\n");
-    d->process.waitForReadyRead();
+    d->process.waitForReadyRead(-1);
     QByteArray output = d->process.readAllStandardOutput();
 
     if(populate_data)
@@ -235,47 +223,6 @@ static void __start_and_validate_engine(d_t *d, bool populate_data)
 
     if(!valid)
         THROW_NEW_GUTIL_EXCEPTION2(Exception, "The engine is not UCI compatible");
-
-    d->process.write("isready\n");
-    d->process.waitForReadyRead();
-    char ba[32];
-    bool ready_ok = false;
-
-    qint64 len = d->process.readLine(ba, sizeof(ba));
-    while(0 < len && !(ready_ok = QByteArray(ba).contains("readyok"))){
-        len = d->process.readLine(ba, sizeof(ba));
-    }
-    if(!ready_ok)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to get ready");
-}
-
-static void __writer_thread(d_t *d)
-{
-    d->lock.lock();
-    while(!d->cancel_thread)
-    {
-        while(!d->cancel_thread && d->outqueue.length() == 0){
-            d->wc.wait(&d->lock);
-        }
-
-        if(d->process.state() != QProcess::Running)
-            continue;
-
-        // Write any data to the engine
-        while(0 < d->outqueue.length())
-        {
-            QByteArray str = d->outqueue.front();
-            d->outqueue.pop_front();
-
-            d->lock.unlock();
-            {
-                // Slow task: Have to write data to the engine
-                d->process.write(str + '\n');
-            }
-            d->lock.lock();
-        }
-    }
-    d->lock.unlock();
 }
 
 
@@ -285,8 +232,8 @@ UCI_Client::UCI_Client(QObject *parent)
 {
     G_D_INIT();
 
-    connect(this, SIGNAL(BestMove(QByteArray)),
-            this, SLOT(_best_move_received()));
+    connect(this, SIGNAL(BestMove(const GenericMove &, const GenericMove &)), this, SLOT(_best_move_received()));
+    //qRegisterMetaType<QProcess::ProcessError>("QProcess::ProcessError");
 }
 
 IEngine *UCI_Client::Create() const
@@ -314,20 +261,21 @@ void UCI_Client::StartEngine(const QString &path_to_engine, const QStringList &a
     d->arguments = args;
 
     try{
-        __start_and_validate_engine(d, true);
+        _start_and_validate_engine(true);
     } catch(...){
         d->engine.clear();
         d->arguments.clear();
         throw;
     }
 
-    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
     connect(&d->process, SIGNAL(error(QProcess::ProcessError)),
             this, SLOT(_engine_error(QProcess::ProcessError)));
     connect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
 
-    // Start the background worker
-    d->writer_thread = QtConcurrent::run(&__writer_thread, d);
+    NewGame();
+    _wait_for_ready(-1);
+
+    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_read_from_engine()));
 }
 
 void UCI_Client::StopEngine()
@@ -339,20 +287,9 @@ void UCI_Client::StopEngine()
 
     G_D;
 
-    // Disconnect all signals from the process
-    disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
-    disconnect(&d->process, SIGNAL(error(QProcess::ProcessError)),
-               this, SLOT(_engine_error(QProcess::ProcessError)));
-    disconnect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
+    _disconnect_from_process();
 
-    _append_to_write_queue("quit");
-
-    d->lock.lock();
-    d->cancel_thread = true;
-    d->wc.wakeOne();
-    d->lock.unlock();
-
-    d->writer_thread.waitForFinished();
+    _write_to_engine("quit");
 
     // Give the process time to exit gracefully
     if(!d->process.waitForFinished(5000))
@@ -361,9 +298,21 @@ void UCI_Client::StopEngine()
         d->process.kill();
         d->process.waitForFinished();
     }
+}
+
+void UCI_Client::_disconnect_from_process()
+{
+    G_D;
+
+    // Disconnect all signals from the process
+    disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_read_from_engine()));
+    disconnect(&d->process, SIGNAL(error(QProcess::ProcessError)),
+               this, SLOT(_engine_error(QProcess::ProcessError)));
+    disconnect(&d->process, SIGNAL(finished(int)), this, SLOT(_engine_stopped(int)));
 
     d->engine.clear();
     d->arguments.clear();
+    d->thinking = false;
 }
 
 bool UCI_Client::IsEngineStarted() const
@@ -405,52 +354,90 @@ void UCI_Client::_engine_stopped(int ec)
     G_D;
     GUTIL_UNUSED(ec);
 
-    // Have to disconnect this while we restart the engine
-    disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
-
     emit NotifyEngineCrashed();
-    __start_and_validate_engine(d, false);
 
-    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_data_available()));
+    QString engine = d->engine;
+    QStringList args = d->arguments;
 
-    // Wake up the background thread if it was waiting to do a command
-    d->wc.wakeOne();
+    _disconnect_from_process();
+    StartEngine(engine, args);
 }
 
-void UCI_Client::_data_available()
+void UCI_Client::_read_from_engine()
 {
     G_D;
     QByteArray ba = d->process.readLine();
     while(0 < ba.length())
     {
-        // remove the new line at the end (can be CR or LF or any combination)
-        if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
-            ba.chop(1);
-        if(0 < ba.length()){
-            if(ba[ba.length() - 1] == (char)0x0a || ba[ba.length() - 1] == (char)0x0d)
-                ba.chop(1);
-        }
-
-        emit MessageReceived(ba);
-
-        if(ba.contains("bestmove"))
-        {
-            int indx = ba.indexOf("bestmove");
-            QByteArray move = __get_next_token(ba, indx + 9);
-
-            QByteArray ponder;
-            indx = ba.indexOf("ponder");
-            if(-1 != indx)
-                ponder = __get_next_token(ba, indx + 7);
-
-            if(ponder == "(none)")
-                ponder = QByteArray();
-
-            emit BestMove(move, ponder);
-        }
-
+        _process_line_received(ba);
         ba = d->process.readLine();
     }
+}
+
+void UCI_Client::_write_to_engine(const QByteArray &ba)
+{
+    G_D;
+    QByteArray line = ba + '\n';
+    qint64 len = d->process.write(line);
+    if(len == line.length())
+        emit MessageSent(ba);
+}
+
+void UCI_Client::_process_line_received(QByteArray &ba)
+{
+    // Remove the newline
+    ba.chop(ba.length() - ba.indexOf('\n', ba.length() - 2));
+    emit MessageReceived(ba);
+
+    if(ba.contains("bestmove"))
+    {
+        int indx = ba.indexOf("bestmove");
+        QByteArray move = __get_next_token(ba, indx + 9);
+
+        QByteArray ponder;
+        indx = ba.indexOf("ponder");
+        if(-1 != indx)
+            ponder = __get_next_token(ba, indx + 7);
+
+        if(ponder == "(none)")
+            ponder = QByteArray();
+
+        emit BestMove(GenericMove(move), GenericMove(ponder));
+    }
+}
+
+bool UCI_Client::WaitForReady(int timeout_ms)
+{
+    G_D;
+    disconnect(&d->process, SIGNAL(readyRead()), this, SLOT(_read_from_engine()));
+
+    bool ret = _wait_for_ready(timeout_ms);
+
+    connect(&d->process, SIGNAL(readyRead()), this, SLOT(_read_from_engine()));
+    return ret;
+}
+
+bool UCI_Client::_wait_for_ready(int timeout_ms)
+{
+    G_D;
+    bool ret = false;
+    _write_to_engine("isready");
+
+    // keep reading until we get the readyok
+    while(d->process.waitForReadyRead(timeout_ms)){
+        QByteArray ba = d->process.readLine();
+        _process_line_received(ba);
+        if(ba == "readyok"){
+            ret = true;
+            break;
+        }
+    }
+    return ret;
+}
+
+void UCI_Client::NewGame()
+{
+    _write_to_engine("ucinewgame");
 }
 
 void UCI_Client::SetPosition(const char *data)
@@ -460,7 +447,7 @@ void UCI_Client::SetPosition(const char *data)
         ba = String::Format("position %s", data).ConstData();
     else
         ba = String::Format("position fen %s", data).ConstData();
-    _append_to_write_queue(ba);
+    _write_to_engine(ba);
 }
 
 void UCI_Client::SetOption(const QString &name, const QVariant &value)
@@ -502,10 +489,10 @@ void UCI_Client::SetOption(const QString &name, const QVariant &value)
     }
 
     // Write the change to the engine
-    QString data = QString("setoption name %1 value %2")
+    QByteArray data = QString("setoption name %1 value %2")
             .arg(name)
-            .arg(value.toString());
-    _append_to_write_queue(data.toUtf8());
+            .arg(value.toString()).toAscii();
+    _write_to_engine(data);
 }
 
 void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
@@ -514,11 +501,11 @@ void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
     if(d->thinking)
         return;
 
-    QString str = "go";
-    if(-1 == p.MoveTime)
+    QByteArray str = "go";
+    if(-1 == p.SearchTime)
         str.append(" infinite");
-    else if(0 < p.MoveTime)
-        str.append(QString(" movetime %1").arg(p.MoveTime));
+    else if(0 < p.SearchTime)
+        str.append(QString(" movetime %1").arg(p.SearchTime));
 
     if(0 < p.Depth)
         str.append(QString(" depth %1").arg(p.Depth));
@@ -529,10 +516,10 @@ void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
     if(0 < p.Mate)
         str.append(QString(" mate %1").arg(p.Mate));
 
-    if(0 < p.SearchMoves.length())
-        str.append(QString(" searchmoves %1").arg(p.SearchMoves.join(" ")));
+//    if(0 < p.SearchMoves.Length())
+//        str.append(QString(" searchmoves %1").arg(p.SearchMoves.join(" ")));
 
-    _append_to_write_queue(str.toUtf8());
+    _write_to_engine(str);
 
     // We raise this when we tell the background thread to start thinking, and lower it
     //  when we receive the best move signal, so we don't need to protect this with a lock
@@ -544,7 +531,7 @@ void UCI_Client::StopThinking()
     G_D;
     if(!d->thinking)
         return;
-    _append_to_write_queue("stop");
+    _write_to_engine("stop");
 }
 
 void UCI_Client::_best_move_received()
@@ -557,15 +544,6 @@ bool UCI_Client::IsThinking() const
 {
     G_D;
     return d->thinking;
-}
-
-void UCI_Client::_append_to_write_queue(const QByteArray &ba)
-{
-    G_D;
-    d->lock.lock();
-    d->outqueue.append(ba);
-    d->lock.unlock();
-    d->wc.wakeOne();
 }
 
 
