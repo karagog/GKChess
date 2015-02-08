@@ -1,6 +1,6 @@
 [submodule "gutil"]
 	path = gutil
-	url = ssh://george@gdomain.homelinux.net/srv/git/gutil.git
+	url = https://github.com/karagog/gutil.git
 [submodule "stockfish"]
 	path = stockfish
-	url = ssh://george@gdomain.homelinux.net/srv/git/stockfish.git
+	url = https://github.com/karagog/Stockfish.git
