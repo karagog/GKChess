@@ -12,10 +12,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-#ifndef GKCHESS_GLOBALS_H
-#define GKCHESS_GLOBALS_H
+#ifndef GKCHESS_COMMON_H
+#define GKCHESS_COMMON_H
 
-#include "gutil_macros.h"
+#include <gutil/macros.h>
 
 #define NAMESPACE_GKCHESS1( n )           namespace GKChess{ namespace n { enum{}
 #define NAMESPACE_GKCHESS                 namespace GKChess{ enum{}
@@ -26,4 +26,4 @@ limitations under the License.*/
 #define USING_NAMESPACE_GKCHESS1( ns )            using namespace GKChess::ns
 #define USING_NAMESPACE_GKCHESS                   using namespace GKChess
 
-#endif // GKCHESS_GLOBALS_H
+#endif // GKCHESS_COMMON_H

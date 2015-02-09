@@ -20,7 +20,7 @@ limitations under the License.*/
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_square.h"
 #include "gkchess_uiglobals.h"
-#include "gutil_paintutils.h"
+#include <gutil/paintutils.h>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QPainter>
@@ -37,7 +37,7 @@ limitations under the License.*/
 #include <QDialog>
 #include <QPushButton>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
 
@@ -100,7 +100,7 @@ USING_NAMESPACE_GKCHESS1(UI);
 #define THREAT_COUNT_MARGIN_FACTOR  0.025
 
 /** The default cursor to use. */
-#define CURSOR_DEFAULT Qt::ArrowCursor
+#define CURSOR_DEFAULT ::Qt::ArrowCursor
 
 
 /** Returns a rect with the same center but shrunken by the given factor */
@@ -142,9 +142,9 @@ BoardView_p::BoardView_p(QWidget *parent)
       m_orientation(NormalOrientation),
       m_editable(true),
       m_showThreatCounts(false),
-      m_darkSquareColor(Qt::gray),
-      m_lightSquareColor(Qt::white),
-      m_activeSquareHighlightColor(Qt::yellow),
+      m_darkSquareColor(::Qt::gray),
+      m_lightSquareColor(::Qt::white),
+      m_activeSquareHighlightColor(::Qt::yellow),
       i_factory(0),
       m_dragging(false),
       m_wasSquareActiveWhenPressed(false),
@@ -204,8 +204,8 @@ QRectF BoardView_p::visual_rectf(int col, int row) const
 QRectF BoardView_p::item_rect(int col, int row) const
 {
     QRectF ret;
-    if(0 <= col && col < GetBoardModel()->GetBoard().ColumnCount() &&
-            0 <= row && row < GetBoardModel()->GetBoard().RowCount())
+    if(0 <= col && col < (int)GetBoardModel()->GetBoard().ColumnCount() &&
+            0 <= row && row < (int)GetBoardModel()->GetBoard().RowCount())
     {
         // Map the indices to account for the orientation
         switch(GetOrientation())
@@ -312,7 +312,7 @@ QModelIndex BoardView_p::indexAt(const QPoint &p) const
     return ret;
 }
 
-QModelIndex BoardView_p::moveCursor(CursorAction ca, Qt::KeyboardModifiers modifiers)
+QModelIndex BoardView_p::moveCursor(CursorAction ca,::Qt::KeyboardModifiers modifiers)
 {
     GUTIL_UNUSED(modifiers);
     QModelIndex ret;
@@ -415,7 +415,7 @@ void BoardView_p::paint_piece_at(Piece const &piece, const QRectF &r, QPainter &
         QFont font_pieces = p.font();
         font_pieces.setPixelSize(PIECE_SIZE_FACTOR * dest_rect.width());
         p.setFont(font_pieces);
-        p.drawText(dest_rect, Qt::AlignHCenter|Qt::AlignBottom, QChar(piece.UnicodeValue()));
+        p.drawText(dest_rect, ::Qt::AlignHCenter|::Qt::AlignBottom, QChar(piece.UnicodeValue()));
     }
     else
     {
@@ -440,7 +440,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
 
     QBrush background = option.palette.base();
     QPen textPen(option.palette.color(QPalette::Text));
-    QPen outline_pen(Qt::black);
+    QPen outline_pen(::Qt::black);
     outline_pen.setWidth(BOARD_OUTLINE_THICKNESS);
 
     // Set up the painter
@@ -501,11 +501,11 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
                                    tmp.height() * THREAT_COUNT_SIZE_FACTOR);
                 painter.drawText(threat_rect.translated(THREAT_COUNT_MARGIN_FACTOR*GetSquareSize(),
                                                         THREAT_COUNT_MARGIN_FACTOR*GetSquareSize()),
-                                 Qt::AlignCenter,
+                                ::Qt::AlignCenter,
                                  QString("%1").arg(cur_sqr.GetThreatCount(Piece::White)));
                 painter.drawText(threat_rect.translated(tmp.width()*(1 - THREAT_COUNT_SIZE_FACTOR)-THREAT_COUNT_MARGIN_FACTOR*GetSquareSize(),
                                                         THREAT_COUNT_MARGIN_FACTOR*GetSquareSize()),
-                                 Qt::AlignCenter,
+                                ::Qt::AlignCenter,
                                  QString("%1").arg(cur_sqr.GetThreatCount(Piece::Black)));
             }
 
@@ -548,7 +548,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             default:
                 GASSERT(false);
             }
-            painter.drawText(text_rect, Qt::AlignCenter,  txt);
+            painter.drawText(text_rect,::Qt::AlignCenter,  txt);
 
             p1.setX(p1.x() + file_width);
             p2.setX(p2.x() + file_width);
@@ -584,7 +584,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
             default:
                 GASSERT(false);
             }
-            painter.drawText(text_rect, Qt::AlignCenter,  txt);
+            painter.drawText(text_rect,::Qt::AlignCenter,  txt);
 
             p1.setY(p1.y() + rank_height);
             p2.setY(p2.y() + rank_height);
@@ -639,7 +639,7 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
     }
 
     // Any debug drawing?
-//    painter.setPen(Qt::red);
+//    painter.setPen(::Qt::red);
 //    painter.drawPoint(temp_point);
 //    painter.drawRect(temp_rect);
 }
@@ -696,7 +696,7 @@ void BoardView_p::SetSquareSize(float s)
 void BoardView_p::wheelEvent(QWheelEvent *ev)
 {
     // Control-scroll changes the board size
-    if(QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
+    if(QApplication::keyboardModifiers().testFlag(::Qt::ControlModifier))
     {
         float tmp = GetSquareSize() + SCROLL_SPEED_FACTOR * ev->delta();
         if(0.0 < tmp)
@@ -861,7 +861,7 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
         return;
 
     QModelIndex ind = indexAt(ev->pos());
-    if(ind.isValid() && ev->button() == Qt::LeftButton)
+    if(ind.isValid() && ev->button() ==::Qt::LeftButton)
     {
         Piece target_piece = ind.data(BoardModel_p::PieceRole).value<Piece>();
         if(target_piece.IsNull())
@@ -894,7 +894,7 @@ void BoardView_p::mousePressEvent(QMouseEvent *ev)
         GASSERT(m_activeSquare.isValid());
     }
 
-    _update_cursor_at_point(ev->posF());
+    _update_cursor_at_point(ev->localPos());
 }
 
 void BoardView_p::mouseReleaseEvent(QMouseEvent *ev)
@@ -942,14 +942,14 @@ void BoardView_p::mouseReleaseEvent(QMouseEvent *ev)
         ClearSquareHighlighting();
     viewport()->update();
 
-    _update_cursor_at_point(ev->posF());
+    _update_cursor_at_point(ev->localPos());
 }
 
 void BoardView_p::mouseMoveEvent(QMouseEvent *ev)
 {
     QAbstractItemView::mouseMoveEvent(ev);
 
-    if(get_board_rect().translated(-horizontalOffset(), -verticalOffset()).contains(ev->posF()))
+    if(get_board_rect().translated(-horizontalOffset(), -verticalOffset()).contains(ev->localPos()))
     {
         setCurrentIndex(indexAt(ev->pos()));
     }
@@ -972,7 +972,7 @@ void BoardView_p::mouseMoveEvent(QMouseEvent *ev)
         if(ind.isValid() && ind != m_activeSquare)
             HighlightSquare(ind,
                             Board::ValidMove == GetBoardModel()->ValidateMove(m_activeSquare, ind) ?
-                                Qt::green : Qt::red);
+                               ::Qt::green : ::Qt::red);
     }
 
     if(Editable() && !m_mousePressLoc.isNull())
@@ -986,7 +986,7 @@ void BoardView_p::mouseMoveEvent(QMouseEvent *ev)
         viewport()->update();
     }
 
-    _update_cursor_at_point(ev->posF());
+    _update_cursor_at_point(ev->localPos());
 }
 
 void BoardView_p::mouseDoubleClickEvent(QMouseEvent *ev)
@@ -1076,12 +1076,12 @@ void BoardView_p::_update_cursor_at_point(const QPointF &pt)
     if(!Editable())
         setCursor(CURSOR_DEFAULT);
     else if(m_dragging)
-        setCursor(Qt::ClosedHandCursor);
+        setCursor(::Qt::ClosedHandCursor);
     else if(get_board_rect().contains(QPoint(pt.x()+horizontalOffset(), pt.y()+verticalOffset())))
     {
         QModelIndex ind = indexAt(pt.toPoint());
         if(ind.isValid() && !ind.data(BoardModel_p::PieceRole).isNull())
-            setCursor(Qt::OpenHandCursor);
+            setCursor(::Qt::OpenHandCursor);
         else
             setCursor(CURSOR_DEFAULT);
     }
@@ -1121,11 +1121,11 @@ public:
         resize(PROMOTED_WIDGET_WIDTH, PROMOTED_WIDGET_HEIGHT);
         new QHBoxLayout(this);
 
-        setWindowFlags(Qt::Dialog |
-                       Qt::CustomizeWindowHint |
-                       Qt::WindowTitleHint |
-                       Qt::WindowStaysOnTopHint);
-        setWindowModality(Qt::WindowModal);
+        setWindowFlags(::Qt::Dialog |
+                       ::Qt::CustomizeWindowHint |
+                       ::Qt::WindowTitleHint |
+                       ::Qt::WindowStaysOnTopHint);
+        setWindowModality(::Qt::WindowModal);
 
         QPushButton *btn_queen = new QPushButton(fac->GetIcon(Piece(Piece::Queen, a)), QString(), this);
         QPushButton *btn_rook = new QPushButton(fac->GetIcon(Piece(Piece::Rook, a)), QString(), this);

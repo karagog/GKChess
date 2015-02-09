@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_UIGLOBALS_H
 #define GKCHESS_UIGLOBALS_H
 
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 
 
 // Here we define some globally used string constants

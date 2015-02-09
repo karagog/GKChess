@@ -74,9 +74,9 @@ static QString __generate_piece_style(Piece const &, const HtmlBoardGenerator::H
 
 HtmlBoardGenerator::HtmlFormattingOptions::HtmlFormattingOptions()
     :HumanReadable(true),
-      PieceColor(Qt::black),
-      LightSquareColor(Qt::white),
-      DarkSquareColor(Qt::gray),
+      PieceColor(::Qt::black),
+      LightSquareColor(::Qt::white),
+      DarkSquareColor(::Qt::gray),
       SquareSize(40),
       BorderSize(1),
       PieceSize(30),
@@ -109,7 +109,7 @@ QString HtmlBoardGenerator::GenerateHtml(const Board &b, const HtmlFormattingOpt
             sw.writeEndElement(); //td
 
             // Iterate through the columns and write each cell
-            for(int j = 0; j < b.ColumnCount(); ++j)
+            for(GUINT32 j = 0; j < b.ColumnCount(); ++j)
             {
                 Square const &s( b.SquareAt(j, i) );
 
@@ -147,7 +147,7 @@ QString HtmlBoardGenerator::GenerateHtml(const Board &b, const HtmlFormattingOpt
             sw.writeEndElement(); //td
 
             char letter = 'a';
-            for(int i = 0; i < b.RowCount(); ++i, ++letter)
+            for(GUINT32 i = 0; i < b.RowCount(); ++i, ++letter)
             {
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", QString("font-size:%1pt;").arg(f.IndexSize));

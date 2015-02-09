@@ -16,6 +16,7 @@ else {
 }
 
 DEFINES += GUTIL_CORE_QT_ADAPTERS
+QMAKE_CXXFLAGS += -std=c++11
 
 INCLUDEPATH += $$TOP_DIR/include $$TOP_DIR/gutil/include
 LIBS += \
@@ -30,4 +31,4 @@ include(data_access/data_access.pri)
 include(utils/utils.pri)
 
 HEADERS += \
-    globals.h
+    common.h

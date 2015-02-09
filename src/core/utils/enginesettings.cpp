@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "enginesettings.h"
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 USING_NAMESPACE_GUTIL;
 
 // This needs to never collide with any potential engine settings names, because it will be
@@ -27,14 +27,13 @@ EngineSettings::EngineSettings(QObject *p)
     :QObject(p),
       m_data("GKChess_GlobalEngineSettings")
 {
-    m_data.SetAutoCommitChanges(false);
-    connect(&m_data, SIGNAL(DataChanged()), this, SIGNAL(NotifyEnginesUpdated()));
+    connect(&m_data, SIGNAL(NotifyChangesCommitted()), this, SIGNAL(NotifyEnginesUpdated()));
 }
 
-QStringList EngineSettings::GetEngineList() const
+StringList EngineSettings::GetEngineList()
 {
-    QStringList ret = m_data.Keys();
-    ret.sort();
+    StringList ret = m_data.Keys();
+    ret.Sort();
     return ret;
 }
 
@@ -75,7 +74,7 @@ void EngineSettings::RemoveOptionForEngine(const QString &engine, const QString 
     }
 }
 
-QVariantMap EngineSettings::GetOptionsForEngine(const QString &engine) const
+QVariantMap EngineSettings::GetOptionsForEngine(const String &engine)
 {
     QVariantMap ret;
     if(m_data.Contains(engine)){

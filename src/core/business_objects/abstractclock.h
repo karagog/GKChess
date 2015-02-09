@@ -16,6 +16,7 @@ limitations under the License.*/
 #define GKCHESS_ABSTRACTCLOCK_H
 
 #include <QTime>
+#include <QObject>
 
 namespace GKChess{
 

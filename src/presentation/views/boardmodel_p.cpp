@@ -71,23 +71,23 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
     if(s)
     {
         Piece const &p = s->GetPiece();
-        if(Qt::UserRole > role)
+        if(::Qt::UserRole > role)
         {
-            switch((Qt::ItemDataRole)role)
+            switch((::Qt::ItemDataRole)role)
             {
-            case Qt::DisplayRole:
+            case ::Qt::DisplayRole:
                 if(!p.IsNull())
                     ret = QString(QChar(p.UnicodeValue()));
                 break;
-            case Qt::EditRole:
+            case ::Qt::EditRole:
                 if(!p.IsNull())
                     ret = QString(QChar(p.ToFEN()));
                 break;
-            case Qt::ToolTipRole:
+            case ::Qt::ToolTipRole:
                 if(!p.IsNull())
                     ret = p.ToString(true).ToQString();
                 break;
-            case Qt::DecorationRole:
+            case ::Qt::DecorationRole:
                 break;
             default: break;
             }
@@ -104,7 +104,7 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
             {
 //                QModelIndexList il;
 //                Vector<Square const *> tmp = GetBoard().GetValidMovesForSquare(*s);
-//                G_FOREACH_CONST(Square const *sqr, tmp)
+//                for(Square const *sqr : tmp)
 //                {
 //                    il.append(index(sqr->GetRow(), sqr->GetColumn()));
 //                }
@@ -125,7 +125,7 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
     {
         Square const *sqr = ConvertIndexToSquare(ind);
         Piece const &cur_piece = sqr->GetPiece();
-        if(Qt::UserRole <= r)
+        if(::Qt::UserRole <= r)
         {
             switch((CustomDataRoleEnum)r)
             {
@@ -143,9 +143,9 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
         }
         else
         {
-            switch((Qt::ItemDataRole)r)
+            switch((::Qt::ItemDataRole)r)
             {
-            case Qt::EditRole:
+            case ::Qt::EditRole:
             {
                 QString s = v.toString();
                 if(s.length() == 0)
@@ -160,7 +160,7 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
                 else if(1 == s.length())
                 {
                     // Set a piece if it's valid and different
-                    Piece p = Piece::FromFEN(s[0].toAscii());
+                    Piece p = Piece::FromFEN(s[0].toLatin1());
                     if(!p.IsNull() && (cur_piece.IsNull() || p != cur_piece))
                     {
                         m_board->SetPiece(p, *sqr);
@@ -176,16 +176,16 @@ bool BoardModel_p::setData(const QModelIndex &ind, const QVariant &v, int r)
     return ret;
 }
 
-QVariant BoardModel_p::headerData(int indx, Qt::Orientation o, int role) const
+QVariant BoardModel_p::headerData(int indx, ::Qt::Orientation o, int role) const
 {
     QVariant ret;
-    if(Qt::Horizontal == o)
+    if(::Qt::Horizontal == o)
     {
-        if(m_board->RowCount() > indx)
+        if((int)m_board->RowCount() > indx)
         {
-            switch((Qt::ItemDataRole)role)
+            switch((::Qt::ItemDataRole)role)
             {
-            case Qt::DisplayRole:
+            case ::Qt::DisplayRole:
                 ret = QChar('a' + indx);
                 break;
             default:
@@ -193,13 +193,13 @@ QVariant BoardModel_p::headerData(int indx, Qt::Orientation o, int role) const
             }
         }
     }
-    else if(Qt::Vertical == o)
+    else if(::Qt::Vertical == o)
     {
-        if(m_board->ColumnCount() > indx)
+        if((int)m_board->ColumnCount() > indx)
         {
-            switch((Qt::ItemDataRole)role)
+            switch((::Qt::ItemDataRole)role)
             {
-            case Qt::DisplayRole:
+            case ::Qt::DisplayRole:
                 ret = 1 + indx;
                 break;
             default:
@@ -235,12 +235,12 @@ void BoardModel_p::_board_updated()
 
 Qt::ItemFlags BoardModel_p::flags(const QModelIndex &ind) const
 {
-    Qt::ItemFlags ret;
+   ::Qt::ItemFlags ret;
     if(ind.isValid())
     {
-        ret |= Qt::ItemIsEnabled
-                | Qt::ItemIsSelectable
-                | Qt::ItemIsEditable
+        ret |=::Qt::ItemIsEnabled
+                |::Qt::ItemIsSelectable
+                |::Qt::ItemIsEditable
                 ;
     }
     return ret;
@@ -271,7 +271,7 @@ QMimeData *BoardModel_p::mimeData(const QModelIndexList &l) const
 //                             .arg(p.ToFEN())
 //                             .arg(s->GetColumn())
 //                             .arg(s->GetRow())
-//                             .toAscii());
+//                             .toLatin1());
 //            }
 //        }
 //    }
@@ -279,7 +279,7 @@ QMimeData *BoardModel_p::mimeData(const QModelIndexList &l) const
 }
 
 bool BoardModel_p::dropMimeData(const QMimeData *data,
-                              Qt::DropAction action,
+                             ::Qt::DropAction action,
                               int row,
                               int column,
                               const QModelIndex &parent)
@@ -318,14 +318,14 @@ bool BoardModel_p::dropMimeData(const QMimeData *data,
 
 //            switch(action)
 //            {
-//            case Qt::MoveAction:
+//            case::Qt::MoveAction:
 //                if(1 <= l[0].length() && -1 != s_col && -1 != s_row)
 //                {
-//                    ret = setData(parent, QString::fromAscii(l[0]), Qt::EditRole);
+//                    ret = setData(parent, QString::fromAscii(l[0]),::Qt::EditRole);
 //                    if(ret)
 //                    {
 //                        // Clear the source square
-//                        setData(index(s_row, s_col), "", Qt::EditRole);
+//                        setData(index(s_row, s_col), "",::Qt::EditRole);
 //                    }
 //                }
 //                break;

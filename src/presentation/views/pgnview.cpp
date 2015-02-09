@@ -27,7 +27,7 @@ PGNView::PGNView(QWidget *p)
       m_isMousePressed(false)
 {
     setReadOnly(true);
-    setTextInteractionFlags(Qt::TextSelectableByMouse);
+    setTextInteractionFlags(::Qt::TextSelectableByMouse);
 }
 
 PGNView::~PGNView()

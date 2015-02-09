@@ -15,11 +15,11 @@ limitations under the License.*/
 #ifndef PGN_PARSER_H
 #define PGN_PARSER_H
 
-#include "gutil_map.h"
-#include "gutil_strings.h"
-#include "gutil_flags.h"
+#include <gutil/map.h>
+#include <gutil/string.h>
+#include <gutil/flags.h>
 #include "gkchess_pgn_movedata.h"
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 
 NAMESPACE_GKCHESS;
 

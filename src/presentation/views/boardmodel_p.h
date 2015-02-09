@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDMODEL_H
 #define GKCHESS_BOARDMODEL_H
 
-#include "gutil_map.h"
+#include <gutil/map.h>
 #include "gkchess_piece.h"
 #include "gkchess_board.h"
 #include <QColor>

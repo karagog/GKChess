@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_H
 #define GKCHESS_BOARDVIEW_H
 
-#include "gutil_vector.h"
+#include <gutil/vector.h>
 #include <QWidget>
 
 namespace GKChess{

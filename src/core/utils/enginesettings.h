@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_ENGINESETTINGS_H
 #define GKCHESS_ENGINESETTINGS_H
 
-#include "gutil_persistentdata.h"
+#include <gutil/qt_settings.h>
 #include <QStringList>
 
 namespace GKChess
@@ -27,7 +27,7 @@ class EngineSettings :
         public QObject
 {
     Q_OBJECT
-    GUtil::QT::PersistentData m_data;
+    GUtil::Qt::Settings m_data;
 public:
 
     /** You should construct this before setting the application name, so the data gets shared between all
@@ -36,7 +36,7 @@ public:
     EngineSettings(QObject * = 0);
 
     /** Returns the list of configured engines. */
-    QStringList GetEngineList() const;
+    GUtil::StringList GetEngineList();
 
     /** Removes the engine from the list. */
     void RemoveEngine(const QString &name);
@@ -56,7 +56,7 @@ public:
     void RemoveOptionForEngine(const QString &engine, const QString &name);
 
     /** Returns the options for the given engine.  Or an empty map if the engine was not configured. */
-    QVariantMap GetOptionsForEngine(const QString &engine) const;
+    QVariantMap GetOptionsForEngine(const GUtil::String &engine);
 
     /** Causes the changes to be written to disk and the update signals to be emitted. */
     void CommitChanges();

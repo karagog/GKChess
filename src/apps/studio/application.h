@@ -15,10 +15,10 @@ limitations under the License.*/
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "gutil_application.h"
+#include <gutil/application.h>
 
-namespace GUtil{ namespace QT{
-class PersistentData;
+namespace GUtil{ namespace Qt{
+class Settings;
 }}
 
 namespace GKChess{
@@ -28,11 +28,11 @@ class EngineSettings;
 class MainWindow;
 
 class StudioApplication :
-        public GUtil::QT::Application
+        public GUtil::Qt::Application
 {
     Q_OBJECT
     GKChess::EngineSettings *m_engineSettings;
-    GUtil::QT::PersistentData *m_settings;
+    GUtil::Qt::Settings *m_settings;
     MainWindow *m_mainWindow;
 
 public:

@@ -226,7 +226,7 @@ Piece::PieceTypeEnum Piece::GetTypeFromUnicodeValue(int uc)
     s.AppendUnicode(uc);
     if(1 < s.Length())
     {
-        THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+        throw NotImplementedException<>();
         // The unicode point is a chess piece
 //        int tmp = uc - (int)Black;
 //        if(0 > tmp)

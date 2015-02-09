@@ -14,11 +14,12 @@ limitations under the License.*/
 
 #include "bookmodel.h"
 #include "gkchess_board.h"
-#include "gutil_pluginutils.h"
-#include "gutil_strings.h"
+#include <gutil/pluginutils.h>
+#include <gutil/string.h>
+#include <QColor>
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 
 NAMESPACE_GKCHESS1(UI);
 
@@ -116,29 +117,29 @@ QVariant BookModel::data(const QModelIndex &index, int role) const
     {
         int col = index.column();
         MoveDataCache *d = _get_data_from_index(index);
-        switch((Qt::ItemDataRole)role)
+        switch((::Qt::ItemDataRole)role)
         {
-        case Qt::DisplayRole:
+        case ::Qt::DisplayRole:
             if(0 == col)
                 ret = d->Data.PGNData.ToString().ToQString();
             else if(1 == col)
                 ret = d->BookData.Weight;
             break;
-        case Qt::BackgroundRole:
+        case ::Qt::BackgroundRole:
         {
             int n = 0x1 & GetAncestry(index).length();
             Piece::AllegienceEnum a = m_board.GetWhoseTurn();
             if((n && a == Piece::White) || (!n && a == Piece::Black))
-                ret = Qt::white;
+                ret = QColor(::Qt::white);
             else
-                ret = Qt::gray;
+                ret = QColor(::Qt::gray);
         }
             break;
-        case Qt::TextAlignmentRole:
+        case ::Qt::TextAlignmentRole:
             if(0 == col)
-                ret = Qt::AlignLeft;
+                ret = ::Qt::AlignLeft;
             else if(1 == col)
-                ret = Qt::AlignCenter;
+                ret = ::Qt::AlignCenter;
             break;
         default:
             break;
@@ -147,21 +148,21 @@ QVariant BookModel::data(const QModelIndex &index, int role) const
     return ret;
 }
 
-QVariant BookModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant BookModel::headerData(int section,::Qt::Orientation orientation, int role) const
 {
     QVariant ret;
-    if(orientation == Qt::Horizontal)
+    if(orientation ==::Qt::Horizontal)
     {
-        switch((Qt::ItemDataRole)role)
+        switch((::Qt::ItemDataRole)role)
         {
-        case Qt::DisplayRole:
+        case ::Qt::DisplayRole:
             if(0 == section)
                 ret = tr("Move");
             else if(1 == section)
                 ret = tr("Weight (%)");
             break;
-        case Qt::TextAlignmentRole:
-            ret = Qt::AlignCenter;
+        case ::Qt::TextAlignmentRole:
+            ret =::Qt::AlignCenter;
             break;
         default:
             break;
@@ -217,7 +218,7 @@ void BookModel::fetchMore(const QModelIndex &parent)
     if(0 < moves.Length())
     {
         beginInsertRows(parent, 0, moves.Length() - 1);
-        G_FOREACH_CONST(BookMove const &m, moves){
+        for(BookMove const &m : moves){
             lst->Moves.Append(MoveDataCache(d));
             lst->Moves.Back().BookData = m;
             lst->Moves.Back().Data = cpy.GenerateMoveData(cpy.SquareAt(m.SourceCol, m.SourceRow),

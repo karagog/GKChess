@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef BOOKREADER_H
 #define BOOKREADER_H
 
-#include "gutil_smartpointer.h"
+#include <gutil/smartpointer.h>
 #include "gkchess_ibookreader.h"
 #include "gkchess_bookmodel.h"
 #include <QWidget>
@@ -25,8 +25,8 @@ namespace Ui {
 class BookReaderControl;
 }
 
-namespace GUtil{ namespace QT{
-class PersistentData;
+namespace GUtil{ namespace Qt{
+class Settings;
 }}
 
 namespace GKChess{
@@ -43,13 +43,13 @@ class BookReaderControl :
     Q_OBJECT
     GUtil::SmartPointer<Ui::BookReaderControl> ui;
     Board &m_board;
-    GUtil::QT::PersistentData *m_settings;
+    GUtil::Qt::Settings *m_settings;
     GKChess::UI::BookModel m_bookModel;
 
 public:
 
     /** If you pass a persistent data object, then we will be able to remember the last book you had open. */
-    explicit BookReaderControl(GKChess::ObservableBoard &, GUtil::QT::PersistentData * = 0, QWidget *parent = 0);
+    explicit BookReaderControl(GKChess::ObservableBoard &, GUtil::Qt::Settings * = 0, QWidget *parent = 0);
     ~BookReaderControl();
 
 

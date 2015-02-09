@@ -24,7 +24,7 @@ MoveDataModel::MoveDataModel(QObject *parent)
 
 void MoveDataModel::InitFromPGN(const GUtil::Vector<PGN_MoveData> &)
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    throw NotImplementedException<>();
 }
 
 int MoveDataModel::rowCount(const QModelIndex &i) const
@@ -43,9 +43,9 @@ QVariant MoveDataModel::data(const QModelIndex &i, int role) const
     MoveDataCache *md = _get_data_from_index(i);
     if(md)
     {
-        switch((Qt::ItemDataRole)role)
+        switch((::Qt::ItemDataRole)role)
         {
-        case Qt::DisplayRole:
+        case ::Qt::DisplayRole:
             //ret = md->Data.Text;
             break;
         default:

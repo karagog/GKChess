@@ -16,7 +16,7 @@ limitations under the License.*/
 #define GKCHESS_COLORED_PIECE_ICON_FACTORY_H
 
 #include "gkchess_ifactory_pieceicon.h"
-#include "gutil_map.h"
+#include <gutil/map.h>
 #include <QDir>
 #include <QMutex>
 #include <QFuture>

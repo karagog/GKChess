@@ -14,11 +14,12 @@ limitations under the License.*/
 
 #include "enginemanager.h"
 #include "gkchess_iengine.h"
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 #include "gkchess_enginesettings.h"
-#include "gutil_pluginutils.h"
+#include <gutil/pluginutils.h>
+#include <gutil/exception.h>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 
 namespace{
 struct d_t
@@ -38,8 +39,8 @@ EngineManager::EngineManager(const QString &engine_name, EngineSettings *setting
     G_D_INIT();
     G_D;
 
-    if(!settings->GetEngineList().contains(engine_name))
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unrecognized Engine");
+    if(GUINT32_MAX == settings->GetEngineList().IndexOf(engine_name))
+        throw Exception<>("Unrecognized Engine");
 
     d->engine_name = engine_name;
     d->engine_settings = settings;

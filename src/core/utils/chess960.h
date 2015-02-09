@@ -15,8 +15,8 @@ limitations under the License.*/
 #ifndef GKCHESS_CHESS960_H
 #define GKCHESS_CHESS960_H
 
-#include "gutil_strings.h"
-#include "gkchess_globals.h"
+#include <gutil/string.h>
+#include <gkchess_common.h>
 
 NAMESPACE_GKCHESS;
 

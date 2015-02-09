@@ -36,7 +36,7 @@ void MoveRecorderPlayer::_piece_moved(const MoveData &md)
     if(m_suppressUpdates)
         return;
 
-    if(m_index < m_currentLine->Length() - 1){
+    if(m_index < (int)m_currentLine->Length() - 1){
         // If we are somewhere in the middle of a line, then
         //  fork a new variant from the last move
         MoveData &last_move = m_currentLine->operator [](m_index + 1);
@@ -70,7 +70,7 @@ void MoveRecorderPlayer::Clear()
 
 void MoveRecorderPlayer::NavigateForward()
 {
-    if(m_index + 1 < m_currentLine->Length())
+    if(m_index + 1 < (int)m_currentLine->Length())
     {
         ++m_index;
         m_suppressUpdates = true;

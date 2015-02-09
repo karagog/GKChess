@@ -18,7 +18,7 @@ limitations under the License.*/
 #include "gkchess_pgn_parser.h"
 #include "gkchess_board.h"
 #include "gkchess_board_movedata.h"
-#include "gutil_vector.h"
+#include <gutil/vector.h>
 #include <QAbstractItemModel>
 
 namespace GKChess{ namespace UI{

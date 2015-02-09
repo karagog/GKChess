@@ -13,6 +13,7 @@ CONFIG += plugin
 TOP_DIR = ../../../..
 
 DESTDIR = $$TOP_DIR/bin
+QMAKE_CXXFLAGS += -std=c++11
 
 CONFIG(debug, debug|release) {
     #message(Preparing debug build)

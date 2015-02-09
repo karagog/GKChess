@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef PGN_PLAYERCONTROL_H
 #define PGN_PLAYERCONTROL_H
 
-#include "gutil_strings.h"
+#include <gutil/string.h>
 #include <QWidget>
 
 namespace Ui{

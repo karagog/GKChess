@@ -15,9 +15,9 @@ limitations under the License.*/
 #ifndef GKCHESS_PIECE_H
 #define GKCHESS_PIECE_H
 
-#include "gkchess_globals.h"
-#include "gutil_strings.h"
-#include "gutil_smartpointer.h"
+#include <gkchess_common.h>
+#include <gutil/string.h>
+#include <gutil/smartpointer.h>
 #include <QMetaType>
 
 NAMESPACE_GKCHESS;

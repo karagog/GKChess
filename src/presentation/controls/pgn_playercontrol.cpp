@@ -14,7 +14,7 @@ limitations under the License.*/
 
 #include "pgn_playercontrol.h"
 #include "ui_pgn_playercontrol.h"
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 #include "gkchess_pgn_player.h"
 #include "gkchess_pgn_parser.h"
 USING_NAMESPACE_GKCHESS;

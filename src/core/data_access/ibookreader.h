@@ -16,7 +16,7 @@ limitations under the License.*/
 #define GKCHESS_IBOOKREADER_H
 
 #include "gkchess_movedata.h"
-#include "gutil_strings.h"
+#include <gutil/string.h>
 #include <QObject>
 
 namespace GKChess

@@ -16,13 +16,13 @@ limitations under the License.*/
 #include "piece.h"
 #include "square.h"
 #include "gkchess_pgn_parser.h"
-#include "gutil_euclideanvector.h"
-#include "gutil_range.h"
+#include <gutil/euclideanvector.h>
+#include <gutil/range.h>
 #include "gkchess_chess960.h"
 USING_NAMESPACE_GUTIL;
 
 #ifdef DEBUG
-#include "gutil_console.h"
+#include <gutil/console.h>
 #endif // DEBUG
 
 
@@ -54,7 +54,7 @@ void Board::piece_index_t::copy_from(const piece_index_t &o, const Board &b)
         for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j)
         {
             pieces[i][j].Reserve(o.pieces[i][j].Capacity());
-            G_FOREACH_CONST(Square const *s, o.pieces[i][j])
+            for(Square const *s : o.pieces[i][j])
                 pieces[i][j].PushBack(&b.SquareAt(s->GetColumn(), s->GetRow()));
         }
     }
@@ -124,7 +124,7 @@ void Board::piece_index_t::clear()
 void Board::piece_index_t::show_index() const
 {
     Vector<Square const *> squares = all_pieces(Piece::AnyAllegience);
-    G_FOREACH_CONST(Square const *s, squares){
+    for(Square const *s : squares){
         GDEBUG(String::Format("%c: %c%d", s->GetPiece().ToFEN(), 'a' + s->GetColumn(), 1 + s->GetRow()));
     }
     GDEBUG("\n");
@@ -134,7 +134,7 @@ void Board::piece_index_t::show_index() const
 
 
 
-Board::Board(int num_cols, int num_rows)
+Board::Board(GUINT32 num_cols, GUINT32 num_rows)
     :m_columnCount(num_cols),
       m_rowCount(num_rows),
       _p_WhoseTurn(Piece::AnyAllegience),
@@ -175,8 +175,8 @@ void Board::_init()
 {
     // Initialize all the squares in the array
     m_squares = (Square *)malloc(ColumnCount() * RowCount() * sizeof(Square));
-    for(int c = 0; c < ColumnCount(); ++c)
-        for(int r = 0; r < RowCount(); ++r)
+    for(GUINT32 c = 0; c < ColumnCount(); ++c)
+        for(GUINT32 r = 0; r < RowCount(); ++r)
             new(&square_at(c, r)) Square(c, r);
 }
 
@@ -223,12 +223,12 @@ Board::~Board()
     free(m_squares);
 }
 
-int Board::ColumnCount() const
+GUINT32 Board::ColumnCount() const
 {
     return m_columnCount;
 }
 
-int Board::RowCount() const
+GUINT32 Board::RowCount() const
 {
     return m_rowCount;
 }
@@ -471,8 +471,8 @@ Board::MoveValidationEnum Board::Move(const Square &src, const Square &dest, IPl
 
 void Board::Clear()
 {
-    for(int i = 0; i < ColumnCount(); ++i)
-        for(int j = 0; j < RowCount(); ++j)
+    for(GUINT32 i = 0; i < ColumnCount(); ++i)
+        for(GUINT32 j = 0; j < RowCount(); ++j)
             SetPiece(Piece(), SquareAt(i, j));
 }
 
@@ -488,24 +488,24 @@ void Board::FromFEN(const String &s)
     String backRank_white;
     String backRank_black;
     if(6 != sl.Length())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN requires 6 fields separated by spaces");
+        throw Exception<>("FEN requires 6 fields separated by spaces");
 
     // First parse the position text:
     {
         StringList sl2( sl[0].Split('/', false) );
         if(RowCount() != sl2.Length())
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "FEN position text requires 8 fields separated by /");
+            throw Exception<>("FEN position text requires 8 fields separated by /");
 
         backRank_white = sl2[7];
         backRank_black = sl2[0];
 
         // For each section of position text...
-        for(int i = 0; i < sl2.Length(); ++i)
+        for(GUINT32 i = 0; i < sl2.Length(); ++i)
         {
-            int col = 0;
+            GUINT32 col = 0;
             int rank = 7 - i;
             typename String::const_iterator iter(sl2[i].begin());
-            typename String::const_iterator next(iter + 1);
+            typename String::const_iterator next(iter + (GUINT32)1);
 
             // For each character in the section...
             for(;
@@ -519,7 +519,7 @@ void Board::FromFEN(const String &s)
                 {
                     // Normally numbers are single digit, but we want to support larger boards too
                     if(String::IsNumber(n))
-                        num = String(iter, next + 1).ToInt();
+                        num = String(iter, next + (GUINT32)1).ToInt();
                     else
                         num = String(c).ToInt();
                 }
@@ -527,7 +527,7 @@ void Board::FromFEN(const String &s)
                 if(-1 != num)
                 {
                     // Numbers define empty space. Set all empty spaces null
-                    for(int h = col; h < col + num; ++h)
+                    for(GUINT32 h = col; h < col + num; ++h)
                         SetPiece(Piece(), SquareAt(h, rank));
                     col += num;
                 }
@@ -566,7 +566,7 @@ void Board::FromFEN(const String &s)
             a = Piece::White;
             break;
         default:
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The current turn must be either a 'w' or 'b'");
+            throw Exception<>("The current turn must be either a 'w' or 'b'");
         }
         SetWhoseTurn(a);
     }
@@ -579,7 +579,7 @@ void Board::FromFEN(const String &s)
         SetCastleBlackA(-1);
         SetCastleBlackH(-1);
 
-        G_FOREACH_CONST(char c, sl[2])
+        for(char c : sl[2])
         {
             Piece::AllegienceEnum a = String::IsUpper(c) ? Piece::White : Piece::Black;
             char const rook_char = Piece::White == a ? 'R' : 'r';
@@ -617,7 +617,7 @@ void Board::FromFEN(const String &s)
                 // Find the outermost rook on the A-side
                 const String *s = Piece::White == a ? &backRank_white : &backRank_black;
                 int distance_from_a = 0;
-                for(int i = 0; i < s->Length(); ++i){
+                for(GUINT32 i = 0; i < s->Length(); ++i){
                     char cur = (*s)[i];
                     if(String::IsNumber(cur)){
                         distance_from_a += String(cur).ToInt();
@@ -661,7 +661,7 @@ void Board::FromFEN(const String &s)
             }
             else if('-' != c)
             {
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "There was an error with the castle info");
+                throw Exception<>("There was an error with the castle info");
             }
         }
     }
@@ -672,12 +672,12 @@ void Board::FromFEN(const String &s)
         if(sl[3] != "-")
         {
             if(sl[3].Length() != 2)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid En Passant square");
+                throw Exception<>("Invalid En Passant square");
 
             char f = sl[3][0];
             char rnk = sl[3][1];
             if(f < 'a' || 'h' < f || rnk < '1' || '8' < rnk)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid En Passant square");
+                throw Exception<>("Invalid En Passant square");
 
             SetEnPassantSquare(&SquareAt(f - 'a', rnk - '1'));
         }
@@ -691,7 +691,7 @@ void Board::FromFEN(const String &s)
         bool ok(false);
         SetHalfMoveClock(sl[4].ToInt(&ok));
         if(!ok)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid half-move clock");
+            throw Exception<>("Invalid half-move clock");
     }
 
 
@@ -700,7 +700,7 @@ void Board::FromFEN(const String &s)
         bool ok(false);
         SetFullMoveNumber(sl[5].ToInt(&ok));
         if(!ok)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid full-move number");
+            throw Exception<>("Invalid full-move number");
     }
 
     _update_threat_counts();
@@ -728,7 +728,7 @@ static GUtil::String __get_castle_string_for_allegience(const Board &b,
         else if(castle_file_h_side != -1)
         {
             bool no_outer_rook = true;
-            for(int i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
+            for(GUINT32 i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
             {
                 Square const &sqr = b.SquareAt(i, rank);
                 if(!sqr.GetPiece().IsNull() &&
@@ -771,7 +771,7 @@ String Board::ToFEN() const
     for(int r = RowCount() - 1; r >= 0; --r)
     {
         int empty_cnt = 0;
-        for(int c = 0; c < ColumnCount(); ++c)
+        for(GUINT32 c = 0; c < ColumnCount(); ++c)
         {
             Square const &cur = SquareAt(c, r);
             if(!cur.GetPiece().IsNull())
@@ -964,7 +964,7 @@ void Board::SetupNewGame(Board::SetupTypeEnum ste)
         FromFEN(Chess960::GetRandomStartingPosition());
         break;
     default:
-        THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+        throw NotImplementedException<>();
         break;
     }
 
@@ -1132,7 +1132,7 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d, 
         break;
     default:
         // We should not have an unkown piece type
-        THROW_NEW_GUTIL_EXCEPTION(Exception);
+        throw Exception<>();
     }
 
     if(!technically_ok)
@@ -1172,7 +1172,7 @@ static Square const *__get_source_square(const Board &b,
 {
     Square const *ret = 0;
     Vector<Square const *> possible_sources( b.FindPieces(Piece(Piece::GetTypeFromPGN(piece_moved), a)) );
-    for(GINT32 i = 0; i < possible_sources.Length(); ++i)
+    for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
     {
         Square const *s = possible_sources[i];
 
@@ -1221,7 +1221,7 @@ static Square const *__get_source_square(const Board &b,
             else
             {
                 if(NULL != ret)
-                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
+                    throw Exception<>("Multiple pieces found which could move there");
 
                 ret = s;
             }
@@ -1257,11 +1257,11 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         }
 
         if(-1 == rook_loc)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unable to castle on that side");
+            throw Exception<>("Unable to castle on that side");
 
         Vector<Square const *> v = FindPieces(Piece(Piece::King, turn));
         if(v.Length() != 1)
-            THROW_NEW_GUTIL_EXCEPTION(Exception);
+            throw Exception<>();
         ret.Source = *v[0];
         ret.Destination = SquareAt(rook_loc, v[0]->GetRow());
         ret.PieceMoved = Piece(Piece::King, turn);
@@ -1283,11 +1283,11 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         }
 
         if(-1 == rook_loc)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Unable to castle on that side");
+            throw Exception<>("Unable to castle on that side");
 
         Vector<Square const *> v = FindPieces(Piece(Piece::King, turn));
         if(v.Length() != 1)
-            THROW_NEW_GUTIL_EXCEPTION(Exception);
+            throw Exception<>();
         ret.Source = *v[0];
         ret.Destination = SquareAt(rook_loc, v[0]->GetRow());
         ret.PieceMoved = Piece(Piece::King, turn);
@@ -1296,13 +1296,13 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
     {
         // Validate the inputs
         if('a' > m.DestFile || m.DestFile > 'h')
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The destination file is invalid");
+            throw Exception<>("The destination file is invalid");
         if(0 >= m.DestRank || m.DestRank > 8)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The destination rank is invalid");
+            throw Exception<>("The destination rank is invalid");
         if(0 != m.SourceFile && ('a' > m.SourceFile || m.SourceFile > 'h'))
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The source file is invalid");
+            throw Exception<>("The source file is invalid");
         if(0 != m.SourceRank && (0 > m.SourceRank || m.SourceRank >= 8))
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "The source rank is invalid");
+            throw Exception<>("The source rank is invalid");
 
 
         // Get the destination square (this is always given)
@@ -1314,7 +1314,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             if(!dest.GetPiece().IsNull() && dest.GetPiece().GetAllegience() != turn)
                 ret.PieceCaptured = dest.GetPiece();
             else
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid piece to capture at the destination square");
+                throw Exception<>("Invalid piece to capture at the destination square");
         }
 
 
@@ -1326,11 +1326,11 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
 
             // Do a sanity check on the square they specified
             if(s.GetPiece().IsNull())
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "No piece on the square");
+                throw Exception<>("No piece on the square");
             if(s.GetPiece().GetAllegience() != turn)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "It is not your turn");
+                throw Exception<>("It is not your turn");
             if(s.GetPiece().GetType() != m.PieceMoved)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "The piece on that square is different than the piece you said to move");
+                throw Exception<>("The piece on that square is different than the piece you said to move");
 
             ret.Source = s;
         }
@@ -1354,13 +1354,13 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                     //  next to the destination
                     if(-1 != tmp_source_column &&
                             1 != Abs(tmp_source_column - ret.Destination.GetColumn()))
-                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file for pawn capture");
+                        throw Exception<>("Invalid file for pawn capture");
 
                     Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
                     if(0 == possible_sources.Length())
-                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "There are no pieces of that type to move");
+                        throw Exception<>("There are no pieces of that type to move");
 
-                    for(GINT32 i = 0; i < possible_sources.Length(); ++i)
+                    for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
                     {
                         Square const *s = possible_sources[i];
 
@@ -1381,7 +1381,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                             else
                             {
                                 if(!ret.Source.IsNull())
-                                    THROW_NEW_GUTIL_EXCEPTION2(Exception, "Multiple pieces found which could move there");
+                                    throw Exception<>("Multiple pieces found which could move there");
 
                                 ret.Source = *s;
 
@@ -1396,7 +1396,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                     // If the pawn is not capturing, it must be in the same file
                     int r = ret.Destination.GetRow() - __allegience_to_rank_increment(turn);
                     if(0 > r || r > 7)
-                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
+                        throw Exception<>("No such piece can reach the square");
 
                     Square const *s = &SquareAt(ret.Destination.GetColumn(), r);
                     if(s->GetPiece().IsNull())
@@ -1405,15 +1405,15 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                         r = s->GetRow() - __allegience_to_rank_increment(turn);
                         if((turn == Piece::White && 1 != r) || (turn == Piece::Black && 6 != r) ||
                                 (s = &SquareAt(ret.Destination.GetColumn(), r))->GetPiece().IsNull())
-                            THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
+                            throw Exception<>("No such piece can reach the square");
                     }
 
                     if(s->GetPiece().GetAllegience() != turn ||
                             s->GetPiece().GetType() != Piece::Pawn)
-                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
+                        throw Exception<>("No such piece can reach the square");
 
                     if(!ret.Destination.GetPiece().IsNull())
-                        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Destination square occupied");
+                        throw Exception<>("Destination square occupied");
 
                     ret.Source = *s;
                 }
@@ -1438,12 +1438,12 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
             }
                 break;
             default:
-                THROW_NEW_GUTIL_EXCEPTION(Exception);
+                throw Exception<>();
             }
         }
 
         if(ret.Source.IsNull())
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "No such piece can reach the square");
+            throw Exception<>("No such piece can reach the square");
 
         ret.PieceMoved = SquareAt(ret.Source.GetColumn(), ret.Source.GetRow()).GetPiece();
         GASSERT(!ret.PieceMoved.IsNull());
@@ -1452,7 +1452,7 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         if(m.PiecePromoted)
         {
             if('P' != m.PieceMoved && 0 != m.PieceMoved)
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Only pawns can be promoted");
+                throw Exception<>("Only pawns can be promoted");
 
             ret.PiecePromoted = Piece(Piece::GetTypeFromPGN(m.PiecePromoted), turn);
         }
@@ -1543,7 +1543,7 @@ MoveData Board::GenerateMoveData(const Square &s,
                 if(pieces.Length() > 1)
                 {
                     Vector<const Square *> possible_movers;
-                    G_FOREACH_CONST(const Square *s, pieces){
+                    for(const Square *s : pieces){
                         if(*s != ret.Source && ValidMove == ValidateMove(*s, ret.Destination, true))
                             possible_movers.PushBack(s);
                     }
@@ -1551,7 +1551,7 @@ MoveData Board::GenerateMoveData(const Square &s,
                     if(0 < possible_movers.Length())
                     {
                         bool row_match = false;
-                        for(int i = 0; i < possible_movers.Length(); ++i){
+                        for(GUINT32 i = 0; i < possible_movers.Length(); ++i){
                             if(ret.Source.GetRow() == possible_movers[i]->GetRow()){
                                 row_match = true;
                                 possible_movers.RemoveAt(i);
@@ -1560,7 +1560,7 @@ MoveData Board::GenerateMoveData(const Square &s,
                         }
 
                         bool col_match = false;
-                        for(int i = 0; i < possible_movers.Length(); ++i){
+                        for(GUINT32 i = 0; i < possible_movers.Length(); ++i){
                             if(ret.Source.GetColumn() == possible_movers[i]->GetColumn()){
                                 col_match = true;
                                 break;
@@ -1592,10 +1592,10 @@ MoveData Board::GenerateMoveData(const Square &s,
 
 // If there is a piece at the destination, dest_piece will be updated with the information
 //  Returns true if the square was appended
-static bool __append_if_within_bounds(Vector<Square const *> &res, const Board &b, int col, int row, Piece *dest_piece)
+static bool __append_if_within_bounds(Vector<Square const *> &res, const Board &b, GUINT32 col, GUINT32 row, Piece *dest_piece)
 {
     bool ret = false;
-    if(0 <= col && col < b.ColumnCount() && 0 <= row && row < b.RowCount()){
+    if(col < b.ColumnCount() && row < b.RowCount()){
         Square const *sqr = &b.SquareAt(col, row);
         res.PushBack(sqr);
         ret = true;
@@ -1620,7 +1620,7 @@ static void __get_threatened_squares_helper(Vector<Square const *> &ret, const B
         int i = 0;
 
         // The increments get rotated 4 times for each distance
-        G_FOREVER
+        forever
         {
             if(measuring[i])
             {
@@ -1702,14 +1702,14 @@ void Board::_update_threat_counts()
     _set_all_threat_counts(0);
 
     Vector<Square const *> all_pieces(FindPieces(Piece()));
-    G_FOREACH(Square const *s_c, all_pieces)
+    for(Square const *s_c : all_pieces)
     {
         GASSERT(!s_c->GetPiece().IsNull());
 
         Piece const &p = s_c->GetPiece();
 
         Vector<Square const *> squares(__get_threatened_squares(*this, p, *s_c));
-        G_FOREACH_CONST(Square const *s_c, squares){
+        for(Square const *s_c : squares){
             Square &s = square_at(s_c->GetColumn(), s_c->GetRow());
             s.SetThreatCount(p.GetAllegience(), s.GetThreatCount(p.GetAllegience()) + 1);
         }
@@ -1718,9 +1718,9 @@ void Board::_update_threat_counts()
 
 void Board::_set_all_threat_counts(int c)
 {
-    for(int i = 0; i < ColumnCount(); ++i)
+    for(GUINT32 i = 0; i < ColumnCount(); ++i)
     {
-        for(int j = 0; j < RowCount(); ++j)
+        for(GUINT32 j = 0; j < RowCount(); ++j)
         {
             square_at(i, j).SetThreatCount(Piece::White, c);
             square_at(i, j).SetThreatCount(Piece::Black, c);
@@ -1781,7 +1781,7 @@ void Board::ShowIndex() const
 {
     Console::WriteLine("White Pieces:");
     Vector<Square const *> v = m_index.all_pieces(Piece::White);
-    G_FOREACH_CONST(const Square *s, v){
+    for(const Square *s : v){
         Console::WriteLine(String::Format("%s: %s",
                                           s->GetPiece().ToString(true).ConstData(),
                                           s->ToString().ConstData()));
@@ -1790,7 +1790,7 @@ void Board::ShowIndex() const
 
     Console::WriteLine("\nBlack Pieces:");
     v = m_index.all_pieces(Piece::Black);
-    G_FOREACH_CONST(const Square *s, v){
+    for(const Square *s : v){
         Console::WriteLine(String::Format("%s: %s",
                                           s->GetPiece().ToString(true).ConstData(),
                                           s->ToString().ConstData()));

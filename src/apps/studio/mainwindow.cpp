@@ -19,16 +19,16 @@ limitations under the License.*/
 #include "gkchess_chess960generatorcontrol.h"
 #include "gkchess_bookreadercontrol.h"
 #include "gkchess_manage_engines.h"
-#include "gutil_file.h"
-#include "gutil_application.h"
-#include "gutil_persistentdata.h"
+#include <gutil/file.h>
+#include <gutil/application.h>
+#include <gutil/qt_settings.h>
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QFileDialog>
 #include <QWhatsThis>
 #include <QCloseEvent>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
 
@@ -40,13 +40,13 @@ USING_NAMESPACE_GKCHESS1(UI);
 #define SETTINGS_DW_MOVEHISTORY_OPEN  "mainwindow_movehistory_open"
 
 
-MainWindow::MainWindow(PersistentData *settings,
+MainWindow::MainWindow(GUtil::Qt::Settings *settings,
                        EngineSettings *engine_settings,
                        QWidget *parent)
     :QMainWindow(parent),
       m_board(),
       //m_board(10),
-      m_iconFactory(":/gkchess/icons/default", Qt::white, Qt::gray),
+      m_iconFactory(":/gkchess/icons/default",::Qt::white,::Qt::gray),
       ui(new Ui::MainWindow),
       m_settings(settings),
       m_engineSettings(engine_settings)
@@ -152,7 +152,7 @@ void MainWindow::_load_pgn_file()
     QString fn = QFileDialog::getOpenFileName(this, "Select PGN", QString(), "*.pgn");
     QFile f(fn);
     if(!f.open(QFile::ReadOnly))
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Could not open file: %s", fn.toUtf8().constData()));
+        throw Exception<>(String::Format("Could not open file: %s", fn.toUtf8().constData()));
     QString s = f.readAll();
     f.close();
     _load_pgn_string(String::FromQString(s));

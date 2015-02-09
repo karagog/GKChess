@@ -15,10 +15,10 @@ limitations under the License.*/
 #ifndef GKCHESS_PGN_PLAYER_H
 #define GKCHESS_PGN_PLAYER_H
 
-#include "gutil_strings.h"
-#include "gutil_map.h"
-#include "gutil_flags.h"
-#include "gutil_smartpointer.h"
+#include <gutil/string.h>
+#include <gutil/map.h>
+#include <gutil/flags.h>
+#include <gutil/smartpointer.h>
 #include "gkchess_pgn_parser.h"
 #include "gkchess_board_movedata.h"
 

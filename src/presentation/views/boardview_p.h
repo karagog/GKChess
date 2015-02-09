@@ -16,9 +16,9 @@ limitations under the License.*/
 #define GKCHESS_BOARDVIEW_P_H
 
 #include "gkchess_board.h"
-#include "gutil_smartpointer.h"
-#include "gutil_vector.h"
-#include "gutil_map.h"
+#include <gutil/smartpointer.h>
+#include <gutil/vector.h>
+#include <gutil/map.h>
 #include <QAbstractItemView>
 #include <QVariantAnimation>
 

@@ -15,9 +15,9 @@ limitations under the License.*/
 #ifndef GKCHESS_PGN_MOVEDATA_H
 #define GKCHESS_PGN_MOVEDATA_H
 
-#include "gutil_strings.h"
-#include "gutil_flags.h"
-#include "gkchess_globals.h"
+#include <gutil/string.h>
+#include <gutil/flags.h>
+#include <gkchess_common.h>
 
 NAMESPACE_GKCHESS;
 
@@ -72,7 +72,7 @@ public:
     /** Returns the full-move number for this move, which does not by itself distinguish between
      *  white and black's moves.
     */
-    int MoveNumber;
+    GUINT32 MoveNumber;
 
     /** The type of piece being moved, in PGN notation ('K' for king, 'Q' for queen, etc...) */
     char PieceMoved;

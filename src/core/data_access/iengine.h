@@ -15,8 +15,8 @@ limitations under the License.*/
 #ifndef GKCHESS_IENGINE_H
 #define GKCHESS_IENGINE_H
 
-#include "gutil_map.h"
-#include "gutil_list.h"
+#include <gutil/map.h>
+#include <gutil/list.h>
 #include "gkchess_movedata.h"
 #include <QObject>
 #include <QStringList>

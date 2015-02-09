@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "polyglotreader.h"
-#include "gutil_macros.h"
+#include <gutil/macros.h>
 
 #include "pg_utils/pg_utils.h"
 #include <QtPlugin>
@@ -55,8 +55,7 @@ void PolyglotBookReader::OpenBook(const char *b)
         CloseBook();
 
     if(!(d->file = pg_open_file(b, 0)))
-        THROW_NEW_GUTIL_EXCEPTION2(Exception,
-                                   String::Format("Unable to open file: %s\n%s", b, pg_error_string()));
+        throw Exception<>(String::Format("Unable to open file: %s\n%s", b, pg_error_string()));
 
     d->filename = b;
 }
@@ -85,8 +84,7 @@ void PolyglotBookReader::ValidateBook(IValidationProgressObserver *ob)
     __validation_observer = 0;
 
     if(0 != res){
-        THROW_NEW_GUTIL_EXCEPTION2(Exception,
-                                   String::Format("Invalid Polyglot book: %s", pg_error_string()));
+        throw Exception<>(String::Format("Invalid Polyglot book: %s", pg_error_string()));
     }
 }
 
@@ -132,5 +130,3 @@ Vector<BookMove> PolyglotBookReader::LookupMoves(const char *fen)
 
 
 }
-
-Q_EXPORT_PLUGIN2(polyglotReaderPlugin, GKChess::PolyglotBookReader)

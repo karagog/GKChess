@@ -1,5 +1,7 @@
 
-QT += core gui
+QT += core gui concurrent
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TEMPLATE    = lib
 
@@ -7,6 +9,7 @@ TOP_DIR = ../..
 
 DESTDIR = $$TOP_DIR/lib
 TARGET = GKChessUI
+QMAKE_CXXFLAGS += -std=c++11
 
 DEFINES += \
     GUTIL_CORE_QT_ADAPTERS

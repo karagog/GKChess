@@ -17,20 +17,20 @@ limitations under the License.*/
 #include "gkchess_board.h"
 #include "gkchess_polyglotreader.h"
 #include "gkchess_movedata.h"
-#include "gutil_persistentdata.h"
+#include <gutil/qt_settings.h>
 //#include "src/test/modeltest.h"
 #include <QFileDialog>
 #include <QTableWidgetItem>
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 
 #define SETTING_LAST_BOOK "bookreader_last_open_book"
 
 NAMESPACE_GKCHESS1(UI);
 
 
-BookReaderControl::BookReaderControl(ObservableBoard &b, PersistentData *pd, QWidget *parent)
+BookReaderControl::BookReaderControl(ObservableBoard &b, GUtil::Qt::Settings *pd, QWidget *parent)
     :QWidget(parent),
       ui(new Ui::BookReaderControl),
       m_board(b),
@@ -82,7 +82,7 @@ void BookReaderControl::move_doubleClicked(const QModelIndex &ind)
     foreach(const QModelIndex &i, m_bookModel.GetAncestry(ind)){
         lst.Append(*m_bookModel.ConvertIndexToMoveData(i));
     }
-    G_FOREACH_CONST(const MoveData &md, lst){
+    for(const MoveData &md : lst){
         m_board.Move(md);
     }
 }

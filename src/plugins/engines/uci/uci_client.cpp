@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "uci_client.h"
-#include "gutil_strings.h"
-#include "gkchess_globals.h"
-#include "gutil_consolelogger.h"
+#include <gutil/string.h>
+#include <gkchess_common.h>
+#include <gutil/consolelogger.h>
 #include <QFile>
 #include <QtPlugin>
 #include <QVariant>
@@ -100,19 +100,19 @@ void UCI_Client::_start_and_validate_engine(bool populate_data)
 {
     G_D;
     if(!QFile(d->engine).exists())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "File does not exist");
+        throw Exception<>("File does not exist");
 
     d->process.setReadChannel(QProcess::StandardOutput);
     d->process.start(d->engine, d->arguments);
     if(!d->process.waitForStarted())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine unable to start");
+        throw Exception<>("Engine unable to start");
 
     // Ignore the first bit of junk the engine sends
     d->process.waitForReadyRead(-1);
     d->process.readAllStandardOutput();
 
     if(d->process.state() != QProcess::Running)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "Engine crashed immediately after starting");
+        throw Exception<>("Engine crashed immediately after starting");
 
     bool valid = true;
     QString name;
@@ -222,7 +222,7 @@ void UCI_Client::_start_and_validate_engine(bool populate_data)
     }
 
     if(!valid)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "The engine is not UCI compatible");
+        throw Exception<>("The engine is not UCI compatible");
 }
 
 
@@ -443,7 +443,7 @@ void UCI_Client::NewGame()
 void UCI_Client::SetPosition(const char *data)
 {
     QByteArray ba;
-    if(-1 != String(data).IndexOf("startpos"))
+    if(GUINT32_MAX != String(data).IndexOf("startpos"))
         ba = String::Format("position %s", data).ConstData();
     else
         ba = String::Format("position fen %s", data).ConstData();
@@ -491,7 +491,7 @@ void UCI_Client::SetOption(const QString &name, const QVariant &value)
     // Write the change to the engine
     QByteArray data = QString("setoption name %1 value %2")
             .arg(name)
-            .arg(value.toString()).toAscii();
+            .arg(value.toString()).toLatin1();
     _write_to_engine(data);
 }
 
@@ -548,6 +548,3 @@ bool UCI_Client::IsThinking() const
 
 
 END_NAMESPACE_GKCHESS;
-
-
-Q_EXPORT_PLUGIN2(uciEnginePlugin, GKChess::UCI_Client)

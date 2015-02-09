@@ -14,8 +14,8 @@ limitations under the License.*/
 
 #include "coloredpieceiconfactory.h"
 #include "gkchess_piece.h"
-#include "gutil_flags.h"
-#include "gutil_thread.h"
+#include <gutil/flags.h>
+#include <gutil/thread.h>
 #include <QApplication>
 #include <QDir>
 #include <QDirIterator>
@@ -23,8 +23,9 @@ limitations under the License.*/
 #include <QImage>
 #include <QUuid>
 #include <QtConcurrentRun>
+#include <QStandardPaths>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 
 NAMESPACE_GKCHESS1(UI);
 
@@ -33,9 +34,9 @@ static QString __get_new_temp_icon_dir()
 {
     return QDir::toNativeSeparators(
                 QString("%1/%2/temp_icons/%3")
-                .arg(QDesktopServices::storageLocation(QDesktopServices::TempLocation))
+                .arg(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
                 .arg(qApp->applicationName())
-                .arg(QUuid::createUuid()));
+                .arg(QUuid::createUuid().toString()));
 }
 
 static QString __get_filename_for_piece(Piece const &p)
@@ -61,7 +62,7 @@ static void __make_sure_dir_exists(const QString &dirname)
     QDir dir(dirname);
     if(!dir.exists()){
         if(!dir.mkpath(dirname))
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Directory does not exist, and I couldn't create it");
+            throw Exception<>("Directory does not exist, and I couldn't create it");
     }
 }
 
@@ -97,7 +98,7 @@ ColoredPieceIconFactory::ColoredPieceIconFactory(const QString &dirname, const Q
     _validate_template_icons();
 
     connect(this, SIGNAL(NotifyIconsUpdated()), this, SLOT(_update_index()),
-            Qt::QueuedConnection);
+           ::Qt::QueuedConnection);
 
     // Start up the background thread
     bg_threadRef = QtConcurrent::run(this, &ColoredPieceIconFactory::_worker_thread);
@@ -120,7 +121,7 @@ void ColoredPieceIconFactory::_validate_template_icons()
     // Attempt to load the icons, skipping any files that don't match our file convention
 
     if(!QDir(dir_templates).exists())
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, QString("Templates directory does not exist: %s").arg(dir_templates).toUtf8());
+        throw Exception<>(QString("Templates directory does not exist: %s").arg(dir_templates).toUtf8());
 
     QDirIterator iter(dir_templates);
     Flags<> f((GUINT32)0x03F);
@@ -133,7 +134,7 @@ void ColoredPieceIconFactory::_validate_template_icons()
         if(1 != id.length())
             continue;
 
-        Piece tmp = Piece::FromFEN(id[0].toAscii());
+        Piece tmp = Piece::FromFEN(id[0].toLatin1());
         if(tmp.IsNull())
             continue;
 
@@ -145,15 +146,15 @@ void ColoredPieceIconFactory::_validate_template_icons()
         QImage img(fi.absoluteFilePath());
         QVector<QRgb> colors = img.colorTable();
         if(0 == colors.size())
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "There is no color index for the icon template");
+            throw Exception<>("There is no color index for the icon template");
         if(-1 == colors.indexOf(0xFFFFFFFF))
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "I did not find the color white in the color index");
+            throw Exception<>("I did not find the color white in the color index");
 
         GDEBUG(QString("Found valid icon template: %1").arg(fi.absoluteFilePath()).toUtf8().constData());
     }
 
     if(f)
-        THROW_NEW_GUTIL_EXCEPTION2(Exception, "The icon factory did not find all the necessary templates");
+        throw Exception<>("The icon factory did not find all the necessary templates");
 }
 
 QIcon ColoredPieceIconFactory::GetIcon(Piece const &p)

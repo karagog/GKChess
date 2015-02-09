@@ -15,7 +15,7 @@ limitations under the License.*/
 #ifndef GKCHESS_HTMLBOARDGENERATOR_H
 #define GKCHESS_HTMLBOARDGENERATOR_H
 
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 #include <QString>
 #include <QColor>
 

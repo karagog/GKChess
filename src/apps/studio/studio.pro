@@ -15,6 +15,7 @@ TOP_DIR = ../../..
 
 DESTDIR = $$TOP_DIR/bin
 DEFINES += GUTIL_CORE_QT_ADAPTERS
+QMAKE_CXXFLAGS += -std=c++11
 
 CONFIG(debug, debug|release) {
     #message(Preparing debug build)

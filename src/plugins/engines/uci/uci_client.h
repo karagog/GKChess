@@ -27,6 +27,7 @@ class UCI_Client :
 {
     Q_OBJECT
     Q_INTERFACES(GKChess::IEngine)
+    Q_PLUGIN_METADATA(IID "GKChess.UCI_Engine_Client")
     void *d;
 public:
 

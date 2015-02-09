@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "pgn_parser.h"
-#include "gutil_file.h"
+#include <gutil/file.h>
 USING_NAMESPACE_GUTIL;
 
 #define TAG_RESULT "result"
@@ -42,16 +42,14 @@ static void __parse_heading(PGN_GameData &gm,
                 if(String::IsNumber(c))
                 {
                     if(!inside_quote){
-                        THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
-                                                   "Invalid number within tag section");
+                        throw ValidationException<>("Invalid number within tag section");
                     }
                 }
 
                 switch(c)
                 {
                 case '[':
-                    THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
-                                               "Invalid nested brackets");
+                    throw ValidationException<>("Invalid nested brackets");
                     break;
                 case ']':
                     gm.Tags.Insert(tmp_key.ToLower(), tmp_value);
@@ -73,8 +71,7 @@ static void __parse_heading(PGN_GameData &gm,
                                 tmp_value = tmp;
                             }
                             else
-                                THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
-                                                           "Too many quotes in tag section");
+                                throw ValidationException<>("Too many quotes in tag section");
                             inside_quote = false;
                         }
                         else{
@@ -149,9 +146,9 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
 
     //GDEBUG(String::Format("Parsing '%s'", s.ConstData()));
 
-    if(-1 != s.ToUpper().IndexOf("O-O-O"))
+    if(GUINT32_MAX != s.ToUpper().IndexOf("O-O-O"))
         ret.Flags.SetFlag(PGN_MoveData::CastleASide, true);
-    else if(-1 != s.ToUpper().IndexOf("O-O"))
+    else if(GUINT32_MAX != s.ToUpper().IndexOf("O-O"))
         ret.Flags.SetFlag(PGN_MoveData::CastleHSide, true);
     else
     {
@@ -204,7 +201,7 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
         else if(files.Length() == 1)
             ret.DestFile = files[0];
         else
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid file info");
+            throw Exception<>("Invalid file info");
 
         if(ranks.Length() == 2){
             ret.SourceRank = ranks[0];
@@ -213,36 +210,36 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
         else if(ranks.Length() == 1)
             ret.DestRank = ranks[0];
         else
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid rank info");
+            throw Exception<>("Invalid rank info");
 
         // Is there a piece promotion?
-        GINT32 ind = s.IndexOf("=");
-        if(-1 != ind){
+        GUINT32 ind = s.IndexOf("=");
+        if(GUINT32_MAX != ind){
             if(ind + 1 >= s.Length() ||
                     __is_invalid_promotion_piece(s[ind+1]))
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, "Invalid promotion piece");
+                throw Exception<>("Invalid promotion piece");
             ret.PiecePromoted = s[ind+1];
         }
     }
 
     // See if the move puts the king in check or checkmate
-    if(-1 != s.IndexOf('#'))
+    if(GUINT32_MAX != s.IndexOf('#'))
         ret.Flags.SetFlag(PGN_MoveData::CheckMate, true);
-    else if(-1 != s.IndexOf('+'))
+    else if(GUINT32_MAX != s.IndexOf('+'))
         ret.Flags.SetFlag(PGN_MoveData::Check, true);
 
     // See if the annotator has an assessment of this move
-    if(-1 != s.IndexOf("??"))
+    if(GUINT32_MAX != s.IndexOf("??"))
         ret.Flags.SetFlag(PGN_MoveData::Blunder, true);
-    else if(-1 != s.IndexOf("!!"))
+    else if(GUINT32_MAX != s.IndexOf("!!"))
         ret.Flags.SetFlag(PGN_MoveData::Brilliant, true);
-    else if(-1 != s.IndexOf("!?"))
+    else if(GUINT32_MAX != s.IndexOf("!?"))
         ret.Flags.SetFlag(PGN_MoveData::Interesting, true);
-    else if(-1 != s.IndexOf("?!"))
+    else if(GUINT32_MAX != s.IndexOf("?!"))
         ret.Flags.SetFlag(PGN_MoveData::Dubious, true);
-    else if(-1 != s.IndexOf('?'))
+    else if(GUINT32_MAX != s.IndexOf('?'))
         ret.Flags.SetFlag(PGN_MoveData::Mistake, true);
-    else if(-1 != s.IndexOf('!'))
+    else if(GUINT32_MAX != s.IndexOf('!'))
         ret.Flags.SetFlag(PGN_MoveData::Good, true);
 
     return ret;
@@ -399,7 +396,7 @@ static void __parse_moves(PGN_GameData &gm,
             prev_move_number = next_move_number;
 
             if((gm.Moves.Length() >> 1) + 1 != md.MoveNumber){
-                THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid move number: '%d'", md.MoveNumber));
+                throw Exception<>(String::Format("Invalid move number: '%d'", md.MoveNumber));
             }
             gm.Moves.Append(md);
         }
@@ -463,8 +460,7 @@ List<PGN_GameData> PGN_Parser::ParseFile(const String &filename)
 List<PGN_GameData> PGN_Parser::ParseString(String const &s)
 {
     if(!s.IsValidUTF8())
-        THROW_NEW_GUTIL_EXCEPTION2(ValidationException,
-                                   "The data contains an invalid UTF-8 sequence");
+        throw ValidationException<>("The data contains an invalid UTF-8 sequence");
 
     List<PGN_GameData> ret;
     typename String::const_iterator iter(s.begin());
@@ -479,16 +475,16 @@ List<PGN_GameData> PGN_Parser::ParseString(String const &s)
 
         // Validate the heading to make sure it has the required tags
         if(!gd.Tags.Contains(TAG_RESULT))
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Tag section is missing '%s'", TAG_RESULT));
+            throw Exception<>(String::Format("Tag section is missing '%s'", TAG_RESULT));
 
         // The result is the game termination marker
         String result_val = gd.Tags[TAG_RESULT];
         if(result_val != "1-0" && result_val != "0-1" && result_val != "1/2-1/2" && result_val != "*")
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, String::Format("Invalid Result: %s", result_val.ConstData()));
+            throw Exception<>(String::Format("Invalid Result: %s", result_val.ConstData()));
 
-        int last_index = s.IndexOf(result_val, iter - s.begin());
-        if(-1 == last_index)
-            THROW_NEW_GUTIL_EXCEPTION2(Exception, "Move section not terminated by result");
+        GUINT32 last_index = s.IndexOf(result_val, iter - s.begin());
+        if(GUINT32_MAX == last_index)
+            throw Exception<>("Move section not terminated by result");
 
         __parse_moves(gd, iter, s.begin() + last_index);
 

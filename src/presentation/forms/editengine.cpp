@@ -14,7 +14,7 @@ limitations under the License.*/
 
 #include "editengine.h"
 #include "ui_editengine.h"
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 #include <QFileDialog>
 
 NAMESPACE_GKCHESS1(UI);

@@ -28,8 +28,8 @@ namespace Ui {
 class MainWindow;
 }
 
-namespace GUtil{ namespace QT{
-class PersistentData;
+namespace GUtil{ namespace Qt{
+class Settings;
 }}
 
 namespace GKChess{
@@ -46,12 +46,12 @@ class MainWindow : public QMainWindow
 
     Ui::MainWindow *ui;
 
-    GUtil::QT::PersistentData *m_settings;
+    GUtil::Qt::Settings *m_settings;
     GKChess::EngineSettings *m_engineSettings;
 
 public:
 
-    explicit MainWindow(GUtil::QT::PersistentData *settings,
+    explicit MainWindow(GUtil::Qt::Settings *settings,
                         GKChess::EngineSettings *engine_settings,
                         QWidget *parent = 0);
     ~MainWindow();

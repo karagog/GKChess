@@ -15,7 +15,8 @@ limitations under the License.*/
 #ifndef GKCHESS_ABSTRACTBOARD_H
 #define GKCHESS_ABSTRACTBOARD_H
 
-#include "gutil_strings.h"
+#include <QObject>
+#include <gutil/string.h>
 #include "gkchess_piece.h"
 #include "gkchess_board_movedata.h"
 #include "gkchess_pgn_parser.h"
@@ -60,8 +61,8 @@ public:
 */
 class Board
 {
-    const int m_columnCount;
-    const int m_rowCount;
+    const GUINT32 m_columnCount;
+    const GUINT32 m_rowCount;
     Square *m_squares;
 
     class piece_index_t
@@ -175,7 +176,7 @@ public:
     /** Constructs a board with the given number of columns and rows.
      *  It defaults to the standard chess board with 8 columns and rows.
     */
-    Board(int num_cols = 8, int num_rows = 8);
+    Board(GUINT32 num_cols = 8, GUINT32 num_rows = 8);
 
     Board(const Board &o);
     Board &operator = (const Board &o);
@@ -234,10 +235,10 @@ public:
     void SetupNewGame(SetupTypeEnum = SetupStandardChess);
 
     /** Returns the number of rows on the board. */
-    int RowCount() const;
+    GUINT32 RowCount() const;
 
     /** Returns the number of columns on the board. */
-    int ColumnCount() const;
+    GUINT32 ColumnCount() const;
 
     /** Returns a reference to the square at the given column and row.
      *  The square is valid as long as the game logic is, so you can safely pass around pointers to it.

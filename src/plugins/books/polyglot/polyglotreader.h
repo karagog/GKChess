@@ -29,6 +29,7 @@ class PolyglotBookReader :
 {
     Q_OBJECT
     Q_INTERFACES(GKChess::IBookReader)
+    Q_PLUGIN_METADATA(IID "GKChess.PolyglotReader")
     void *d;
 public:
 

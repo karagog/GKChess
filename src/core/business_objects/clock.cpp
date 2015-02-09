@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 #include "clock.h"
-#include "gkchess_globals.h"
-#include "gutil_exception.h"
+#include <gkchess_common.h>
+#include <gutil/exception.h>
 USING_NAMESPACE_GUTIL;
 
 NAMESPACE_GKCHESS;
@@ -28,27 +28,27 @@ Clock::~Clock(){}
 
 void Clock::InitClock(ClockIndex, int, int)
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    throw NotImplementedException<>();
 }
 
 void Clock::PushClock(ClockIndex)
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    throw NotImplementedException<>();
 }
 
 void Clock::AdjustClock(ClockIndex, int)
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    throw NotImplementedException<>();
 }
 
 void Clock::Pause()
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    throw NotImplementedException<>();
 }
 
 QTime Clock::GetRemainingTime(ClockIndex)
 {
-    THROW_NEW_GUTIL_EXCEPTION(NotImplementedException);
+    throw NotImplementedException<>();
     return QTime();
 }
 

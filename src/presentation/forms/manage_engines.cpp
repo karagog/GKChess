@@ -14,7 +14,7 @@ limitations under the License.*/
 
 #include "manage_engines.h"
 #include "ui_manage_engines.h"
-#include "gkchess_globals.h"
+#include <gkchess_common.h>
 #include "gkchess_enginesettings.h"
 #include "gkchess_editengine.h"
 #include "gkchess_enginemanager.h"
@@ -28,18 +28,18 @@ limitations under the License.*/
 #include <QLineEdit>
 #include <QComboBox>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 
 NAMESPACE_GKCHESS1(UI);
 
 
-ManageEngines::ManageEngines(EngineSettings *settings, PersistentData *app_settings, QWidget *parent)
+ManageEngines::ManageEngines(EngineSettings *settings, GUtil::Qt::Settings *app_settings, QWidget *parent)
     :QDialog(parent),
       m_settings(settings),
       ui(new Ui::ManageEngines)
 {
     ui->setupUi(this);
-    setWindowModality(Qt::ApplicationModal);
+    setWindowModality(::Qt::ApplicationModal);
 
     new QGridLayout(ui->pnl_options);
     ui->pnl_options->setContentsMargins(0,0,0,0);
@@ -50,7 +50,7 @@ ManageEngines::ManageEngines(EngineSettings *settings, PersistentData *app_setti
             this, SLOT(_current_changed(int)));
 
     const QString last_engine = app_settings->Value(GKCHESS_SETTING_LAST_ENGINE_USED).toString();
-    QList<QListWidgetItem *> lst = ui->lst_engines->findItems(last_engine, Qt::MatchExactly);
+    QList<QListWidgetItem *> lst = ui->lst_engines->findItems(last_engine,::Qt::MatchExactly);
     if(0 < lst.length())
         _current_changed(0);
 }
@@ -76,8 +76,9 @@ void ManageEngines::_engine_list_updated()
 
     _clear_options_panel();
 
-    if(0 < m_engineList.length()){
-        ui->lst_engines->addItems(m_engineList);
+    if(0 < m_engineList.Length()){
+        for(const String &s : m_engineList)
+            ui->lst_engines->addItem(s.ToQString());
         ui->lst_engines->setCurrentRow(0);
         ui->btn_del->setEnabled(true);
     }
@@ -340,7 +341,7 @@ void ManageEngines::_add()
         QString path = ne.GetExePath();
         if(!name.isEmpty() && !path.isEmpty())
         {
-            if(m_settings->GetEngineList().contains(name))
+            if(GUINT32_MAX != m_settings->GetEngineList().IndexOf(String::FromQString(name)))
             {
                 if(QMessageBox::Ok !=
                         QMessageBox::warning(this,

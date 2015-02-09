@@ -15,8 +15,8 @@ limitations under the License.*/
 #ifndef GKCHESS_MOVEDATA_ENGINE_H
 #define GKCHESS_MOVEDATA_ENGINE_H
 
-#include "gkchess_globals.h"
-#include "gutil_exception.h"
+#include <gkchess_common.h>
+#include <gutil/exception.h>
 #include <cstring>
 
 NAMESPACE_GKCHESS;

@@ -16,11 +16,11 @@ limitations under the License.*/
 #include "mainwindow.h"
 #include "gkchess_uiglobals.h"
 #include "gkchess_enginesettings.h"
-#include "gutil_messageboxlogger.h"
-#include "gutil_about.h"
-#include "gutil_persistentdata.h"
+#include <gutil/messageboxlogger.h>
+#include <gutil/about.h>
+#include <gutil/qt_settings.h>
 USING_NAMESPACE_GKCHESS;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 
 
 #define APPLICATION_ICON ":/gkchess/icons/default/k.png"
@@ -30,16 +30,13 @@ USING_NAMESPACE_GUTIL1(QT);
 
 
 StudioApplication::StudioApplication(int &argc, char **argv)
-    :Application(argc, argv)
+    :Application(argc, argv, APPLICATION_NAME, APPLICATION_VERSION)
 {
     // Initialize these settings before setting the application name, so they are shared between apps
     m_engineSettings = new EngineSettings;
 
-    setApplicationName(APPLICATION_NAME);
-    setApplicationVersion(APPLICATION_VERSION);
-
     // Initialize these settings after setting the application name, so that they are specific to this app
-    m_settings = new PersistentData("Settings", QString(), this);
+    m_settings = new GUtil::Qt::Settings("main", "", this);
     m_mainWindow = new MainWindow(m_settings, m_engineSettings);
 
     // Make sure the GKChess resources are initialized
@@ -65,7 +62,7 @@ void StudioApplication::handle_exception(const GUtil::Exception<> &ex)
 }
 
 
-class __about : public GUtil::QT::About
+class __about : public GUtil::Qt::About
 {
 public:
     __about(QWidget *w)
@@ -90,6 +87,6 @@ public:
 
 void StudioApplication::show_about(QWidget *w)
 {
-    __about(w).ShowAbout();
+    (new __about(w))->ShowAbout();
 }
 

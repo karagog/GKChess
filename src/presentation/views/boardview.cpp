@@ -21,8 +21,8 @@ limitations under the License.*/
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_square.h"
 #include "gkchess_uiglobals.h"
-#include "gutil_map.h"
-#include "gutil_paintutils.h"
+#include <gutil/map.h>
+#include <gutil/paintutils.h>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QPainter>
@@ -35,7 +35,7 @@ limitations under the License.*/
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 USING_NAMESPACE_GUTIL;
-USING_NAMESPACE_GUTIL1(QT);
+USING_NAMESPACE_GUTIL1(Qt);
 USING_NAMESPACE_GKCHESS;
 USING_NAMESPACE_GKCHESS1(UI);
 
@@ -139,7 +139,7 @@ void BoardView::HighlightSquares(const Vector<SquarePointerConst> &vec, const QC
 {
     G_D;
     QModelIndexList il;
-    G_FOREACH_CONST(SquarePointerConst s, vec)
+    for(SquarePointerConst s : vec)
         il.append(stoi(s));
     d->BoardView.HighlightSquares(il, c);
 }

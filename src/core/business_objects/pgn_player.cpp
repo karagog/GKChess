@@ -46,7 +46,7 @@ const Board &PGN_Player::GetBoard() const
 // Converts the pgn movedata to the internal movedata struct and adds it to the list
 static void __add_move_data(Board &b, List<MoveData> &l, const List<PGN_MoveData> &pgn_movedata)
 {
-    G_FOREACH_CONST(const PGN_MoveData &pmd, pgn_movedata)
+    for(const PGN_MoveData &pmd : pgn_movedata)
     {
         MoveData md = b.GenerateMoveData(pmd);
 
@@ -100,7 +100,7 @@ void PGN_Player::Clear()
 
 void PGN_Player::Next()
 {
-    if(move_index < move_data.Length() - 1){
+    if(move_index < (int)(move_data.Length() - 1)){
         ++(move_index);
         board.Move(move_data[move_index]);
     }

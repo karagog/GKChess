@@ -15,7 +15,8 @@ limitations under the License.*/
 #ifndef MANAGE_ENGINES_H
 #define MANAGE_ENGINES_H
 
-#include "gutil_persistentdata.h"
+#include <gutil/smartpointer.h>
+#include <gutil/qt_settings.h>
 #include <QDialog>
 
 namespace Ui{
@@ -34,14 +35,14 @@ class ManageEngines : public QDialog
     EngineSettings *m_settings;
     Ui::ManageEngines *ui;
 
-    QStringList m_engineList;
+    GUtil::StringList m_engineList;
     GUtil::SmartPointer<EngineManager> m_engineManager;
 
     QWidgetList m_optionItems;
 
 public:
 
-    explicit ManageEngines(EngineSettings *engine_settings, GUtil::QT::PersistentData *app_settings, QWidget *parent = 0);
+    explicit ManageEngines(EngineSettings *engine_settings, GUtil::Qt::Settings *app_settings, QWidget *parent = 0);
     ~ManageEngines();
 
 
