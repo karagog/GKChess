@@ -18,7 +18,6 @@ limitations under the License.*/
 #include "gkchess_pgn_parser.h"
 #include "gkchess_board.h"
 #include "gkchess_board_movedata.h"
-#include <gutil/vector.h>
 #include <QAbstractItemModel>
 
 namespace GKChess{ namespace UI{
@@ -35,7 +34,7 @@ class MoveDataModel :
     /** Contains a list of moves. */
     struct MoveDataContainer
     {
-        GUtil::Vector<MoveDataCache *> Moves;
+        QList<MoveDataCache *> Moves;
     };
 
     /** One cached move consists of the actual move data, a reference to
@@ -63,7 +62,7 @@ public:
     /** Initializes the model from a list of pgn moves.
         These PGN moves are created by the PGN_Parser.
     */
-    void InitFromPGN(const GUtil::Vector<PGN_MoveData> &);
+    void InitFromPGN(const QList<PGN_MoveData> &);
 
     /** QAbstractItemModel interface
         \{

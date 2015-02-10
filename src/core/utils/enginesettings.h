@@ -36,7 +36,7 @@ public:
     EngineSettings(QObject * = 0);
 
     /** Returns the list of configured engines. */
-    GUtil::StringList GetEngineList();
+    QStringList GetEngineList();
 
     /** Removes the engine from the list. */
     void RemoveEngine(const QString &name);

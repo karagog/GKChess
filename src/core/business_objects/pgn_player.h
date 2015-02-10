@@ -16,11 +16,11 @@ limitations under the License.*/
 #define GKCHESS_PGN_PLAYER_H
 
 #include <gutil/string.h>
-#include <gutil/map.h>
 #include <gutil/flags.h>
 #include <gutil/smartpointer.h>
 #include "gkchess_pgn_parser.h"
 #include "gkchess_board_movedata.h"
+#include <QList>
 
 NAMESPACE_GKCHESS;
 
@@ -35,7 +35,7 @@ class PGN_Player
     GKChess::Board &board;
     GUtil::String pgn_text;
     GKChess::PGN_GameData game_data;
-    GUtil::List<GKChess::MoveData> move_data;
+    QList<GKChess::MoveData> move_data;
     int move_index;
 public:
 
@@ -46,7 +46,7 @@ public:
     void LoadPGN(const GUtil::String &);
 
     /** Returns move data used by the player. */
-    GUtil::List<MoveData> const &GetMoveData() const;
+    QList<MoveData> const &GetMoveData() const;
 
     /** Returns the pgn game data used by the player. This stores more meta-data about the game, like
      *  who was playing at what event, and so on.

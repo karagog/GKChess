@@ -109,7 +109,7 @@ QString HtmlBoardGenerator::GenerateHtml(const Board &b, const HtmlFormattingOpt
             sw.writeEndElement(); //td
 
             // Iterate through the columns and write each cell
-            for(GUINT32 j = 0; j < b.ColumnCount(); ++j)
+            for(int j = 0; j < b.ColumnCount(); ++j)
             {
                 Square const &s( b.SquareAt(j, i) );
 
@@ -147,7 +147,7 @@ QString HtmlBoardGenerator::GenerateHtml(const Board &b, const HtmlFormattingOpt
             sw.writeEndElement(); //td
 
             char letter = 'a';
-            for(GUINT32 i = 0; i < b.RowCount(); ++i, ++letter)
+            for(int i = 0; i < b.RowCount(); ++i, ++letter)
             {
                 sw.writeStartElement("td");
                 sw.writeAttribute("style", QString("font-size:%1pt;").arg(f.IndexSize));

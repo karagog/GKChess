@@ -57,10 +57,10 @@ void MoveHistoryControl::history_updated()
     QTextCursor cur(ui->pgnView->document()->rootFrame());
     cur.movePosition(QTextCursor::EndOfBlock);
 
-    List<MoveData> const &moves = m_recorder.GetHistory();
-    if(0 < moves.Length())
+    QList<MoveData> const &moves = m_recorder.GetHistory();
+    if(0 < moves.size())
     {
-        const MoveData &md = moves.Back();
+        const MoveData &md = moves.back();
         if(1 == (md.PlyNumber & 0x1))
             cur.insertText(QString("%1. ").arg(md.PlyNumber / 2 + 1));
         cur.insertText(md.PGNData.ToString());

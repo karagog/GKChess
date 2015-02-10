@@ -35,7 +35,7 @@ class ManageEngines : public QDialog
     EngineSettings *m_settings;
     Ui::ManageEngines *ui;
 
-    GUtil::StringList m_engineList;
+    QStringList m_engineList;
     GUtil::SmartPointer<EngineManager> m_engineManager;
 
     QWidgetList m_optionItems;

@@ -40,7 +40,7 @@ EngineControl::EngineControl(Board &b, EngineSettings *settings, GUtil::Qt::Sett
 
     _engines_updated();
 
-    if(settings->GetEngineList().Length() > 0)
+    if(settings->GetEngineList().size() > 0)
         _engine_selection_changed(ui->cmb_engine->currentText());
 
     connect(m_settings, SIGNAL(NotifyEnginesUpdated()),
@@ -59,20 +59,20 @@ EngineControl::~EngineControl()
 void EngineControl::_engines_updated()
 {
     m_engineList = m_settings->GetEngineList();
-    m_engineList.Sort();
+    m_engineList.sort();
 
     // Remove engines from the combo box first
     QStringList combo_list;
     for(int i = ui->cmb_engine->count() - 1; i >= 0; --i){
-        String engine_name = String::FromQString(ui->cmb_engine->itemText(i));
-        if(GUINT32_MAX != m_engineList.IndexOf(engine_name))
+        QString engine_name = ui->cmb_engine->itemText(i);
+        if(m_engineList.contains(engine_name))
             combo_list.append(engine_name);
         else
             ui->cmb_engine->removeItem(i);
     }
 
     // Then add new ones
-    if(0 < m_engineList.Length()){
+    if(0 < m_engineList.size()){
         int i = 0;
         for(const String &k : m_engineList){
             int indx = combo_list.indexOf(k);

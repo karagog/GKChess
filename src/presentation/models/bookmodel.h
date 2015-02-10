@@ -38,7 +38,7 @@ class BookModel :
     /** Contains a list of moves. */
     struct MoveDataContainer
     {
-        GUtil::List<MoveDataCache> Moves;
+        QList<MoveDataCache> Moves;
         bool Loaded;
         MoveDataContainer() :Loaded(false) {}
     };

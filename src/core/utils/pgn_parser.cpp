@@ -52,7 +52,7 @@ static void __parse_heading(PGN_GameData &gm,
                     throw ValidationException<>("Invalid nested brackets");
                     break;
                 case ']':
-                    gm.Tags.Insert(tmp_key.ToLower(), tmp_value);
+                    gm.Tags.insert(tmp_key.ToLower(), tmp_value);
                     inside_tag = false;
                     skip_char = true;
                     //GDEBUG(String::Format("Found tag: %s-%s", tmp_key.ConstData(), tmp_value.ConstData()));
@@ -161,8 +161,10 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
         }
 
         // Parse the source and destination squares
-        Vector<char> files(2);
-        Vector<int> ranks(2);
+        QList<char> files;
+        QList<int> ranks;
+        files.reserve(2);
+        ranks.reserve(2);
         for(; iter != s.end(); ++iter)
         {
             char c = *iter.Current();
@@ -172,11 +174,11 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
             {
                 // If a file is given, it may be a source or destination file,
                 //  so we just remember it until we have more information.
-                files.PushBack(c);
+                files.append(c);
             }
             else if(-1 != tmp_number)
             {
-                ranks.PushBack(tmp_number);
+                ranks.append(tmp_number);
             }
             else if('x' == c)
             {
@@ -194,20 +196,20 @@ PGN_MoveData PGN_Parser::CreateMoveDataFromString(const String &s)
         }
 
         // Now we can sort out what the source and destination squares are:
-        if(files.Length() == 2){
+        if(files.size() == 2){
             ret.SourceFile = files[0];
             ret.DestFile = files[1];
         }
-        else if(files.Length() == 1)
+        else if(files.size() == 1)
             ret.DestFile = files[0];
         else
             throw Exception<>("Invalid file info");
 
-        if(ranks.Length() == 2){
+        if(ranks.size() == 2){
             ret.SourceRank = ranks[0];
             ret.DestRank = ranks[1];
         }
-        else if(ranks.Length() == 1)
+        else if(ranks.size() == 1)
             ret.DestRank = ranks[0];
         else
             throw Exception<>("Invalid rank info");
@@ -374,7 +376,7 @@ static void __parse_moves(PGN_GameData &gm,
         {
             next_move_number = tmps.ToInt(&ok);
             tmps.Empty();
-            if(0 == gm.Moves.Length()){
+            if(0 == gm.Moves.size()){
                 first_move_number = next_move_number;
                 prev_move_number = next_move_number;
             }
@@ -395,10 +397,10 @@ static void __parse_moves(PGN_GameData &gm,
             md.MoveNumber = prev_move_number;
             prev_move_number = next_move_number;
 
-            if((gm.Moves.Length() >> 1) + 1 != md.MoveNumber){
+            if((gm.Moves.size() >> 1) + 1 != md.MoveNumber){
                 throw Exception<>(String::Format("Invalid move number: '%d'", md.MoveNumber));
             }
-            gm.Moves.Append(md);
+            gm.Moves.append(md);
         }
         if((prev_state == parsing_comment_curly_braces && cur_state != parsing_comment_curly_braces) ||
                 (prev_state == parsing_comment_semicolon && cur_state != parsing_comment_semicolon))
@@ -437,16 +439,16 @@ static void __parse_moves(PGN_GameData &gm,
         }
     }
 
-    // Append the last move data
+    // append the last move data
     if(has_move_data){
         md.MoveNumber = prev_move_number;
-        gm.Moves.Append(md);
+        gm.Moves.append(md);
     }
 }
 
 
 
-List<PGN_GameData> PGN_Parser::ParseFile(const String &filename)
+QList<PGN_GameData> PGN_Parser::ParseFile(const String &filename)
 {
     String s;
     {
@@ -457,24 +459,24 @@ List<PGN_GameData> PGN_Parser::ParseFile(const String &filename)
     return ParseString(s);
 }
 
-List<PGN_GameData> PGN_Parser::ParseString(String const &s)
+QList<PGN_GameData> PGN_Parser::ParseString(String const &s)
 {
     if(!s.IsValidUTF8())
         throw ValidationException<>("The data contains an invalid UTF-8 sequence");
 
-    List<PGN_GameData> ret;
+    QList<PGN_GameData> ret;
     typename String::const_iterator iter(s.begin());
     typename String::const_iterator end(s.end());
     while(iter != end)
     {
-        ret.Append(PGN_GameData());
-        PGN_GameData &gd = ret.Back();
+        ret.append(PGN_GameData());
+        PGN_GameData &gd = ret.back();
 
         // Parse the heading section for tags-value pairs
         __parse_heading(gd, iter, end);
 
         // Validate the heading to make sure it has the required tags
-        if(!gd.Tags.Contains(TAG_RESULT))
+        if(!gd.Tags.contains(TAG_RESULT))
             throw Exception<>(String::Format("Tag section is missing '%s'", TAG_RESULT));
 
         // The result is the game termination marker

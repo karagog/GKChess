@@ -15,7 +15,6 @@ limitations under the License.*/
 #ifndef GKCHESS_BOARDVIEW_H
 #define GKCHESS_BOARDVIEW_H
 
-#include <gutil/vector.h>
 #include <QWidget>
 
 namespace GKChess{
@@ -76,7 +75,7 @@ public:
     void HighlightSquare(const Square &, const QColor &);
 
     /** Causes all the squares to be highlighted. */
-    void HighlightSquares(const GUtil::Vector<Square const *> &, const QColor &);
+    void HighlightSquares(const QList<Square const *> &, const QColor &);
 
     /** Removes all highlighting from the board. */
     void ClearSquareHighlighting();

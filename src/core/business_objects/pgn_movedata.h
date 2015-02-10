@@ -18,6 +18,7 @@ limitations under the License.*/
 #include <gutil/string.h>
 #include <gutil/flags.h>
 #include <gkchess_common.h>
+#include <QList>
 
 NAMESPACE_GKCHESS;
 
@@ -72,7 +73,7 @@ public:
     /** Returns the full-move number for this move, which does not by itself distinguish between
      *  white and black's moves.
     */
-    GUINT32 MoveNumber;
+    int MoveNumber;
 
     /** The type of piece being moved, in PGN notation ('K' for king, 'Q' for queen, etc...) */
     char PieceMoved;
@@ -103,7 +104,7 @@ public:
     /** Stores any variants for this move from the PGN file.
      *  A variant is interpreted as if this move was unplayed and the variant move was played instead.
     */
-    GUtil::List<PGN_MoveData> Variants;
+    QList<PGN_MoveData> Variants;
 
     /** Returns the normal PGN form of the move.
      *  For example, any of: e4 e5 Nf3 O-O

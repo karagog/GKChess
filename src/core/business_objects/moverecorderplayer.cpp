@@ -36,17 +36,17 @@ void MoveRecorderPlayer::_piece_moved(const MoveData &md)
     if(m_suppressUpdates)
         return;
 
-    if(m_index < (int)m_currentLine->Length() - 1){
+    if(m_index < m_currentLine->length() - 1){
         // If we are somewhere in the middle of a line, then
         //  fork a new variant from the last move
         MoveData &last_move = m_currentLine->operator [](m_index + 1);
-        last_move.Variants.Append(List<MoveData>());
-        m_currentLine = &last_move.Variants.Back();
+        last_move.Variants.append(QList<MoveData>());
+        m_currentLine = &last_move.Variants.back();
         m_index = -1;
     }
 
-    // Append to the end of the current line
-    m_currentLine->Append(md);
+    // append to the end of the current line
+    m_currentLine->append(md);
     ++m_index;
 
     emit NotifyHistoryUpdated();
@@ -64,13 +64,13 @@ void MoveRecorderPlayer::Clear()
 {
     // Clear the history
     m_index = -1;
-    m_moveHistory.Empty();
+    m_moveHistory.clear();
     m_currentLine = &m_moveHistory;
 }
 
 void MoveRecorderPlayer::NavigateForward()
 {
-    if(m_index + 1 < (int)m_currentLine->Length())
+    if(m_index + 1 < m_currentLine->length())
     {
         ++m_index;
         m_suppressUpdates = true;

@@ -108,10 +108,10 @@ void PolyglotBookReader::CloseBook()
 
 #define MAX_MOVES 50
 
-Vector<BookMove> PolyglotBookReader::LookupMoves(const char *fen)
+QList<BookMove> PolyglotBookReader::LookupMoves(const char *fen)
 {
     G_D;
-    Vector<BookMove> ret;
+    QList<BookMove> ret;
     if(d->file)
     {
         pg_move_t moves[MAX_MOVES];
@@ -119,7 +119,7 @@ Vector<BookMove> PolyglotBookReader::LookupMoves(const char *fen)
 
         for(unsigned int i = 0; i < len; ++i)
         {
-            ret.PushBack(BookMove(moves[i].weight, moves[i].learn,
+            ret.append(BookMove(moves[i].weight, moves[i].learn,
                                   GenericMove(moves[i].source_col, moves[i].source_row,
                                               moves[i].dest_col, moves[i].dest_row,
                                               moves[i].promoted_piece)));

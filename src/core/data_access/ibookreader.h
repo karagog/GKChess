@@ -53,7 +53,7 @@ public:
     /** Looks up the given position in the book, and returns all the moves it found.
      *  If the position was not in the database, an empty vector is returned.
     */
-    virtual GUtil::Vector<BookMove> LookupMoves(const char *fen) = 0;
+    virtual QList<BookMove> LookupMoves(const char *fen) = 0;
 
     /** Closes the book, or does nothing if it's already closed. */
     virtual void CloseBook() = 0;

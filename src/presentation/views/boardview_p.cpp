@@ -597,17 +597,15 @@ void BoardView_p::paint_board(QPainter &painter, const QRect &update_rect)
 
     // Apply any square highlighting
     painter.save();
-    for(typename Map<QModelIndex, SquareFormatOptions>::const_iterator iter = m_formatOpts.begin();
-        iter != m_formatOpts.end();
-        ++iter)
+    for(QModelIndex k : m_formatOpts.keys())
     {
-        Square const *sqr = GetBoardModel()->ConvertIndexToSquare(iter->Key());
+        Square const *sqr = GetBoardModel()->ConvertIndexToSquare(k);
         QRectF cur_rect = item_rect(sqr->GetColumn(), sqr->GetRow());
         QPainterPath path;
         QPainterPath subtracted;
         path.addRect(cur_rect);
         subtracted.addRect(__get_shrunken_rect(cur_rect, 1.0-HIGHLIGHT_THICKNESS));
-        painter.fillPath(path.subtracted(subtracted), iter->Value().HighlightColor);
+        painter.fillPath(path.subtracted(subtracted), m_formatOpts[k].HighlightColor);
     }
     painter.restore();
 
@@ -838,7 +836,7 @@ void BoardView_p::HighlightSquares(const QModelIndexList &il, const QColor &c)
 
 void BoardView_p::ClearSquareHighlighting()
 {
-    m_formatOpts.Clear();
+    m_formatOpts.clear();
     viewport()->update();
 }
 

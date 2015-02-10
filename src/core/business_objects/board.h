@@ -61,13 +61,13 @@ public:
 */
 class Board
 {
-    const GUINT32 m_columnCount;
-    const GUINT32 m_rowCount;
+    const int m_columnCount;
+    const int m_rowCount;
     Square *m_squares;
 
     class piece_index_t
     {
-        GUtil::Vector<Square const *> pieces[2][8];
+        QList<Square const *> pieces[2][8];
     public:
         piece_index_t();
 
@@ -78,11 +78,11 @@ class Board
 
         // Returns all the positions of the pieces of the given type. Both type and allegience must be defined.
         //  Very fast constant time lookup!
-        const GUtil::Vector<Square const *> &find_pieces(const Piece &) const;
-        GUtil::Vector<Square const *> &find_pieces(const Piece &);
+        const QList<Square const *> &find_pieces(const Piece &) const;
+        QList<Square const *> &find_pieces(const Piece &);
 
         // Returns all pieces of the given allegience
-        GUtil::Vector<Square const *> all_pieces(Piece::AllegienceEnum) const;
+        QList<Square const *> all_pieces(Piece::AllegienceEnum) const;
 
         // Pass 0 for new_val to remove a piece.  Pass 0 for orig_val to add a piece
         void update_piece(const Piece &, Square const *orig_val, Square const *new_val);
@@ -223,7 +223,7 @@ public:
      *  This lookup should be done at least as good as O(log(N)) time, where N is the
      *  number of different types of pieces.
     */
-    GUtil::Vector<Square const *> FindPieces(Piece const &) const;
+    QList<Square const *> FindPieces(Piece const &) const;
 
     /** Removes all pieces from the board and resets the gamestate to default. */
     void Clear();
@@ -235,10 +235,10 @@ public:
     void SetupNewGame(SetupTypeEnum = SetupStandardChess);
 
     /** Returns the number of rows on the board. */
-    GUINT32 RowCount() const;
+    int RowCount() const;
 
     /** Returns the number of columns on the board. */
-    GUINT32 ColumnCount() const;
+    int ColumnCount() const;
 
     /** Returns a reference to the square at the given column and row.
      *  The square is valid as long as the game logic is, so you can safely pass around pointers to it.
@@ -270,7 +270,7 @@ public:
     virtual MoveValidationEnum ValidateMove(const Square &, const Square &, bool ignore_checks = false) const;
 
     /** Returns a list of valid squares that the piece on the given square can move to. */
-    virtual GUtil::Vector<Square const *> GetValidMovesForSquare(const Square &) const;
+    virtual QList<Square const *> GetValidMovesForSquare(const Square &) const;
 
     /** Executes the move described by the move data object and advances the game state.
      *

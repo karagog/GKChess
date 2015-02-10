@@ -46,7 +46,7 @@ static QString __get_filename_for_piece(Piece const &p)
             .arg(QChar(p.ToFEN()).toLower());
 }
 
-static void __add_pieces_icons_to_index(Map<int, QIcon> &m, const QString &dir_deploy, Piece::AllegienceEnum a)
+static void __add_pieces_icons_to_index(QMap<int, QIcon> &m, const QString &dir_deploy, Piece::AllegienceEnum a)
 {
     for(Piece::PieceTypeEnum t = Piece::King; t <= Piece::Pawn; t = (Piece::PieceTypeEnum)((int)t + 1))
     {
@@ -160,9 +160,9 @@ void ColoredPieceIconFactory::_validate_template_icons()
 QIcon ColoredPieceIconFactory::GetIcon(Piece const &p)
 {
     QIcon ret;
-    typename Map<int, QIcon>::iterator i(index.Search(p.UnicodeValue()));
-    if(i)
-        ret = i->Value();
+    auto iter = index.find(p.UnicodeValue());
+    if(iter != index.end())
+        ret = *iter;
     return ret;
 }
 

@@ -21,7 +21,6 @@ limitations under the License.*/
 #include "gkchess_ifactory_pieceicon.h"
 #include "gkchess_square.h"
 #include "gkchess_uiglobals.h"
-#include <gutil/map.h>
 #include <gutil/paintutils.h>
 #include <QPaintEvent>
 #include <QResizeEvent>
@@ -135,7 +134,7 @@ void BoardView::HighlightSquare(const Square &s, const QColor &c)
     G_D;
     d->BoardView.HighlightSquare(stoi((&s)), c);
 }
-void BoardView::HighlightSquares(const Vector<SquarePointerConst> &vec, const QColor &c)
+void BoardView::HighlightSquares(const QList<SquarePointerConst> &vec, const QColor &c)
 {
     G_D;
     QModelIndexList il;

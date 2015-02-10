@@ -32,8 +32,8 @@ class MoveRecorderPlayer :
 {
     Q_OBJECT
     ObservableBoard &m_board;
-    GUtil::List<MoveData> m_moveHistory;
-    GUtil::List<MoveData> *m_currentLine;
+    QList<MoveData> m_moveHistory;
+    QList<MoveData> *m_currentLine;
     int m_index;
     bool m_suppressUpdates;
 public:
@@ -41,10 +41,10 @@ public:
     MoveRecorderPlayer(ObservableBoard &b, QObject * = 0);
 
     /** Returns the move history. */
-    GUtil::List<MoveData> const &GetHistory() const{ return m_moveHistory; }
+    QList<MoveData> const &GetHistory() const{ return m_moveHistory; }
 
     /** Returns the current line. */
-    GUtil::List<MoveData> const *GetCurrentLine() const{ return m_currentLine; }
+    QList<MoveData> const *GetCurrentLine() const{ return m_currentLine; }
 
     /** Returns the index we are navigating with the board. */
     int GetCurrentIndex() const{ return m_index; }

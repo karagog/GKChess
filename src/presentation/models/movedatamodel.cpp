@@ -22,14 +22,14 @@ MoveDataModel::MoveDataModel(QObject *parent)
     :QAbstractItemModel(parent)
 {}
 
-void MoveDataModel::InitFromPGN(const GUtil::Vector<PGN_MoveData> &)
+void MoveDataModel::InitFromPGN(const QList<PGN_MoveData> &)
 {
     throw NotImplementedException<>();
 }
 
 int MoveDataModel::rowCount(const QModelIndex &i) const
 {
-    return _get_container_from_index(i)->Moves.Length();
+    return _get_container_from_index(i)->Moves.size();
 }
 
 int MoveDataModel::columnCount(const QModelIndex &) const

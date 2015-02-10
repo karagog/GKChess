@@ -39,7 +39,7 @@ EngineManager::EngineManager(const QString &engine_name, EngineSettings *setting
     G_D_INIT();
     G_D;
 
-    if(GUINT32_MAX == settings->GetEngineList().IndexOf(engine_name))
+    if(!settings->GetEngineList().contains(engine_name))
         throw Exception<>("Unrecognized Engine");
 
     d->engine_name = engine_name;

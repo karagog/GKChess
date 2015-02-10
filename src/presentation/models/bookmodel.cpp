@@ -91,7 +91,7 @@ bool BookModel::hasChildren(const QModelIndex &i) const
     bool ret = false;
     MoveDataContainer const *c = _get_children_of_index(i);
     //if(!i.isValid() || 0 == i.column())
-    if(!c->Loaded || 0 < c->Moves.Length())
+    if(!c->Loaded || 0 < c->Moves.size())
         ret = true;
     return ret;
 }
@@ -100,7 +100,7 @@ int BookModel::rowCount(const QModelIndex &parent) const
 {
     int ret = 0;
     if(!parent.isValid() || 0 == parent.column()){
-        ret = _get_children_of_index(parent)->Moves.Length();
+        ret = _get_children_of_index(parent)->Moves.size();
     }
     return ret;
 }
@@ -189,9 +189,9 @@ QModelIndex BookModel::parent(const QModelIndex &child) const
     if(d && d->Parent){
         int parent_row;
         if(d->Parent->Parent)
-            parent_row = d->Parent->Parent->Moves.IndexOf(*d->Parent);
+            parent_row = d->Parent->Parent->Moves.indexOf(*d->Parent);
         else
-            parent_row = m_rootContainer.Moves.IndexOf(*d->Parent);
+            parent_row = m_rootContainer.Moves.indexOf(*d->Parent);
         ret = createIndex(parent_row, 0, d->Parent);
     }
     return ret;
@@ -212,16 +212,16 @@ void BookModel::fetchMore(const QModelIndex &parent)
     }
 
     String s = cpy.ToFEN();
-    Vector<BookMove> moves = i_bookReader->LookupMoves(s);
+    QList<BookMove> moves = i_bookReader->LookupMoves(s);
     lst->Loaded = true;
 
-    if(0 < moves.Length())
+    if(0 < moves.size())
     {
-        beginInsertRows(parent, 0, moves.Length() - 1);
+        beginInsertRows(parent, 0, moves.size() - 1);
         for(BookMove const &m : moves){
-            lst->Moves.Append(MoveDataCache(d));
-            lst->Moves.Back().BookData = m;
-            lst->Moves.Back().Data = cpy.GenerateMoveData(cpy.SquareAt(m.SourceCol, m.SourceRow),
+            lst->Moves.append(MoveDataCache(d));
+            lst->Moves.back().BookData = m;
+            lst->Moves.back().Data = cpy.GenerateMoveData(cpy.SquareAt(m.SourceCol, m.SourceRow),
                                                           cpy.SquareAt(m.DestCol, m.DestRow),
                                                           0, true);
         }
@@ -275,7 +275,7 @@ void BookModel::_board_position_changed()
     beginResetModel();
     {
         m_rootContainer.Loaded = false;
-        m_rootContainer.Moves.Empty();
+        m_rootContainer.Moves.clear();
     }
     endResetModel();
 }

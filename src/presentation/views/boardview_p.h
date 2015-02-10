@@ -17,8 +17,6 @@ limitations under the License.*/
 
 #include "gkchess_board.h"
 #include <gutil/smartpointer.h>
-#include <gutil/vector.h>
-#include <gutil/map.h>
 #include <QAbstractItemView>
 #include <QVariantAnimation>
 
@@ -225,7 +223,7 @@ private:
     GUtil::SmartPointer<GKChess::Board> m_animationBoard;
 
     // Keeps track of our per-square format options
-    GUtil::Map<QModelIndex, SquareFormatOptions> m_formatOpts;
+    QMap<QModelIndex, SquareFormatOptions> m_formatOpts;
 
 
     // Private methods start here:

@@ -15,11 +15,11 @@ limitations under the License.*/
 #ifndef PGN_PARSER_H
 #define PGN_PARSER_H
 
-#include <gutil/map.h>
 #include <gutil/string.h>
 #include <gutil/flags.h>
 #include "gkchess_pgn_movedata.h"
 #include <gkchess_common.h>
+#include <QMap>
 
 NAMESPACE_GKCHESS;
 
@@ -28,12 +28,12 @@ NAMESPACE_GKCHESS;
 struct PGN_GameData
 {
     /** The string tags that precede the moves. */
-    GUtil::Map<GUtil::String, GUtil::String> Tags;
+    QMap<GUtil::String, GUtil::String> Tags;
 
     /** All the move data. */
-    GUtil::List<PGN_MoveData> Moves;
+    QList<PGN_MoveData> Moves;
 
-    void clear(){ Tags.Clear(); Moves.Empty(); }
+    void clear(){ Tags.clear(); Moves.clear(); }
 
 };
 
@@ -51,10 +51,10 @@ class PGN_Parser
 public:
 
     /** Parses the UTF-8 string. Throws an exception on error. */
-    static GUtil::List<PGN_GameData> ParseString(const GUtil::String &utf8);
+    static QList<PGN_GameData> ParseString(const GUtil::String &utf8);
 
     /** Parses the file with UTF-8 encoding. Throws an exception on error. */
-    static GUtil::List<PGN_GameData> ParseFile(const GUtil::String &filename);
+    static QList<PGN_GameData> ParseFile(const GUtil::String &filename);
 
     /** Parses a single PGN move into a move data object.
      *  Example move strings are:  e4 e2e4 e2-e4 O-O Nxg5+ d8=Q

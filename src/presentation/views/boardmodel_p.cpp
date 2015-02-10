@@ -103,7 +103,7 @@ QVariant BoardModel_p::data(const QModelIndex &i, int role) const
             case ValidMovesRole:
             {
 //                QModelIndexList il;
-//                Vector<Square const *> tmp = GetBoard().GetValidMovesForSquare(*s);
+//                QList<Square const *> tmp = GetBoard().GetValidMovesForSquare(*s);
 //                for(Square const *sqr : tmp)
 //                {
 //                    il.append(index(sqr->GetRow(), sqr->GetColumn()));

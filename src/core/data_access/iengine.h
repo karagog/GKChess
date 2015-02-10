@@ -15,11 +15,10 @@ limitations under the License.*/
 #ifndef GKCHESS_IENGINE_H
 #define GKCHESS_IENGINE_H
 
-#include <gutil/map.h>
-#include <gutil/list.h>
 #include "gkchess_movedata.h"
 #include <QObject>
 #include <QStringList>
+#include <QMap>
 
 namespace GKChess
 {
@@ -113,9 +112,9 @@ public:
 
         /** This holds all the option names in the order they were given by the engine. */
         QStringList OptionNames;
-        GUtil::Map<QString, Option_t *> Options;
+        QMap<QString, Option_t *> Options;
 
-        void clear(){ Name.clear(); Author.clear(); OptionNames.clear(); Options.Clear(); }
+        void clear(){ Name.clear(); Author.clear(); OptionNames.clear(); Options.clear(); }
 
         ~EngineInfo();
     };
@@ -195,7 +194,7 @@ public:
         int Mate;
 
         /** Constrains the engine to consider only these moves. An empty list means unconstrained. */
-        GUtil::List<GenericMove> SearchMoves;
+        QList<GenericMove> SearchMoves;
 
         ThinkParams()
             :SearchTime(-1),

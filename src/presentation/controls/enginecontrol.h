@@ -42,7 +42,7 @@ class EngineControl : public QWidget
     Board &m_board;
     EngineSettings *m_settings;
     GUtil::Qt::Settings *m_appSettings;
-    GUtil::StringList m_engineList;
+    QStringList m_engineList;
     bool m_suppressUpdate;
 
     Ui::EngineControl *ui;

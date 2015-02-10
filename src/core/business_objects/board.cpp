@@ -16,9 +16,10 @@ limitations under the License.*/
 #include "piece.h"
 #include "square.h"
 #include "gkchess_pgn_parser.h"
+#include "gkchess_chess960.h"
 #include <gutil/euclideanvector.h>
 #include <gutil/range.h>
-#include "gkchess_chess960.h"
+#include <QStringList>
 USING_NAMESPACE_GUTIL;
 
 #ifdef DEBUG
@@ -53,16 +54,17 @@ void Board::piece_index_t::copy_from(const piece_index_t &o, const Board &b)
     {
         for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j)
         {
-            pieces[i][j].Reserve(o.pieces[i][j].Capacity());
+            pieces[i][j].reserve(o.pieces[i][j].size());
             for(Square const *s : o.pieces[i][j])
-                pieces[i][j].PushBack(&b.SquareAt(s->GetColumn(), s->GetRow()));
+                pieces[i][j].append(&b.SquareAt(s->GetColumn(), s->GetRow()));
         }
     }
 }
 
-Vector<Square const *> Board::piece_index_t::all_pieces(Piece::AllegienceEnum a) const
+QList<Square const *> Board::piece_index_t::all_pieces(Piece::AllegienceEnum a) const
 {
-    Vector<Square const *> ret(16);
+    QList<Square const *> ret;
+    ret.reserve(16);
     if(Piece::AnyAllegience == a || Piece::White == a){
         for(GUINT32 i = 0; i < sizeof(pieces[0])/sizeof(pieces[0][0]); ++i)
             ret << pieces[Piece::White][i];
@@ -76,16 +78,16 @@ Vector<Square const *> Board::piece_index_t::all_pieces(Piece::AllegienceEnum a)
 
 bool Board::piece_index_t::contains(const Piece &p) const
 {
-    return 0 < find_pieces(p).Length();
+    return 0 < find_pieces(p).size();
 }
 
-const Vector<Square const *> &Board::piece_index_t::find_pieces(const Piece &p) const
+const QList<Square const *> &Board::piece_index_t::find_pieces(const Piece &p) const
 {
     GASSERT(p.GetType() != Piece::NoPiece && p.GetAllegience() != Piece::AnyAllegience);
     return pieces[(int)p.GetAllegience()][(int)p.GetType()];
 }
 
-Vector<Square const *> &Board::piece_index_t::find_pieces(const Piece &p)
+QList<Square const *> &Board::piece_index_t::find_pieces(const Piece &p)
 {
     GASSERT(p.GetType() != Piece::NoPiece && p.GetAllegience() != Piece::AnyAllegience);
     return pieces[(int)p.GetAllegience()][(int)p.GetType()];
@@ -95,15 +97,15 @@ void Board::piece_index_t::update_piece(const Piece &p,
                                         Square const *orig_val,
                                         Square const *new_val)
 {
-    Vector<Square const *> &vec = find_pieces(p);
-    int indx = 0 == orig_val ? -1 : vec.IndexOf(orig_val);
+    QList<Square const *> &vec = find_pieces(p);
+    int indx = 0 == orig_val ? -1 : vec.indexOf(orig_val);
     if(-1 == indx){
         if(0 != new_val)
-            vec.PushBack(new_val);
+            vec.append(new_val);
     }
     else{
         if(0 == new_val)
-            vec.RemoveAt(indx);
+            vec.removeAt(indx);
         else
             vec[indx] = new_val;
     }
@@ -113,7 +115,7 @@ void Board::piece_index_t::clear()
 {
     for(GUINT32 i = 0; i < sizeof(pieces)/sizeof(pieces[0]); ++i){
         for(GUINT32 j = 0; j < sizeof(pieces[0])/sizeof(pieces[0][0]); ++j){
-            pieces[i][j].Empty();
+            pieces[i][j].clear();
         }
     }
 }
@@ -123,7 +125,7 @@ void Board::piece_index_t::clear()
 
 void Board::piece_index_t::show_index() const
 {
-    Vector<Square const *> squares = all_pieces(Piece::AnyAllegience);
+    QList<Square const *> squares = all_pieces(Piece::AnyAllegience);
     for(Square const *s : squares){
         GDEBUG(String::Format("%c: %c%d", s->GetPiece().ToFEN(), 'a' + s->GetColumn(), 1 + s->GetRow()));
     }
@@ -175,8 +177,8 @@ void Board::_init()
 {
     // Initialize all the squares in the array
     m_squares = (Square *)malloc(ColumnCount() * RowCount() * sizeof(Square));
-    for(GUINT32 c = 0; c < ColumnCount(); ++c)
-        for(GUINT32 r = 0; r < RowCount(); ++r)
+    for(int c = 0; c < ColumnCount(); ++c)
+        for(int r = 0; r < RowCount(); ++r)
             new(&square_at(c, r)) Square(c, r);
 }
 
@@ -223,12 +225,12 @@ Board::~Board()
     free(m_squares);
 }
 
-GUINT32 Board::ColumnCount() const
+int Board::ColumnCount() const
 {
     return m_columnCount;
 }
 
-GUINT32 Board::RowCount() const
+int Board::RowCount() const
 {
     return m_rowCount;
 }
@@ -471,8 +473,8 @@ Board::MoveValidationEnum Board::Move(const Square &src, const Square &dest, IPl
 
 void Board::Clear()
 {
-    for(GUINT32 i = 0; i < ColumnCount(); ++i)
-        for(GUINT32 j = 0; j < RowCount(); ++j)
+    for(int i = 0; i < ColumnCount(); ++i)
+        for(int j = 0; j < RowCount(); ++j)
             SetPiece(Piece(), SquareAt(i, j));
 }
 
@@ -483,29 +485,29 @@ void Board::FromFEN(const String &s)
 
     int king_col_white = -1;
     int king_col_black = -1;
-    String cpy( s.Trimmed() );
-    StringList sl( cpy.Split(' ', false) );
-    String backRank_white;
-    String backRank_black;
-    if(6 != sl.Length())
+    QString cpy( s.Trimmed().ToQString() );
+    QStringList sl( cpy.split(' ', QString::SkipEmptyParts) );
+    QString backRank_white;
+    QString backRank_black;
+    if(6 != sl.size())
         throw Exception<>("FEN requires 6 fields separated by spaces");
 
     // First parse the position text:
     {
-        StringList sl2( sl[0].Split('/', false) );
-        if(RowCount() != sl2.Length())
+        QStringList sl2( sl[0].split('/', QString::KeepEmptyParts) );
+        if(RowCount() != sl2.size())
             throw Exception<>("FEN position text requires 8 fields separated by /");
 
         backRank_white = sl2[7];
         backRank_black = sl2[0];
 
         // For each section of position text...
-        for(GUINT32 i = 0; i < sl2.Length(); ++i)
+        for(int i = 0; i < sl2.size(); ++i)
         {
-            GUINT32 col = 0;
+            int col = 0;
             int rank = 7 - i;
-            typename String::const_iterator iter(sl2[i].begin());
-            typename String::const_iterator next(iter + (GUINT32)1);
+            auto iter = sl2[i].begin();
+            auto next = iter + 1;
 
             // For each character in the section...
             for(;
@@ -513,27 +515,29 @@ void Board::FromFEN(const String &s)
                 ++iter)
             {
                 int num(-1);
-                char c = *iter.Current();
-                char n = (next == sl2[i].end() ? 0 : *next.Current());
-                if(String::IsNumber(c))
+                QChar c = *iter;
+                QChar n = (next == sl2[i].end() ? 0 : *next);
+                if(c.isDigit())
                 {
                     // Normally numbers are single digit, but we want to support larger boards too
-                    if(String::IsNumber(n))
-                        num = String(iter, next + (GUINT32)1).ToInt();
-                    else
-                        num = String(c).ToInt();
+                    if(n.isDigit()){
+                        num = QString(c).append(n).toInt();
+                    }
+                    else{
+                        num = QString(c).toInt();
+                    }
                 }
 
                 if(-1 != num)
                 {
                     // Numbers define empty space. Set all empty spaces null
-                    for(GUINT32 h = col; h < col + num; ++h)
+                    for(int h = col; h < col + num; ++h)
                         SetPiece(Piece(), SquareAt(h, rank));
                     col += num;
                 }
                 else
                 {
-                    Piece piece = Piece::FromFEN(c);
+                    Piece piece = Piece::FromFEN(c.toLatin1());
                     SetPiece(piece, SquareAt(col, rank));
 
                     if(Piece::King == piece.GetType())
@@ -557,7 +561,7 @@ void Board::FromFEN(const String &s)
     // Then parse whose turn it is:
     {
         Piece::AllegienceEnum a;
-        switch(sl[1][0])
+        switch(sl[1][0].toLatin1())
         {
         case 'b':
             a = Piece::Black;
@@ -579,14 +583,24 @@ void Board::FromFEN(const String &s)
         SetCastleBlackA(-1);
         SetCastleBlackH(-1);
 
-        for(char c : sl[2])
+        for(QChar c : sl[2])
         {
-            Piece::AllegienceEnum a = String::IsUpper(c) ? Piece::White : Piece::Black;
-            char const rook_char = Piece::White == a ? 'R' : 'r';
-            char const king_char = Piece::White == a ? 'K' : 'k';
-            char tmps[2] = {c, '\0'};
-            String::ToUpper(&c, tmps);
-            switch(c)
+            Piece::AllegienceEnum a;
+            char rook_char;
+            char king_char;
+            if(c.isUpper()){
+                a = Piece::White;
+                rook_char = 'R';
+                king_char = 'K';
+            }
+            else{
+                a = Piece::Black;
+                rook_char = 'r';
+                king_char = 'k';
+                c = c.toUpper();
+            }
+
+            switch(c.toLatin1())
             {
             case '-':
                 // If a dash is given, then this field is empty (nobody can castle)
@@ -594,18 +608,18 @@ void Board::FromFEN(const String &s)
             case 'K':
             {
                 // Find the outermost rook on the H-side
-                const String *s = Piece::White == a ? &backRank_white : &backRank_black;
+                const QString *s = Piece::White == a ? &backRank_white : &backRank_black;
                 int distance_from_h = 0;
-                for(int i = s->Length() - 1; i >= 0; --i){
-                    char cur = (*s)[i];
-                    if(String::IsNumber(cur)){
+                for(int i = s->length() - 1; i >= 0; --i){
+                    QChar cur = (*s)[i];
+                    if(cur.isDigit()){
                         distance_from_h += String(cur).ToInt();
                     }
-                    else if(cur == rook_char){
+                    else if(cur.toLatin1() == rook_char){
                         c = 'H' - distance_from_h;
                         break;
                     }
-                    else if(cur == king_char)
+                    else if(cur.toLatin1() == king_char)
                         break;
                     else
                         ++distance_from_h;
@@ -615,18 +629,18 @@ void Board::FromFEN(const String &s)
             case 'Q':
             {
                 // Find the outermost rook on the A-side
-                const String *s = Piece::White == a ? &backRank_white : &backRank_black;
+                const QString *s = Piece::White == a ? &backRank_white : &backRank_black;
                 int distance_from_a = 0;
-                for(GUINT32 i = 0; i < s->Length(); ++i){
-                    char cur = (*s)[i];
-                    if(String::IsNumber(cur)){
+                for(int i = 0; i < s->length(); ++i){
+                    QChar cur = (*s)[i];
+                    if(cur.isDigit()){
                         distance_from_a += String(cur).ToInt();
                     }
-                    else if(cur == rook_char){
+                    else if(cur.toLatin1() == rook_char){
                         c = 'A' + distance_from_a;
                         break;
                     }
-                    else if(cur == king_char)
+                    else if(cur.toLatin1() == king_char)
                         break;
                     else
                         ++distance_from_a;
@@ -641,7 +655,7 @@ void Board::FromFEN(const String &s)
             //  the range from a-h
             if('A' <= c && c <= 'H')
             {
-                int file = c-'A';
+                int file = c.toLatin1()-'A';
                 switch(a)
                 {
                 case Piece::White:
@@ -671,11 +685,11 @@ void Board::FromFEN(const String &s)
     {
         if(sl[3] != "-")
         {
-            if(sl[3].Length() != 2)
+            if(sl[3].size() != 2)
                 throw Exception<>("Invalid En Passant square");
 
-            char f = sl[3][0];
-            char rnk = sl[3][1];
+            char f = sl[3][0].toLatin1();
+            char rnk = sl[3][1].toLatin1();
             if(f < 'a' || 'h' < f || rnk < '1' || '8' < rnk)
                 throw Exception<>("Invalid En Passant square");
 
@@ -689,7 +703,7 @@ void Board::FromFEN(const String &s)
     // Parse the half-move clock:
     {
         bool ok(false);
-        SetHalfMoveClock(sl[4].ToInt(&ok));
+        SetHalfMoveClock(sl[4].toInt(&ok));
         if(!ok)
             throw Exception<>("Invalid half-move clock");
     }
@@ -698,7 +712,7 @@ void Board::FromFEN(const String &s)
     // Parse the full-move number:
     {
         bool ok(false);
-        SetFullMoveNumber(sl[5].ToInt(&ok));
+        SetFullMoveNumber(sl[5].toInt(&ok));
         if(!ok)
             throw Exception<>("Invalid full-move number");
     }
@@ -728,7 +742,7 @@ static GUtil::String __get_castle_string_for_allegience(const Board &b,
         else if(castle_file_h_side != -1)
         {
             bool no_outer_rook = true;
-            for(GUINT32 i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
+            for(int i = castle_file_h_side + 1; i < b.ColumnCount(); ++i)
             {
                 Square const &sqr = b.SquareAt(i, rank);
                 if(!sqr.GetPiece().IsNull() &&
@@ -771,7 +785,7 @@ String Board::ToFEN() const
     for(int r = RowCount() - 1; r >= 0; --r)
     {
         int empty_cnt = 0;
-        for(GUINT32 c = 0; c < ColumnCount(); ++c)
+        for(int c = 0; c < ColumnCount(); ++c)
         {
             Square const &cur = SquareAt(c, r);
             if(!cur.GetPiece().IsNull())
@@ -1157,9 +1171,9 @@ Board::MoveValidationEnum Board::ValidateMove(const Square &s, const Square &d, 
     return ValidMove;
 }
 
-Vector<Square const *> Board::GetValidMovesForSquare(const Square &) const
+QList<Square const *> Board::GetValidMovesForSquare(const Square &) const
 {
-    Vector<Square const *> ret;
+    QList<Square const *> ret;
     return ret;
 }
 
@@ -1171,8 +1185,8 @@ static Square const *__get_source_square(const Board &b,
                                          GINT8 given_rank_info)
 {
     Square const *ret = 0;
-    Vector<Square const *> possible_sources( b.FindPieces(Piece(Piece::GetTypeFromPGN(piece_moved), a)) );
-    for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+    QList<Square const *> possible_sources( b.FindPieces(Piece(Piece::GetTypeFromPGN(piece_moved), a)) );
+    for(int i = 0; i < possible_sources.size(); ++i)
     {
         Square const *s = possible_sources[i];
 
@@ -1259,8 +1273,8 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         if(-1 == rook_loc)
             throw Exception<>("Unable to castle on that side");
 
-        Vector<Square const *> v = FindPieces(Piece(Piece::King, turn));
-        if(v.Length() != 1)
+        QList<Square const *> v = FindPieces(Piece(Piece::King, turn));
+        if(v.size() != 1)
             throw Exception<>();
         ret.Source = *v[0];
         ret.Destination = SquareAt(rook_loc, v[0]->GetRow());
@@ -1285,8 +1299,8 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
         if(-1 == rook_loc)
             throw Exception<>("Unable to castle on that side");
 
-        Vector<Square const *> v = FindPieces(Piece(Piece::King, turn));
-        if(v.Length() != 1)
+        QList<Square const *> v = FindPieces(Piece(Piece::King, turn));
+        if(v.size() != 1)
             throw Exception<>();
         ret.Source = *v[0];
         ret.Destination = SquareAt(rook_loc, v[0]->GetRow());
@@ -1356,11 +1370,11 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                             1 != Abs(tmp_source_column - ret.Destination.GetColumn()))
                         throw Exception<>("Invalid file for pawn capture");
 
-                    Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
-                    if(0 == possible_sources.Length())
+                    QList<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
+                    if(0 == possible_sources.size())
                         throw Exception<>("There are no pieces of that type to move");
 
-                    for(GUINT32 i = 0; i < possible_sources.Length(); ++i)
+                    for(int i = 0; i < possible_sources.size(); ++i)
                     {
                         Square const *s = possible_sources[i];
 
@@ -1427,10 +1441,10 @@ MoveData Board::GenerateMoveData(const PGN_MoveData &m) const
                 break;
             case 'K':
             {
-                Vector<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
+                QList<Square const *> possible_sources( FindPieces(Piece(Piece::GetTypeFromPGN(m.PieceMoved), turn)) );
 
                 // There can only be one king
-                GASSERT(1 == possible_sources.Length());
+                GASSERT(1 == possible_sources.size());
 
                 Square const *s = possible_sources[0];
                 if(__is_move_valid_for_king(*this, *s, ret.Destination, turn))
@@ -1539,28 +1553,28 @@ MoveData Board::GenerateMoveData(const Square &s,
             if(ret.PGNData.SourceFile == 0)
             {
                 // If more than one piece could reach the destination square
-                Vector<const Square *> pieces = m_index.find_pieces(ret.PieceMoved);
-                if(pieces.Length() > 1)
+                QList<const Square *> pieces = m_index.find_pieces(ret.PieceMoved);
+                if(pieces.size() > 1)
                 {
-                    Vector<const Square *> possible_movers;
+                    QList<const Square *> possible_movers;
                     for(const Square *s : pieces){
                         if(*s != ret.Source && ValidMove == ValidateMove(*s, ret.Destination, true))
-                            possible_movers.PushBack(s);
+                            possible_movers.append(s);
                     }
 
-                    if(0 < possible_movers.Length())
+                    if(0 < possible_movers.size())
                     {
                         bool row_match = false;
-                        for(GUINT32 i = 0; i < possible_movers.Length(); ++i){
+                        for(int i = 0; i < possible_movers.size(); ++i){
                             if(ret.Source.GetRow() == possible_movers[i]->GetRow()){
                                 row_match = true;
-                                possible_movers.RemoveAt(i);
+                                possible_movers.removeAt(i);
                                 break;
                             }
                         }
 
                         bool col_match = false;
-                        for(GUINT32 i = 0; i < possible_movers.Length(); ++i){
+                        for(int i = 0; i < possible_movers.size(); ++i){
                             if(ret.Source.GetColumn() == possible_movers[i]->GetColumn()){
                                 col_match = true;
                                 break;
@@ -1592,12 +1606,12 @@ MoveData Board::GenerateMoveData(const Square &s,
 
 // If there is a piece at the destination, dest_piece will be updated with the information
 //  Returns true if the square was appended
-static bool __append_if_within_bounds(Vector<Square const *> &res, const Board &b, GUINT32 col, GUINT32 row, Piece *dest_piece)
+static bool __append_if_within_bounds(QList<Square const *> &res, const Board &b, int col, int row, Piece *dest_piece)
 {
     bool ret = false;
-    if(col < b.ColumnCount() && row < b.RowCount()){
+    if(0 <= col && 0 <= row && col < b.ColumnCount() && row < b.RowCount()){
         Square const *sqr = &b.SquareAt(col, row);
-        res.PushBack(sqr);
+        res.append(sqr);
         ret = true;
 
         if(!sqr->GetPiece().IsNull())
@@ -1607,7 +1621,7 @@ static bool __append_if_within_bounds(Vector<Square const *> &res, const Board &
 }
 
 
-static void __get_threatened_squares_helper(Vector<Square const *> &ret, const Board &b, const Square &s, int col_inc, int row_inc, int max_distance = -1)
+static void __get_threatened_squares_helper(QList<Square const *> &ret, const Board &b, const Square &s, int col_inc, int row_inc, int max_distance = -1)
 {
     int distance = 1;
     int measuring_cnt = 4;
@@ -1652,9 +1666,9 @@ static void __get_threatened_squares_helper(Vector<Square const *> &ret, const B
 }
 
 // Returns the squares that a piece with given type on the given square can capture
-static Vector<Square const *> __get_threatened_squares(const Board &b, Piece const &p, const Square &s)
+static QList<Square const *> __get_threatened_squares(const Board &b, Piece const &p, const Square &s)
 {
-    Vector<Square const *> ret;
+    QList<Square const *> ret;
     int max_distance = -1;
     switch(p.GetType())
     {
@@ -1666,11 +1680,11 @@ static Vector<Square const *> __get_threatened_squares(const Board &b, Piece con
         {
             int col = s.GetColumn() - 1;
             if(0 <= col)
-                ret.PushBack(&b.SquareAt(col, rank));
+                ret.append(&b.SquareAt(col, rank));
 
             col = s.GetColumn() + 1;
             if(7 >= col)
-                ret.PushBack(&b.SquareAt(col, rank));
+                ret.append(&b.SquareAt(col, rank));
         }
     }
         break;
@@ -1701,14 +1715,14 @@ void Board::_update_threat_counts()
     // Set all threats to 0 and then increment them as we find threats
     _set_all_threat_counts(0);
 
-    Vector<Square const *> all_pieces(FindPieces(Piece()));
+    QList<Square const *> all_pieces(FindPieces(Piece()));
     for(Square const *s_c : all_pieces)
     {
         GASSERT(!s_c->GetPiece().IsNull());
 
         Piece const &p = s_c->GetPiece();
 
-        Vector<Square const *> squares(__get_threatened_squares(*this, p, *s_c));
+        QList<Square const *> squares(__get_threatened_squares(*this, p, *s_c));
         for(Square const *s_c : squares){
             Square &s = square_at(s_c->GetColumn(), s_c->GetRow());
             s.SetThreatCount(p.GetAllegience(), s.GetThreatCount(p.GetAllegience()) + 1);
@@ -1718,10 +1732,8 @@ void Board::_update_threat_counts()
 
 void Board::_set_all_threat_counts(int c)
 {
-    for(GUINT32 i = 0; i < ColumnCount(); ++i)
-    {
-        for(GUINT32 j = 0; j < RowCount(); ++j)
-        {
+    for(int i = 0; i < ColumnCount(); ++i){
+        for(int j = 0; j < RowCount(); ++j){
             square_at(i, j).SetThreatCount(Piece::White, c);
             square_at(i, j).SetThreatCount(Piece::Black, c);
         }
@@ -1741,9 +1753,9 @@ void Board::SetPiece(Piece const &p, const Square &s)
         m_index.update_piece(p, 0, &s);
 }
 
-Vector<Square const *> Board::FindPieces(Piece const &pc) const
+QList<Square const *> Board::FindPieces(Piece const &pc) const
 {
-    Vector<Square const *> ret;
+    QList<Square const *> ret;
     if(Piece::NoPiece == pc.GetType()){
         ret << m_index.all_pieces(pc.GetAllegience());
     }
@@ -1757,8 +1769,8 @@ bool Board::IsInCheck(Piece::AllegienceEnum a) const
 {
     bool ret = false;
     Piece king(Piece::King, a);
-    Vector<Square const *> king_loc = FindPieces(king);
-    if(1 == king_loc.Length())
+    QList<Square const *> king_loc = FindPieces(king);
+    if(1 == king_loc.size())
     {
         if(0 < king_loc[0]->GetThreatCount(king.GetOppositeAllegience()))
             ret = true;
@@ -1780,7 +1792,7 @@ bool Board::IsInCheckMate(Piece::AllegienceEnum) const
 void Board::ShowIndex() const
 {
     Console::WriteLine("White Pieces:");
-    Vector<Square const *> v = m_index.all_pieces(Piece::White);
+    QList<Square const *> v = m_index.all_pieces(Piece::White);
     for(const Square *s : v){
         Console::WriteLine(String::Format("%s: %s",
                                           s->GetPiece().ToString(true).ConstData(),

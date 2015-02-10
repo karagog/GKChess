@@ -23,7 +23,7 @@ PGN_Player::PGN_Player(Board &b)
     :board(b)
 {}
 
-List<MoveData> const &PGN_Player::GetMoveData() const
+QList<MoveData> const &PGN_Player::GetMoveData() const
 {
     return move_data;
 }
@@ -44,39 +44,40 @@ const Board &PGN_Player::GetBoard() const
 }
 
 // Converts the pgn movedata to the internal movedata struct and adds it to the list
-static void __add_move_data(Board &b, List<MoveData> &l, const List<PGN_MoveData> &pgn_movedata)
+static void __add_move_data(Board &b, QList<MoveData> &l, const QList<PGN_MoveData> &pgn_movedata)
 {
     for(const PGN_MoveData &pmd : pgn_movedata)
     {
         MoveData md = b.GenerateMoveData(pmd);
 
         // Recursively populate any variants
-        if(pmd.Variants.Length() > 0)
+        if(pmd.Variants.size() > 0)
         {
-            md.Variants.Append(List<MoveData>());
-            __add_move_data(b, md.Variants.Back(), pmd.Variants);
+            md.Variants.append(QList<MoveData>());
+            __add_move_data(b, md.Variants.back(), pmd.Variants);
 
             // After the last function returns the board could be in any state, so set it back now
             b.FromFEN(md.Position);
         }
 
         b.Move(md);
-        l.Append(md);
+        l.append(md);
     }
 }
 
 void PGN_Player::LoadPGN(const String &s)
 {
-    List<PGN_GameData> games = PGN_Parser::ParseString(s);
-    if(games.Length() > 0)
+    QList<PGN_GameData> games = PGN_Parser::ParseString(s);
+    if(games.size() > 0)
     {
-        List<MoveData> tmp_move_data;
+        QList<MoveData> tmp_move_data;
         const PGN_GameData &gd = games[0];
 
         // Set the initial position of the board
-        if(gd.Tags.Contains("setup") && gd.Tags.At("setup") == "1"){
-            GASSERT(gd.Tags.Contains("fen"));
-            board.FromFEN(gd.Tags.At("fen"));
+        if(gd.Tags.contains("setup") && gd.Tags["setup"] == "1"){
+            if(!gd.Tags.contains("fen"))
+                throw Exception<>("Setup declared without accompanying FEN");
+            board.FromFEN(gd.Tags["fen"]);
         }
         else
             board.SetupNewGame(Board::SetupStandardChess);
@@ -87,20 +88,20 @@ void PGN_Player::LoadPGN(const String &s)
         pgn_text = s;
         game_data = gd;
         move_data = tmp_move_data;
-        move_index = tmp_move_data.Length() - 1;
+        move_index = tmp_move_data.size() - 1;
     }
 }
 
 void PGN_Player::Clear()
 {
     game_data.clear();
-    move_data.Clear();
+    move_data.clear();
     pgn_text.Empty();
 }
 
 void PGN_Player::Next()
 {
-    if(move_index < (int)(move_data.Length() - 1)){
+    if(move_index < (int)(move_data.size() - 1)){
         ++(move_index);
         board.Move(move_data[move_index]);
     }
@@ -116,7 +117,7 @@ void PGN_Player::Previous()
 
 void PGN_Player::First()
 {
-    if(move_data.Length() > 0){
+    if(move_data.size() > 0){
         move_index = -1;
         board.FromFEN(move_data[0].Position);
     }
@@ -124,8 +125,8 @@ void PGN_Player::First()
 
 void PGN_Player::Last()
 {
-    if(move_data.Length() > 0){
-        move_index = move_data.Length() - 1;
+    if(move_data.size() > 0){
+        move_index = move_data.size() - 1;
         board.FromFEN(move_data[move_index].Position);
         board.Move(move_data[move_index]);
     }

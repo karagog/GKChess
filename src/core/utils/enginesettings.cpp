@@ -30,10 +30,12 @@ EngineSettings::EngineSettings(QObject *p)
     connect(&m_data, SIGNAL(NotifyChangesCommitted()), this, SIGNAL(NotifyEnginesUpdated()));
 }
 
-StringList EngineSettings::GetEngineList()
+QStringList EngineSettings::GetEngineList()
 {
-    StringList ret = m_data.Keys();
-    ret.Sort();
+    QStringList ret;
+    for(const String &s : m_data.Keys())
+        ret << s.ToQString();
+    ret.sort();
     return ret;
 }
 

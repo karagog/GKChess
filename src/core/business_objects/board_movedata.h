@@ -65,7 +65,7 @@ struct MoveData
     GUtil::String Position;
 
     /** Stores a list of variant lines for this move. */
-    GUtil::List<GUtil::List<MoveData> > Variants;
+    QList<QList<MoveData> > Variants;
 
     /** Returns true if this is a null move data (default constructed). */
     bool IsNull() const{ return -1 == PlyNumber; }

@@ -76,7 +76,7 @@ void ManageEngines::_engine_list_updated()
 
     _clear_options_panel();
 
-    if(0 < m_engineList.Length()){
+    if(0 < m_engineList.size()){
         for(const String &s : m_engineList)
             ui->lst_engines->addItem(s.ToQString());
         ui->lst_engines->setCurrentRow(0);
@@ -132,7 +132,7 @@ void ManageEngines::_current_changed(int r)
         QWidget *editing_widget = 0;
         QAction *edited_action = 0;
         QString cur_name = info.OptionNames[i];
-        IEngine::Option_t *opt = info.Options.At(cur_name);
+        IEngine::Option_t *opt = info.Options[cur_name];
 
         switch(opt->GetType())
         {
@@ -235,7 +235,7 @@ void ManageEngines::_edited_action(QAction *a)
 
     IEngine &engine = m_engineManager->GetEngine();
     IEngine::EngineInfo const &info = engine.GetEngineInfo();
-    IEngine::Option_t *opt = info.Options.At(info.OptionNames[option_index]);
+    IEngine::Option_t *opt = info.Options[info.OptionNames[option_index]];
 
     bool default_value = true;
     QVariant value;
@@ -304,7 +304,7 @@ void ManageEngines::_default_action(QAction *a)
         return;
 
     IEngine::EngineInfo const &info = m_engineManager->GetEngine().GetEngineInfo();
-    IEngine::Option_t *opt = info.Options.At(info.OptionNames[option_index]);
+    IEngine::Option_t *opt = info.Options[info.OptionNames[option_index]];
     switch(opt->GetType())
     {
     case IEngine::Option_t::Check:
@@ -341,7 +341,7 @@ void ManageEngines::_add()
         QString path = ne.GetExePath();
         if(!name.isEmpty() && !path.isEmpty())
         {
-            if(GUINT32_MAX != m_settings->GetEngineList().IndexOf(String::FromQString(name)))
+            if(m_settings->GetEngineList().contains(name))
             {
                 if(QMessageBox::Ok !=
                         QMessageBox::warning(this,

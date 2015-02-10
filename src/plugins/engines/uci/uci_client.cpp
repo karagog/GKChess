@@ -209,7 +209,7 @@ void UCI_Client::_start_and_validate_engine(bool populate_data)
 
                 if(opt){
                     d->info.OptionNames.append(opt_name);
-                    d->info.Options.Insert(opt_name, opt);
+                    d->info.Options.insert(opt_name, opt);
                 }
             }
             else if(line.startsWith("uciok"))
@@ -323,10 +323,8 @@ bool UCI_Client::IsEngineStarted() const
 
 UCI_Client::EngineInfo::~EngineInfo()
 {
-    for(typename Map<QString, Option_t *>::iterator iter = Options.begin();
-        iter != Options.end();
-        ++iter)
-        delete iter->Value();
+    for(Option_t *o : Options)
+        delete o;
 }
 
 const UCI_Client::EngineInfo &UCI_Client::GetEngineInfo() const
@@ -453,7 +451,7 @@ void UCI_Client::SetPosition(const char *data)
 void UCI_Client::SetOption(const QString &name, const QVariant &value)
 {
     G_D;
-    if(!d->info.Options.Contains(name))
+    if(!d->info.Options.contains(name))
         return;
 
     // Apply the change to our in-memory struct
@@ -516,7 +514,7 @@ void UCI_Client::StartThinking(const IEngine::ThinkParams &p)
     if(0 < p.Mate)
         str.append(QString(" mate %1").arg(p.Mate));
 
-//    if(0 < p.SearchMoves.Length())
+//    if(0 < p.SearchMoves.size())
 //        str.append(QString(" searchmoves %1").arg(p.SearchMoves.join(" ")));
 
     _write_to_engine(str);

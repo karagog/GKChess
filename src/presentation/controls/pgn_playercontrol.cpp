@@ -44,15 +44,15 @@ void PGN_PlayerControl::LoadPGN(const String &s)
     player->LoadPGN(s);
     const PGN_GameData &pgd = player->GetGameData();
 
-    if(pgd.Tags.Contains("white") && pgd.Tags.Contains("black"))
+    if(pgd.Tags.contains("white") && pgd.Tags.contains("black"))
         ui->lbl_title->setText(QString("%1 vs. %2")
-                                  .arg(pgd.Tags.At("white"))
-                                  .arg(pgd.Tags.At("black")));
+                                  .arg(pgd.Tags["white"])
+                                  .arg(pgd.Tags["black"]));
 
-    if(pgd.Tags.Contains("date"))
-        ui->lbl_date->setText(QString("Date: %1").arg(pgd.Tags.At("date")));
-    if(pgd.Tags.Contains("result"))
-        ui->lbl_result->setText(QString("Result: %1").arg(pgd.Tags.At("result")));
+    if(pgd.Tags.contains("date"))
+        ui->lbl_date->setText(QString("Date: %1").arg(pgd.Tags["date"]));
+    if(pgd.Tags.contains("result"))
+        ui->lbl_result->setText(QString("Result: %1").arg(pgd.Tags["result"]));
 
     setEnabled(true);
 }

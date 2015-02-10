@@ -40,7 +40,7 @@ public:
     bool IsBookOpen() const;
     const char *GetBookFilename() const;
     void CloseBook();
-    GUtil::Vector<BookMove> LookupMoves(const char *fen);
+    QList<BookMove> LookupMoves(const char *fen);
 
     /** \note You can only observe the progress for one validation globally at a time. */
     void ValidateBook(IValidationProgressObserver *);

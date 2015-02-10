@@ -78,9 +78,9 @@ void BookReaderControl::file_selected()
 
 void BookReaderControl::move_doubleClicked(const QModelIndex &ind)
 {
-    List<MoveData> lst;
+    QList<MoveData> lst;
     foreach(const QModelIndex &i, m_bookModel.GetAncestry(ind)){
-        lst.Append(*m_bookModel.ConvertIndexToMoveData(i));
+        lst.append(*m_bookModel.ConvertIndexToMoveData(i));
     }
     for(const MoveData &md : lst){
         m_board.Move(md);
