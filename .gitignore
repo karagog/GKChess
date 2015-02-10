@@ -18,6 +18,7 @@ build-*-Release
 *.out
 
 *.dat
+*.bin
 
 
 # Project-specific ignores
