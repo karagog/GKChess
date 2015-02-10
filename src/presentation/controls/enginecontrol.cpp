@@ -53,6 +53,7 @@ EngineControl::EngineControl(Board &b, EngineSettings *settings, GUtil::Qt::Sett
 
 EngineControl::~EngineControl()
 {
+    m_engineMan.Clear();
     delete ui;
 }
 
